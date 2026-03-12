@@ -33,10 +33,9 @@ function Home() {
 
         <ul className="nav-links">
           <li><Link to="/">Home</Link></li>
+          <li><Link to="/products">Products</Link></li>
           <li><Link to="/services">Services</Link></li>
           <li><Link to="/about">About</Link></li>
-          <li><Link to="/stakeholders">Stakeholders</Link></li>
-          <li><Link to="/industry">Industry</Link></li>
           <li><Link to="/contact">Contact</Link></li>
         </ul>
 

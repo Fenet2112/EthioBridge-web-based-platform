@@ -12,6 +12,25 @@ async function getIndustryForUser(userId) {
   return result.rows[0] || null;
 }
 
+// ── GET ALL PRODUCTS (public - for Products page) ──
+router.get("/products/all", async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+        p.id, p.name, p.description, p.price, p.unit, p.category, p.image_url, p.is_available,
+        i.company_name, i.id as industry_id
+       FROM products p
+       JOIN industries i ON i.id = p.industry_id
+       WHERE p.is_available = true
+       ORDER BY p.created_at DESC`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Get all products error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // ── GET MY PRODUCTS (industry dashboard) ──
 router.get(
   "/my-products",

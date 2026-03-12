@@ -14,6 +14,7 @@ import IndustryDetailPage from "./pages/IndustryDetailPage";
 import ProfilePage from "./pages/ProfilePage";
 import StakeholderMessages from "./pages/StakeholderMessages";
 import AccountStatus from "./pages/AccountStatus";
+import Products from "./pages/Products";
 
 function App() {
   return (
@@ -34,6 +35,9 @@ function App() {
         {/* Role dashboards (only accessible after approval) */}
         <Route path="/stakeholders" element={<Stakeholders />} />
         <Route path="/industry" element={<Industry />} />
+
+        {/* Products Page */}
+        <Route path="/products" element={<Products />} />
 
         {/* Stakeholder Messages */}
         <Route path="/messages" element={<StakeholderMessages />} />
