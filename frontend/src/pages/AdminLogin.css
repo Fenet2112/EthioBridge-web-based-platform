@@ -1,0 +1,80 @@
+.admin-login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #defceb;
+  color: white;
+}
+
+.login-container {
+  background: white;
+  padding: 50px;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  max-width: 400px;
+  width: 100%;
+  color: #333;
+  text-align: center;
+}
+
+.login-container h1 {
+  color: #0a5c2f;
+  margin-bottom: 0.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+button {
+  background: #0a5c2f;
+  color: white;
+  border: none;
+  padding: 14px;
+  width: 100%;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: #ccc;
+}
+
+.error {
+  color: #e74c3c;
+  margin-bottom: 1rem;
+}
+/* Back to Home button/link */
+.back-to-home {
+  margin-top: 2rem;
+  font-size: 1.05rem;
+}
+
+.back-home-link {
+  color: #0a5c2f;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.25s;
+}
+
+.back-home-link:hover {
+  color: #084d27;
+  text-decoration: underline;
+  transform: translateX(-4px); /* subtle left shift for visual feedback */
+}

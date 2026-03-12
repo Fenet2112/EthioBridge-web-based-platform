@@ -1,0 +1,691 @@
+.industry-dashboard {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* ── Navbar ── */
+.dashboard-navbar {
+  background: white;
+  padding: 16px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.dashboard-logo {
+  color: #0a5c2f;
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* ── Animated Hamburger ── */
+.hamburger-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 10px;
+  transition: background 0.3s;
+}
+
+.hamburger-btn:hover {
+  background: #136319;
+}
+
+.bar {
+  width: 24px;
+  height: 3px;
+  background: #0a5c2f;
+  border-radius: 2px;
+  transition: all 0.35s ease;
+}
+
+.hamburger-btn.active .bar:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger-btn.active .bar:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-btn.active .bar:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -7px);
+}
+/* Sidebar Profile – fits perfectly without horizontal scroll */
+.sidebar-profile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eee;
+  background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e9 100%);
+  overflow: hidden; /* prevents any overflow */
+}
+
+.sidebar-avatar,
+.sidebar-avatar-placeholder {
+  width: 56px;                     /* smaller & perfect fit (was 64px → too big) */
+  height: 56px;
+  min-width: 56px;                 /* prevents squishing */
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 3px solid white;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+  background-size: cover;
+  background-position: center;
+}
+
+.sidebar-avatar-placeholder {
+  background: #0a5c2f;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.sidebar-profile-info {
+  flex: 1;
+  overflow: hidden;                /* prevents text overflow */
+}
+
+.sidebar-profile-info h4 {
+  margin: 0 0 3px;
+  font-size: 1.15rem;
+  color: #0a5c2f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-profile-info p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Make sure no horizontal scroll in sidebar */
+.sidebar-menu {
+  overflow-x: hidden;              /* no horizontal scroll ever */
+}
+
+.menu-list {
+  margin-top: 8px;
+}
+/* ── Sidebar Menu ── */
+.sidebar-menu {
+  position: fixed;
+  left: -320px;
+  top: 0;
+  width: 320px;
+  height: 100%;
+  background: white;
+  box-shadow: 6px 0 30px rgba(0,0,0,0.16);
+  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 150;
+  overflow-y: auto;
+}
+
+.sidebar-menu.open {
+  left: 0;
+}
+
+.sidebar-header {
+  padding: 24px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  color: #0a5c2f;
+  font-size: 1.5rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #777;
+  cursor: pointer;
+}
+
+.menu-list {
+  list-style: none;
+  padding: 16px 0;
+  margin: 0;
+}
+
+.menu-item {
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 1.08rem;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.menu-item:hover,
+.menu-item.active {
+  background: #f0f9f0;
+  color: #0a5c2f;
+  font-weight: 600;
+}
+
+.menu-icon {
+  font-size: 1.5rem;
+  min-width: 28px;
+}
+
+.sidebar-footer {
+  padding: 24px 28px;
+  border-top: 1px solid #eee;
+  margin-top: 40px;
+}
+/* Fix overlap with navbar */
+.sidebar-top-spacer {
+  height: 70px; /* Adjust this value to match your navbar height */
+  flex-shrink: 0;
+}
+
+/* Sidebar profile avatar – fits perfectly */
+.sidebar-profile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eee;
+  background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e9 100%);
+  overflow: hidden;
+}
+
+.sidebar-avatar,
+.sidebar-avatar-placeholder {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 3px solid white;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+}
+
+.sidebar-avatar-placeholder {
+  background: #0a5c2f;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.sidebar-profile-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar-profile-info h4 {
+  margin: 0 0 3px;
+  font-size: 1.15rem;
+  color: #0a5c2f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-profile-info p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* No horizontal scroll in sidebar */
+.sidebar-menu {
+  overflow-x: hidden;
+}
+
+/* Make sidebar scrollable vertically if needed */
+.sidebar-menu {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.logout-btn {
+  color: #e74c3c;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+/* Profile specific styles */
+.profile-card {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.07);
+}
+
+.profile-form {
+  display: grid;
+  gap: 1.6rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.6rem;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #0a5c2f;
+  box-shadow: 0 0 0 3px rgba(10,92,47,0.12);
+}
+
+.logo-group {
+  text-align: center;
+}
+
+.logo-preview-container {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  margin: 0 auto 1rem;
+  border: 2px dashed #ccc;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #f9fdf9;
+}
+
+.logo-preview,
+.logo-placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #777;
+}
+
+.logo-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.save-profile-btn {
+  background: #0a5c2f;
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-top: 1.5rem;
+  transition: all 0.25s;
+}
+
+.save-profile-btn:hover {
+  background: #084d27;
+  transform: translateY(-2px);
+}
+/* Profile View Mode (like screenshot) */
+.profile-view {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.07);
+  overflow: hidden;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 40px 40px 24px;
+  background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e9 100%);
+  border-bottom: 1px solid #e0f0e0;
+}
+
+.company-logo {
+  width: 120px;
+  height: 120px;
+  border-radius: 16px;
+  object-fit: cover;
+  border: 4px solid white;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.logo-placeholder-view {
+  width: 120px;
+  height: 120px;
+  border-radius: 16px;
+  background: #e8f5e9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0a5c2f;
+  font-weight: 600;
+  border: 4px solid white;
+}
+
+.profile-title h2 {
+  margin: 0;
+  color: #0a5c2f;
+  font-size: 2.1rem;
+}
+
+.industry-type {
+  margin: 8px 0 0;
+  color: #555;
+  font-size: 1.1rem;
+}
+
+.edit-btn {
+  margin-left: auto;
+  background: #0a5c2f;
+  color: white;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.edit-btn:hover {
+  background: #084d27;
+  transform: translateY(-2px);
+}
+
+.profile-details {
+  padding: 32px 40px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.detail-item {
+  font-size: 1.05rem;
+}
+
+.detail-item strong {
+  color: #0a5c2f;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  .edit-btn {
+    margin: 20px auto 0;
+  }
+  .profile-details {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Main Content ── */
+.main-content {
+  padding: 40px;
+  transition: margin-left 0.4s ease;
+}
+
+.content-header h1 {
+  color: #0a5c2f;
+  margin-top: 0;
+  font-size: 2.1rem;
+}
+
+.content-card {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.07);
+  min-height: 70vh;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .main-content {
+    padding: 24px;
+  }
+}
+/* Status banners */
+.status-banner {
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.status-banner.pending {
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+}
+
+.status-banner.rejected {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.locked-section {
+  background: white;
+  padding: 60px 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.07);
+  text-align: center;
+  color: #555;
+}
+
+.locked-section h2 {
+  color: #e74c3c;
+}
+/* ─────────────────────────────────────────────
+   Mobile-first improvements
+   ───────────────────────────────────────────── */
+
+@media (max-width: 992px) {
+  /* Make sidebar narrower and full-height feel */
+  .sidebar-menu {
+    width: 85vw;                    /* most phones: 300–320px */
+    max-width: 320px;
+    left: -85vw;                    /* match width */
+  }
+
+  .sidebar-menu.open {
+    left: 0;
+  }
+
+  /* Reduce navbar padding */
+  .dashboard-navbar {
+    padding: 12px 20px;
+  }
+
+  .nav-left {
+    gap: 16px;
+  }
+
+  .hamburger-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .dashboard-logo {
+    font-size: 1.5rem;
+  }
+
+  /* Main content breathing room */
+  .main-content {
+    padding: 24px 16px;
+  }
+
+  .content-card {
+    padding: 28px 20px;
+  }
+
+  /* Make headings responsive */
+  .content-header h1 {
+    font-size: 1.8rem;
+  }
+
+  /* Optional: dim background when menu is open */
+  .industry-dashboard::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s, visibility 0.4s;
+    z-index: 140;
+  }
+
+  .sidebar-menu.open ~ .industry-dashboard::after {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* Extra small phones (≤ 480px) */
+@media (max-width: 480px) {
+  .welcome-text {
+    display: none;                  /* hide on very small screens */
+  }
+
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+  }
+
+  .sidebar-header h3 {
+    font-size: 1.4rem;
+  }
+
+  .menu-item {
+    font-size: 1rem;
+    padding: 16px 24px;
+  }
+}
+/* Pending Approval Banner */
+.pending-banner {
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.pending-banner h3 {
+  margin-top: 0;
+  color: #856404;
+}
+
+.pending-banner p {
+  margin: 8px 0;
+}
+
+/* Locked Section (when not approved) */
+.locked-section {
+  background: white;
+  padding: 60px 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.07);
+  text-align: center;
+  color: #555;
+}
+
+.locked-section h2 {
+  color: #e74c3c;
+  margin-bottom: 1rem;
+}
+.pending-banner {
+  background: #fff3cd;
+  border-left: 5px solid #f59e0b;
+  padding: 20px 24px;
+  border-radius: 8px;
+  margin-bottom: 32px;
+  color: #92400e;
+}
+
+.pending-banner h3 {
+  margin: 0 0 12px;
+  color: #92400e;
+}
+
+.pending-banner p {
+  margin: 8px 0;
+  font-size: 1.05rem;
+}

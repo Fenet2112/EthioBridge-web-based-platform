@@ -1,0 +1,127 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+.pending-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0faf4 0%, #e8f5e9 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  font-family: 'Inter', sans-serif;
+}
+
+.pending-container {
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(10, 92, 47, 0.12);
+  padding: 60px 48px;
+  max-width: 560px;
+  width: 100%;
+  text-align: center;
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pending-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.pending-container h1 {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #0a5c2f;
+  margin-bottom: 16px;
+  letter-spacing: -0.5px;
+}
+
+.pending-container > p {
+  color: #666;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 36px;
+}
+
+.pending-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+  text-align: left;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: #f8f8f8;
+  color: #aaa;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.step.done {
+  background: #e8f5e9;
+  color: #0a5c2f;
+}
+
+.step.active {
+  background: #fff8e1;
+  color: #f59e0b;
+  border: 2px solid #fde68a;
+}
+
+.step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: currentColor;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.step.done .step-dot { background: #0a5c2f; }
+.step.active .step-dot { background: #f59e0b; }
+.step .step-dot { background: #ddd; color: #999; }
+
+.pending-note {
+  font-size: 0.88rem;
+  color: #999;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.pending-home-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, #0a5c2f, #1a8a4a);
+  color: white;
+  text-decoration: none;
+  padding: 14px 32px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+  box-shadow: 0 6px 20px rgba(10, 92, 47, 0.3);
+}
+
+.pending-home-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(10, 92, 47, 0.4);
+}
