@@ -5,8 +5,6 @@ import SignUp from "./pages/SignUp";
 import Industry from "./pages/Industry";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminLogin from "./pages/AdminLogin";
 import IndustryProfile from "./pages/IndustryProfile";
 import StakeholderProfile from "./pages/StakeholderProfile";
 import PendingApproval from "./pages/PendingApproval";
@@ -15,6 +13,8 @@ import ProfilePage from "./pages/ProfilePage";
 import StakeholderMessages from "./pages/StakeholderMessages";
 import AccountStatus from "./pages/AccountStatus";
 import Products from "./pages/Products";
+import Subscription from "./pages/Subscription";
+import Recommendations from "./pages/Recommendations";
 
 function App() {
   return (
@@ -39,6 +39,12 @@ function App() {
         {/* Products Page */}
         <Route path="/products" element={<Products />} />
 
+        {/* Subscription Page */}
+        <Route path="/subscription" element={<Subscription />} />
+
+        {/* Recommendations Page */}
+        <Route path="/recommendations" element={<Recommendations />} />
+
         {/* Stakeholder Messages */}
         <Route path="/messages" element={<StakeholderMessages />} />
 
@@ -51,9 +57,6 @@ function App() {
         {/* Industry Detail Page - for stakeholders to view industry and products */}
         <Route path="/industry/:id" element={<IndustryDetailPage />} />
 
-        {/* Admin */}
-        <Route path="/admin-login" element={<AdminLogin />} />
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
       </Routes>
     </Router>
   );

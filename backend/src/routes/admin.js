@@ -106,7 +106,7 @@ router.get('/pending', requireAdminAuth, async (req, res) => {
         i.website, i.established_year,
         s.organization_name, s.organization_type, s.location AS stakeholder_location,
         s.description AS stakeholder_description, s.phone AS stakeholder_phone,
-        s.contact_person
+        s.contact_person, s.id_document_url, s.id_document_type, s.identity_verified
       FROM users u
       LEFT JOIN industries i ON i.user_id = u.id
       LEFT JOIN stakeholders s ON s.user_id = u.id
@@ -213,6 +213,58 @@ router.patch('/users/:id/reject', requireAdminAuth, async (req, res) => {
     res.json({ message: "User rejected", user });
   } catch (error) {
     console.error("Reject error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── GET ALL USERS — full management view ──
+router.get('/users/all', requireAdminAuth, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        u.id, u.email, u.role, u.status, u.is_verified, u.ban_reason,
+        u.suspended_until, u.created_at,
+        COALESCE(i.company_name, s.organization_name) AS display_name,
+        i.sector,
+        s.organization_type,
+        s.identity_verified,
+        s.id_document_url
+      FROM users u
+      LEFT JOIN industries  i ON i.user_id = u.id
+      LEFT JOIN stakeholders s ON s.user_id = u.id
+      ORDER BY u.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Get all users error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── UPDATE USER STATUS (ban / suspend / activate) ──
+router.patch('/users/:id/status', requireAdminAuth, async (req, res) => {
+  const { id } = req.params;
+  const { status, ban_reason, suspended_until } = req.body;
+
+  const allowed = ['approved', 'suspended', 'banned', 'rejected'];
+  if (!allowed.includes(status)) {
+    return res.status(400).json({ message: `status must be one of: ${allowed.join(', ')}` });
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE users
+       SET status = $1,
+           ban_reason = $2,
+           suspended_until = $3
+       WHERE id = $4
+       RETURNING id, email, role, status, ban_reason, suspended_until`,
+      [status, ban_reason || null, suspended_until || null, id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ message: "User not found" });
+    res.json({ message: `User ${status} successfully`, user: result.rows[0] });
+  } catch (err) {
+    console.error("Update user status error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

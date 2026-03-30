@@ -1,21 +1,27 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
+import SubscriptionModal from "../components/SubscriptionModal";
 import "./Industry.css";
 import "./IndustryMessages.css";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const FREE_PRODUCT_LIMIT = 5;
 let socket;
 
 function Industry() {
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("profile");
+  const [activeSection, setActiveSection] = useState("dashboard");
 
   // Profile status from API
   const [profileStatus, setProfileStatus] = useState("incomplete");
   const [loading, setLoading] = useState(true);
+
+  // Subscription state
+  const [subStatus, setSubStatus] = useState(null);
+  const [showSubModal, setShowSubModal] = useState(false);
 
   // Products state
   const [products, setProducts] = useState([]);
@@ -24,10 +30,17 @@ function Industry() {
   const [productForm, setProductForm] = useState({
     name: "", description: "", price: "", unit: "unit", category: ""
   });
+  const [productNameError, setProductNameError] = useState("");
 
   // Purchase requests state
   const [purchaseRequests, setPurchaseRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
+
+  // Dashboard state
+  const [dashSummary, setDashSummary] = useState(null);
+  const [dashRequests, setDashRequests] = useState([]);
+  const [dashProducts, setDashProducts] = useState([]);
+  const [dashLoading, setDashLoading] = useState(false);
 
   // Messaging state
   const [conversations, setConversations] = useState([]);
@@ -38,10 +51,12 @@ function Industry() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const menuItems = [
-    { id: "profile", label: "Manage Profile", icon: "👤" },
-    { id: "products", label: "Manage Product Listings", icon: "📦" },
-    { id: "requests", label: "Purchase Requests", icon: "📋" },
-    { id: "messages", label: "Communicate with Stakeholders", icon: "💬" },
+    { id: "dashboard", label: "Dashboard",                   icon: "🏠" },
+    { id: "profile",   label: "Manage Profile",              icon: "👤" },
+    { id: "products",  label: "Manage Product Listings",     icon: "📦" },
+    { id: "requests",  label: "Purchase Requests",           icon: "📋" },
+    { id: "messages",  label: "Communicate with Stakeholders", icon: "💬" },
+    { id: "analytics", label: "Analytics",                   icon: "📊" },
   ];
 
   const [profile, setProfile] = useState({
@@ -57,7 +72,6 @@ function Industry() {
   });
 
   const [isEditing, setIsEditing] = useState(true);
-
   // Check auth and profile status on load
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -67,6 +81,11 @@ function Industry() {
       navigate("/login");
       return;
     }
+
+    // Fetch subscription status
+    fetch(`${API_BASE_URL}/api/subscription/status`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(r => r.json()).then(setSubStatus).catch(() => {});
 
     // Check profile status and load profile data
     fetch(`${API_BASE_URL}/api/profile/industry/status`, {
@@ -93,8 +112,10 @@ function Industry() {
             email: userData.email || "",
             website: data.profile.website || "",
             description: data.profile.description || "",
-            licenseNumber: "", // Not stored in industries table yet
-            logoPreview: null,
+            licenseNumber: "",
+            logoPreview: data.profile.profile_picture
+              ? `${API_BASE_URL}${data.profile.profile_picture}`
+              : null,
           });
           
           // If profile exists and is approved, show view mode
@@ -107,6 +128,24 @@ function Industry() {
     .catch(() => {})
     .finally(() => setLoading(false));
   }, [navigate]);
+
+  // Fetch dashboard data when dashboard section is active
+  useEffect(() => {
+    if (activeSection === "dashboard" && profileStatus === "approved") {
+      setDashLoading(true);
+      const token = localStorage.getItem("token");
+      Promise.all([
+        fetch(`${API_BASE_URL}/api/industry/dashboard-summary`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+        fetch(`${API_BASE_URL}/api/industry/recent-requests`,   { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+        fetch(`${API_BASE_URL}/api/industry/products-summary`,  { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      ]).then(([summary, reqs, prods]) => {
+        setDashSummary(summary);
+        setDashRequests(Array.isArray(reqs) ? reqs : []);
+        setDashProducts(Array.isArray(prods) ? prods : []);
+      }).catch(console.error)
+        .finally(() => setDashLoading(false));
+    }
+  }, [activeSection, profileStatus]);
 
   // Fetch products when products section is active
   useEffect(() => {
@@ -296,7 +335,7 @@ function Industry() {
       }
       
       // Create or get conversation
-      const convRes = await fetch(`${API_BASE_URL}/api/conversations/create`, {
+      const res = await fetch(`${API_BASE_URL}/api/conversations/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -308,7 +347,7 @@ function Industry() {
         })
       });
       
-      const convData = await convRes.json();
+      await res.json(); // get conversation
       
       // Switch to messages section
       setActiveSection("messages");
@@ -334,14 +373,39 @@ function Industry() {
     setProfile((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleLogoChange = (e) => {
+  const handleLogoChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfile((prev) => ({ ...prev, logoPreview: reader.result }));
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfile(prev => ({ ...prev, logoPreview: reader.result }));
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to server so it persists across sessions
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("profile_picture", file);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/profile/me/picture`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      // Replace the base64 preview with the persisted server URL
+      setProfile(prev => ({
+        ...prev,
+        logoPreview: `${API_BASE_URL}${data.profile_picture}`,
+      }));
+    } catch (err) {
+      console.error("Logo upload failed:", err.message);
+      // Preview stays visible but warn the user
+      alert("Logo preview shown but upload failed: " + err.message);
     }
   };
 
@@ -417,10 +481,25 @@ function Industry() {
   const handleProductFormChange = (e) => {
     const { name, value } = e.target;
     setProductForm(prev => ({ ...prev, [name]: value }));
+
+    // Inline duplicate check on name field
+    if (name === "name") {
+      const normalized = value.trim().toLowerCase();
+      if (normalized) {
+        const duplicate = products.find(
+          p => p.name.trim().toLowerCase() === normalized && p.id !== editingProduct?.id
+        );
+        setProductNameError(duplicate ? `"${duplicate.name}" already exists.` : "");
+      } else {
+        setProductNameError("");
+      }
+    }
   };
 
   const handleProductSubmit = async (e) => {
     e.preventDefault();
+    if (productNameError) return; // block if inline error is showing
+
     const token = localStorage.getItem("token");
     const url = editingProduct 
       ? `${API_BASE_URL}/api/products/${editingProduct.id}`
@@ -436,6 +515,26 @@ function Industry() {
         },
         body: JSON.stringify(productForm)
       });
+      
+      if (res.status === 402) {
+        setShowProductForm(false);
+        setShowSubModal(true);
+        return;
+      }
+
+      if (res.status === 409) {
+        const data = await res.json();
+        setProductNameError(data.message);
+        // If server tells us the existing product id, offer to edit it
+        if (data.existing_id) {
+          const existing = products.find(p => p.id === data.existing_id);
+          if (existing && window.confirm(`${data.message}\n\nDo you want to edit the existing product instead?`)) {
+            setProductNameError("");
+            handleEditProduct(existing);
+          }
+        }
+        return;
+      }
       
       if (res.status === 403) {
         alert("Your account needs to be approved by admin before you can add products. Please log out and log back in after admin approval to refresh your session.");
@@ -453,6 +552,7 @@ function Industry() {
       
       setShowProductForm(false);
       setEditingProduct(null);
+      setProductNameError("");
       setProductForm({ name: "", description: "", price: "", unit: "unit", category: "" });
     } catch (err) {
       alert(err.message);
@@ -468,6 +568,7 @@ function Industry() {
       unit: product.unit || "unit",
       category: product.category || ""
     });
+    setProductNameError("");
     setShowProductForm(true);
   };
 
@@ -534,33 +635,23 @@ function Industry() {
         </div>
 
         <ul className="menu-list">
-          <li
-            className={`menu-item ${activeSection === "profile" ? "active" : ""}`}
-            onClick={() => {
-              setActiveSection("profile");
-              setIsMenuOpen(false);
-            }}
-          >
-            <span className="menu-icon">👤</span>
-            <span>Manage Profile</span>
-          </li>
-
-          {canAccessOtherSections &&
-            menuItems
-              .filter(item => item.id !== "profile")
-              .map(item => (
-                <li
-                  key={item.id}
-                  className={`menu-item ${activeSection === item.id ? "active" : ""}`}
-                  onClick={() => {
-                    setActiveSection(item.id);
-                    setIsMenuOpen(false);
-                  }}
-                >
-                  <span className="menu-icon">{item.icon}</span>
-                  <span>{item.label}</span>
-                </li>
-              ))}
+          {menuItems.map(item => (
+            <li
+              key={item.id}
+              className={`menu-item ${activeSection === item.id ? "active" : ""} ${!canAccessOtherSections && item.id !== "profile" && item.id !== "dashboard" ? "menu-item-locked" : ""}`}
+              onClick={() => {
+                if (!canAccessOtherSections && item.id !== "profile" && item.id !== "dashboard") return;
+                setActiveSection(item.id);
+                setIsMenuOpen(false);
+              }}
+            >
+              <span className="menu-icon">{item.icon}</span>
+              <span>{item.label}</span>
+              {!canAccessOtherSections && item.id !== "profile" && item.id !== "dashboard" && (
+                <span className="menu-lock">🔒</span>
+              )}
+            </li>
+          ))}
         </ul>
 
         <div className="sidebar-footer">
@@ -570,12 +661,158 @@ function Industry() {
 
       {/* Main Content */}
       <main className="main-content">
-        <div className="content-header">
-          <h1>
-            {menuItems.find(item => item.id === activeSection)?.label || "Dashboard"}
-          </h1>
-          <p>Manage your business profile and operations</p>
-        </div>
+        {/* Per-section header — hidden for dashboard which has its own hero */}
+        {activeSection !== "dashboard" && (
+          <div className="content-header">
+            <h1>{menuItems.find(item => item.id === activeSection)?.label || "Dashboard"}</h1>
+            <p>Manage your business profile and operations</p>
+          </div>
+        )}
+
+        {/* ── DASHBOARD SECTION ── */}
+        {activeSection === "dashboard" && (
+          <div className="dash-page">
+            {/* Welcome hero */}
+            <div className="dash-hero">
+              <div className="dash-hero-text">
+                <h1>Welcome back, {profile.companyName || "Industry"} 👋</h1>
+                <p>{profile.industryType}{profile.location ? ` · ${profile.location}` : ""}</p>
+              </div>
+              <div className="dash-hero-actions">
+                <button className="dash-hero-btn primary" onClick={() => { setActiveSection("products"); setShowProductForm(true); setEditingProduct(null); setProductNameError(""); setProductForm({ name: "", description: "", price: "", unit: "unit", category: "" }); }}>
+                  + Add Product
+                </button>
+                <button className="dash-hero-btn secondary" onClick={() => setActiveSection("requests")}>
+                  View Requests
+                </button>
+              </div>
+            </div>
+
+            {!canAccessOtherSections ? (
+              <div className="dash-pending-notice">
+                <span>⏳</span>
+                <div>
+                  <strong>Profile under review</strong>
+                  <p>Analytics and requests will appear here once your account is approved.</p>
+                </div>
+                <button className="dash-hero-btn secondary" onClick={() => setActiveSection("profile")}>
+                  Complete Profile →
+                </button>
+              </div>
+            ) : dashLoading ? (
+              <div className="dash-loading">
+                <div className="dash-spinner"></div>
+                <p>Loading dashboard...</p>
+              </div>
+            ) : (
+              <>
+                {/* Stats row */}
+                <div className="dash-stats">
+                  {[
+                    { icon: "📦", label: "Products",          value: dashSummary?.total_products     ?? 0, color: "#667eea" },
+                    { icon: "📋", label: "Total Requests",    value: dashSummary?.total_requests     ?? 0, color: "#0a5c2f" },
+                    { icon: "⏳", label: "Pending",           value: dashSummary?.pending_requests   ?? 0, color: "#f59e0b" },
+                    { icon: "✅", label: "Approved",          value: dashSummary?.approved_requests  ?? 0, color: "#10b981" },
+                    { icon: "🤝", label: "Stakeholders",      value: dashSummary?.total_stakeholders ?? 0, color: "#764ba2" },
+                  ].map(s => (
+                    <div key={s.label} className="dash-stat-card" style={{ "--stat-color": s.color }}>
+                      <div className="dash-stat-icon">{s.icon}</div>
+                      <div className="dash-stat-value">{s.value}</div>
+                      <div className="dash-stat-label">{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="dash-grid">
+                  {/* Recent Requests */}
+                  <div className="dash-card">
+                    <div className="dash-card-header">
+                      <h3>📩 Recent Requests</h3>
+                      <button className="dash-card-link" onClick={() => setActiveSection("requests")}>View all →</button>
+                    </div>
+                    {dashRequests.length === 0 ? (
+                      <div className="dash-empty">No requests yet</div>
+                    ) : (
+                      <div className="dash-req-list">
+                        {dashRequests.map(req => (
+                          <div key={req.id} className="dash-req-row">
+                            <div className="dash-req-avatar">{req.full_name?.charAt(0) || "?"}</div>
+                            <div className="dash-req-info">
+                              <div className="dash-req-name">
+                                {req.full_name}
+                                {req.identity_verified && <span className="dash-verified-badge">🛡️</span>}
+                              </div>
+                              <div className="dash-req-product">📦 {req.product_name} · qty {req.quantity}</div>
+                              {req.notes && <div className="dash-req-notes">{req.notes.slice(0, 60)}{req.notes.length > 60 ? "…" : ""}</div>}
+                            </div>
+                            <span className={`dash-req-status dash-status-${req.status}`}>
+                              {req.status === "approved" ? "✓" : req.status === "rejected" ? "✕" : "⏳"}
+                              {" "}{req.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Recent Products */}
+                  <div className="dash-card">
+                    <div className="dash-card-header">
+                      <h3>📦 Products</h3>
+                      <button className="dash-card-link" onClick={() => setActiveSection("products")}>Manage →</button>
+                    </div>
+                    {dashProducts.length === 0 ? (
+                      <div className="dash-empty">
+                        <p>No products yet</p>
+                        <button className="dash-hero-btn primary" style={{marginTop:"10px"}} onClick={() => { setActiveSection("products"); setShowProductForm(true); }}>
+                          + Add First Product
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="dash-prod-list">
+                        {dashProducts.map(p => (
+                          <div key={p.id} className="dash-prod-row">
+                            <div className="dash-prod-icon">📦</div>
+                            <div className="dash-prod-info">
+                              <div className="dash-prod-name">{p.name}</div>
+                              {p.category && <div className="dash-prod-cat">{p.category}</div>}
+                            </div>
+                            <div className="dash-prod-price">
+                              {p.price ? `${Number(p.price).toLocaleString()} ETB` : "—"}
+                            </div>
+                            <span className={`dash-prod-status ${p.is_available ? "available" : "unavailable"}`}>
+                              {p.is_available ? "Active" : "Hidden"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="dash-quick-actions">
+                  <h3>⚡ Quick Actions</h3>
+                  <div className="dash-qa-grid">
+                    {[
+                      { icon: "➕", label: "Add Product",     action: () => { setActiveSection("products"); setShowProductForm(true); setEditingProduct(null); setProductNameError(""); setProductForm({ name: "", description: "", price: "", unit: "unit", category: "" }); } },
+                      { icon: "📋", label: "View Requests",   action: () => setActiveSection("requests") },
+                      { icon: "💬", label: "Messages",        action: () => setActiveSection("messages") },
+                      { icon: "👤", label: "Manage Profile",  action: () => setActiveSection("profile") },
+                      { icon: "📊", label: "Analytics",       action: () => setActiveSection("analytics") },
+                      ...(!subStatus?.is_subscribed ? [{ icon: "⭐", label: "Upgrade Premium", action: () => setShowSubModal(true) }] : []),
+                    ].map(qa => (
+                      <button key={qa.label} className="dash-qa-btn" onClick={qa.action}>
+                        <span className="dash-qa-icon">{qa.icon}</span>
+                        <span>{qa.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Pending Approval Banner */}
         {activeSection === "profile" && showPendingBanner && (
@@ -794,16 +1031,36 @@ function Industry() {
         {canAccessOtherSections && activeSection === "products" && (
           <div className="products-section">
             <div className="section-header">
-              <h2>Manage Product Listings</h2>
+              <div>
+                <h2>Manage Product Listings</h2>
+                {subStatus && !subStatus.is_subscribed && (
+                  <p className="product-limit-info">
+                    {products.length}/{FREE_PRODUCT_LIMIT} products used on free plan
+                    {products.length >= FREE_PRODUCT_LIMIT && (
+                      <button className="inline-upgrade-btn" onClick={() => setShowSubModal(true)}>
+                        ⭐ Upgrade for unlimited
+                      </button>
+                    )}
+                  </p>
+                )}
+                {subStatus?.is_subscribed && (
+                  <p className="product-limit-info premium-info">⭐ Premium — unlimited listings</p>
+                )}
+              </div>
               <button 
                 className="add-product-btn"
                 onClick={() => {
+                  if (!subStatus?.is_subscribed && products.length >= FREE_PRODUCT_LIMIT) {
+                    setShowSubModal(true);
+                    return;
+                  }
                   setShowProductForm(true);
                   setEditingProduct(null);
+                  setProductNameError("");
                   setProductForm({ name: "", description: "", price: "", unit: "unit", category: "" });
                 }}
               >
-                + Add Product
+                {!subStatus?.is_subscribed && products.length >= FREE_PRODUCT_LIMIT ? "🔒 Upgrade to Add More" : "+ Add Product"}
               </button>
             </div>
 
@@ -838,7 +1095,25 @@ function Industry() {
                         value={productForm.name}
                         onChange={handleProductFormChange}
                         required
+                        style={productNameError ? { borderColor: "#e53e3e" } : {}}
                       />
+                      {productNameError && (
+                        <div className="product-name-error">
+                          <span>⚠️ {productNameError}</span>
+                          {products.find(p => p.name.trim().toLowerCase() === productForm.name.trim().toLowerCase() && p.id !== editingProduct?.id) && (
+                            <button
+                              type="button"
+                              className="edit-existing-btn"
+                              onClick={() => {
+                                const existing = products.find(p => p.name.trim().toLowerCase() === productForm.name.trim().toLowerCase() && p.id !== editingProduct?.id);
+                                if (existing) handleEditProduct(existing);
+                              }}
+                            >
+                              Edit existing →
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="form-group">
                       <label>Category</label>
@@ -888,7 +1163,7 @@ function Industry() {
                     <button type="button" className="cancel-btn" onClick={() => setShowProductForm(false)}>
                       Cancel
                     </button>
-                    <button type="submit" className="save-btn">
+                    <button type="submit" className="save-btn" disabled={!!productNameError}>
                       {editingProduct ? "Update Product" : "Add Product"}
                     </button>
                   </div>
@@ -925,205 +1200,115 @@ function Industry() {
           <div className="requests-section">
             <div style={{marginBottom: '30px'}}>
               <h2 style={{marginBottom: '8px'}}>Purchase Requests</h2>
-              <p style={{color: '#666', fontSize: '14px'}}>Requests from stakeholders who want to buy your products</p>
+              <p style={{color: 'var(--text-muted)', fontSize: '14px'}}>Requests from stakeholders who want to buy your products</p>
             </div>
 
             {requestsLoading ? (
-              <div style={{textAlign: 'center', padding: '40px', color: '#999'}}>
+              <div style={{textAlign: 'center', padding: '40px', color: 'var(--text-light)'}}>
                 <div style={{fontSize: '40px', marginBottom: '10px'}}>⏳</div>
                 <p>Loading requests...</p>
               </div>
             ) : purchaseRequests.length === 0 ? (
               <div style={{
-                textAlign: 'center',
-                padding: '60px 20px',
-                background: '#f8f9fa',
-                borderRadius: '12px',
-                border: '2px dashed #dee2e6'
+                textAlign: 'center', padding: '60px 20px',
+                background: 'var(--bg-input)', borderRadius: '12px',
+                border: '2px dashed var(--border)'
               }}>
                 <div style={{fontSize: '60px', marginBottom: '15px'}}>📋</div>
-                <h3 style={{color: '#6c757d', marginBottom: '8px'}}>No Purchase Requests Yet</h3>
-                <p style={{color: '#adb5bd', fontSize: '14px'}}>When stakeholders request your products, they'll appear here</p>
+                <h3 style={{color: 'var(--text-muted)', marginBottom: '8px'}}>No Purchase Requests Yet</h3>
+                <p style={{color: 'var(--text-light)', fontSize: '14px'}}>When stakeholders request your products, they'll appear here</p>
               </div>
             ) : (
               <div style={{display: 'grid', gap: '20px'}}>
                 {purchaseRequests.map(req => (
-                  <div key={req.id} style={{
-                    background: 'white',
-                    border: '1px solid #e9ecef',
-                    borderRadius: '12px',
-                    padding: '24px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                    transition: 'all 0.2s',
-                    cursor: 'pointer'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}>
+                  <div key={req.id} className="purchase-request-card">
                     {/* Header */}
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      marginBottom: '20px',
-                      paddingBottom: '16px',
-                      borderBottom: '1px solid #f1f3f5'
-                    }}>
+                    <div className="pr-card-header">
                       <div>
-                        <h4 style={{
-                          margin: '0 0 8px',
-                          fontSize: '20px',
-                          color: '#212529',
-                          fontWeight: '600'
-                        }}>
-                          📦 {req.product_name}
-                        </h4>
-                        <div style={{
-                          display: 'inline-block',
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          color: 'white',
-                          padding: '4px 12px',
-                          borderRadius: '20px',
-                          fontSize: '12px',
-                          fontWeight: '600'
-                        }}>
-                          ✓ Approved
+                        <h4 className="pr-product-name">📦 {req.product_name}</h4>
+                        <div style={{display:'flex', gap:'8px', flexWrap:'wrap', marginTop:'6px'}}>
+                          {req.status === 'approved' ? (
+                            <span className="pr-badge pr-badge-approved">✓ Verified Request</span>
+                          ) : (
+                            <span className="pr-badge pr-badge-pending">⏳ Pending Review</span>
+                          )}
+                          {req.identity_verified && (
+                            <span className="pr-badge pr-badge-id">🛡️ ID Verified</span>
+                          )}
                         </div>
                       </div>
-                      <div style={{
-                        background: '#f8f9fa',
-                        padding: '12px 16px',
-                        borderRadius: '8px',
-                        textAlign: 'center'
-                      }}>
-                        <div style={{fontSize: '24px', fontWeight: '700', color: '#495057'}}>
-                          {req.quantity}
-                        </div>
-                        <div style={{fontSize: '12px', color: '#6c757d', marginTop: '2px'}}>
-                          {req.unit}
-                        </div>
+                      <div className="pr-qty-box">
+                        <div className="pr-qty-num">{req.quantity}</div>
+                        <div className="pr-qty-unit">{req.unit}</div>
                       </div>
                     </div>
 
-                    {/* Details Grid */}
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                      gap: '16px',
-                      marginBottom: '20px'
-                    }}>
-                      <div>
-                        <div style={{fontSize: '12px', color: '#6c757d', marginBottom: '4px'}}>
-                          👤 Stakeholder
-                        </div>
-                        <div style={{fontWeight: '500', color: '#212529'}}>{req.full_name}</div>
+                    {/* Details */}
+                    <div className="pr-details-grid">
+                      <div className="pr-detail">
+                        <div className="pr-detail-label">👤 Stakeholder</div>
+                        <div className="pr-detail-value">{req.full_name}</div>
                       </div>
-                      <div>
-                        <div style={{fontSize: '12px', color: '#6c757d', marginBottom: '4px'}}>
-                          🏢 Organization
-                        </div>
-                        <div style={{fontWeight: '500', color: '#212529'}}>{req.organization_name}</div>
+                      <div className="pr-detail">
+                        <div className="pr-detail-label">🏢 Organization</div>
+                        <div className="pr-detail-value">{req.organization_name}</div>
                       </div>
-                      <div>
-                        <div style={{fontSize: '12px', color: '#6c757d', marginBottom: '4px'}}>
-                          📞 Phone
-                        </div>
-                        <div style={{fontWeight: '500', color: '#212529'}}>
-                          <a href={`tel:${req.phone}`} style={{color: '#667eea', textDecoration: 'none'}}>
-                            {req.phone}
-                          </a>
+                      <div className="pr-detail">
+                        <div className="pr-detail-label">📞 Phone</div>
+                        <div className="pr-detail-value">
+                          <a href={`tel:${req.phone}`} style={{color:'#667eea', textDecoration:'none'}}>{req.phone}</a>
                         </div>
                       </div>
-                      <div>
-                        <div style={{fontSize: '12px', color: '#6c757d', marginBottom: '4px'}}>
-                          📍 Location
-                        </div>
-                        <div style={{fontWeight: '500', color: '#212529'}}>{req.location}</div>
+                      <div className="pr-detail">
+                        <div className="pr-detail-label">📍 Location</div>
+                        <div className="pr-detail-value">{req.location}</div>
                       </div>
+                      <div className="pr-detail">
+                        <div className="pr-detail-label">📅 Date</div>
+                        <div className="pr-detail-value">{new Date(req.created_at).toLocaleDateString()}</div>
+                      </div>
+                      {req.stakeholder_email && (
+                        <div className="pr-detail">
+                          <div className="pr-detail-label">✉️ Email</div>
+                          <div className="pr-detail-value">
+                            <a href={`mailto:${req.stakeholder_email}`} style={{color:'#667eea', textDecoration:'none'}}>{req.stakeholder_email}</a>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Notes */}
                     {req.notes && (
-                      <div style={{
-                        background: '#f8f9fa',
-                        padding: '12px 16px',
-                        borderRadius: '8px',
-                        marginBottom: '16px'
-                      }}>
-                        <div style={{fontSize: '12px', color: '#6c757d', marginBottom: '4px'}}>
-                          📝 Additional Notes
-                        </div>
-                        <div style={{fontSize: '14px', color: '#495057', lineHeight: '1.5'}}>
-                          {req.notes}
-                        </div>
+                      <div className="pr-notes">
+                        <div className="pr-detail-label">📝 Notes</div>
+                        <div style={{fontSize:'14px', color:'var(--text-muted)', lineHeight:'1.5', marginTop:'4px'}}>{req.notes}</div>
                       </div>
                     )}
 
                     {/* Actions */}
-                    <div style={{display: 'flex', gap: '10px'}}>
-                      <button 
-                        onClick={() => openConversationWithStakeholder(req.stakeholder_id)}
-                        style={{
-                          flex: 1,
-                          padding: '12px 24px',
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
-                        }}
-                        onMouseOver={(e) => {
-                          e.target.style.transform = 'translateY(-2px)';
-                          e.target.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.4)';
-                        }}
-                        onMouseOut={(e) => {
-                          e.target.style.transform = 'translateY(0)';
-                          e.target.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
-                        }}
-                      >
-                        💬 Message Stakeholder
-                      </button>
-                      <button 
-                        onClick={() => window.location.href = `tel:${req.phone}`}
-                        style={{
-                          padding: '12px 24px',
-                          background: 'white',
-                          color: '#667eea',
-                          border: '2px solid #667eea',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseOver={(e) => {
-                          e.target.style.background = '#667eea';
-                          e.target.style.color = 'white';
-                        }}
-                        onMouseOut={(e) => {
-                          e.target.style.background = 'white';
-                          e.target.style.color = '#667eea';
-                        }}
-                      >
-                        📞 Call
-                      </button>
-                    </div>
+                    {req.status === 'approved' && (
+                      <div className="pr-actions">
+                        <button
+                          className="pr-action-btn pr-msg-btn"
+                          onClick={() => openConversationWithStakeholder(req.stakeholder_id)}
+                        >
+                          💬 Message Stakeholder
+                        </button>
+                        <a href={`tel:${req.phone}`} className="pr-action-btn pr-call-btn">
+                          📞 Call
+                        </a>
+                      </div>
+                    )}
+                    {req.status === 'pending' && (
+                      <div className="pr-pending-notice">
+                        ⏳ This request is under admin review. You'll be able to contact the stakeholder once approved.
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             )}
           </div>
         )}
-
         {/* Messages Section */}
         {canAccessOtherSections && activeSection === "messages" && (
           <div className="messages-section">
@@ -1214,7 +1399,108 @@ function Industry() {
             </div>
           </div>
         )}
+        {/* Analytics Section */}
+        {canAccessOtherSections && activeSection === "analytics" && (
+          <AnalyticsSection subStatus={subStatus} onUpgrade={() => setShowSubModal(true)} />
+        )}
+
       </main>
+
+      {showSubModal && (
+        <SubscriptionModal
+          onClose={() => setShowSubModal(false)}
+          reason={
+            activeSection === "products"
+              ? `Free plan allows up to ${FREE_PRODUCT_LIMIT} products. Upgrade for unlimited listings, analytics, and more.`
+              : undefined
+          }
+          onSuccess={() => {
+            setShowSubModal(false);
+            const token = localStorage.getItem("token");
+            fetch(`${API_BASE_URL}/api/subscription/status`, {
+              headers: { Authorization: `Bearer ${token}` }
+            }).then(r => r.json()).then(setSubStatus);
+            alert("🎉 Premium activated! Enjoy unlimited access.");
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AnalyticsSection({ subStatus, onUpgrade }) {
+  const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    fetch(`${API_BASE_URL}/api/subscription/analytics`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(r => r.json()).then(setAnalytics).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div style={{ padding: "40px", textAlign: "center", color: "#999" }}>Loading analytics...</div>;
+
+  const isPremium = subStatus?.is_subscribed;
+
+  return (
+    <div style={{ padding: "0 0 40px" }}>
+      <div style={{ marginBottom: "28px" }}>
+        <h2 style={{ margin: "0 0 6px", fontSize: "1.4rem", fontWeight: 800, color: "#0d1b2a" }}>Analytics</h2>
+        <p style={{ margin: 0, color: "#777", fontSize: "0.9rem" }}>
+          {isPremium ? "Full analytics — Premium plan" : "Basic analytics — Upgrade for full insights"}
+        </p>
+      </div>
+
+      {/* Basic stat always visible */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px", marginBottom: "28px" }}>
+        <div style={{ background: "white", borderRadius: "16px", padding: "24px", border: "1px solid #f0f0f0", textAlign: "center" }}>
+          <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "#667eea" }}>{analytics?.total_profile_views || 0}</div>
+          <div style={{ fontSize: "0.85rem", color: "#888", marginTop: "6px" }}>Profile Views</div>
+        </div>
+
+        {isPremium ? (
+          <>
+            <div style={{ background: "white", borderRadius: "16px", padding: "24px", border: "1px solid #f0f0f0", textAlign: "center" }}>
+              <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "#0a5c2f" }}>{analytics?.total_product_clicks || 0}</div>
+              <div style={{ fontSize: "0.85rem", color: "#888", marginTop: "6px" }}>Product Clicks</div>
+            </div>
+            <div style={{ background: "white", borderRadius: "16px", padding: "24px", border: "1px solid #f0f0f0", textAlign: "center" }}>
+              <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "#f59e0b" }}>{analytics?.total_purchase_requests || 0}</div>
+              <div style={{ fontSize: "0.85rem", color: "#888", marginTop: "6px" }}>Purchase Requests</div>
+            </div>
+          </>
+        ) : (
+          <>
+            {["Product Clicks", "Purchase Requests"].map(label => (
+              <div key={label} style={{ background: "#f8f9fc", borderRadius: "16px", padding: "24px", border: "2px dashed #e0e0e0", textAlign: "center", position: "relative" }}>
+                <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "#ccc", filter: "blur(4px)" }}>42</div>
+                <div style={{ fontSize: "0.85rem", color: "#bbb", marginTop: "6px" }}>{label}</div>
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "6px" }}>
+                  <span style={{ fontSize: "1.2rem" }}>🔒</span>
+                  <span style={{ fontSize: "0.75rem", color: "#888", fontWeight: 600 }}>Premium Only</span>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+
+      {!isPremium && (
+        <div style={{ background: "linear-gradient(135deg, #667eea15, #764ba215)", border: "2px solid #667eea30", borderRadius: "16px", padding: "28px", textAlign: "center" }}>
+          <div style={{ fontSize: "2rem", marginBottom: "10px" }}>📊</div>
+          <h3 style={{ margin: "0 0 8px", color: "#0d1b2a", fontSize: "1.1rem" }}>Unlock Full Analytics</h3>
+          <p style={{ margin: "0 0 20px", color: "#777", fontSize: "0.9rem" }}>
+            See product clicks, interested stakeholders, and 30-day activity trends with Premium.
+          </p>
+          <button
+            onClick={onUpgrade}
+            style={{ background: "linear-gradient(135deg, #667eea, #764ba2)", color: "white", border: "none", padding: "12px 28px", borderRadius: "10px", fontWeight: 700, cursor: "pointer", fontSize: "0.95rem" }}
+          >
+            ⭐ Upgrade to Premium
+          </button>
+        </div>
+      )}
     </div>
   );
 }

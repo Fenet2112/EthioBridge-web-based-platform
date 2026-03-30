@@ -1,0 +1,109 @@
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import ProfileDropdown from "./ProfileDropdown";
+import DarkModeToggle from "./DarkModeToggle";
+import "./StakeholderNav.css";
+
+const NAV_ITEMS = [
+  { path: "/stakeholders",    icon: "🏭", label: "Industries"   },
+  { path: "/messages",        icon: "💬", label: "Messages"     },
+  { path: "/products",        icon: "📦", label: "Products"     },
+  { path: "/recommendations", icon: "✨", label: "For You"      },
+  { path: "/profile",         icon: "👤", label: "Profile"      },
+  { path: "/subscription",    icon: "⭐", label: "Subscription" },
+];
+
+function StakeholderNav({ unreadCount = 0 }) {
+  const navigate  = useNavigate();
+  const location  = useLocation();
+  const active    = location.pathname;
+  const [open, setOpen] = useState(false);
+  const drawerRef = useRef(null);
+
+  // Close drawer on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (drawerRef.current && !drawerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    if (open) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  // Close on route change
+  useEffect(() => { setOpen(false); }, [location.pathname]);
+
+  const go = (path) => { navigate(path); setOpen(false); };
+
+  const handleLogout = () => { localStorage.clear(); navigate("/"); };
+
+  return (
+    <>
+      {/* ── Top bar ── */}
+      <nav className="sk-nav">
+        {/* Hamburger */}
+        <button
+          className={`sk-burger ${open ? "open" : ""}`}
+          onClick={() => setOpen(o => !o)}
+          aria-label="Toggle menu"
+        >
+          <span className="sk-bar" />
+          <span className="sk-bar" />
+          <span className="sk-bar" />
+        </button>
+
+        {/* Brand */}
+        <div className="sk-nav-brand" onClick={() => go("/stakeholders")}>
+          <span className="sk-nav-logo">🌉</span>
+          <span className="sk-nav-name">EthioBridge</span>
+        </div>
+
+        {/* Right side — always visible */}
+        <div className="sk-nav-right">
+          <DarkModeToggle />
+          <ProfileDropdown />
+        </div>
+      </nav>
+
+      {/* ── Backdrop ── */}
+      {open && <div className="sk-backdrop" onClick={() => setOpen(false)} />}
+
+      {/* ── Slide-in drawer ── */}
+      <aside className={`sk-drawer ${open ? "open" : ""}`} ref={drawerRef}>
+        <div className="sk-drawer-header">
+          <span className="sk-drawer-title">🌉 EthioBridge</span>
+          <button className="sk-drawer-close" onClick={() => setOpen(false)}>✕</button>
+        </div>
+
+        <nav className="sk-drawer-nav">
+          {NAV_ITEMS.map(item => (
+            <button
+              key={item.path}
+              className={`sk-drawer-item ${active === item.path ? "active" : ""}`}
+              onClick={() => go(item.path)}
+            >
+              <span className="sk-drawer-icon">{item.icon}</span>
+              <span className="sk-drawer-label">{item.label}</span>
+              {item.path === "/messages" && unreadCount > 0 && (
+                <span className="sk-drawer-badge">{unreadCount}</span>
+              )}
+              {active === item.path && <span className="sk-drawer-dot" />}
+            </button>
+          ))}
+        </nav>
+
+        <div className="sk-drawer-footer">
+          <button className="sk-drawer-home" onClick={() => go("/")}>
+            <span>🏠</span> Back to Home
+          </button>
+          <button className="sk-drawer-logout" onClick={handleLogout}>
+            <span>🚪</span> Logout
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+export default StakeholderNav;

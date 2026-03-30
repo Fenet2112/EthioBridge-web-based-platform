@@ -28,6 +28,7 @@ const industryRoutes = require("./routes/industries.js");
 const productRoutes = require("./routes/products.js");
 const purchaseRoutes = require("./routes/purchases.js");
 const messageRoutes = require("./routes/messages.js");
+const subscriptionRoutes = require("./routes/subscription.js");
 
 app.use("/api", authRoutes);
 app.use("/api/admin", adminRoutes);
@@ -35,6 +36,7 @@ app.use("/api", industryRoutes);
 app.use("/api", productRoutes);
 app.use("/api", purchaseRoutes);
 app.use("/api", messageRoutes);
+app.use("/api", subscriptionRoutes);
 
 // Test routes
 app.get("/", (req, res) => {

@@ -46,6 +46,15 @@ app.use('/api', messagesRoutes);
 const profileRoutes = require('./src/routes/profile');
 app.use('/api/profile', profileRoutes);
 
+const subscriptionRoutes = require('./src/routes/subscription');
+app.use('/api', subscriptionRoutes);
+
+const cartRoutes = require('./src/routes/cart');
+app.use('/api', cartRoutes);
+
+const recommendationRoutes = require('./src/routes/recommendations');
+app.use('/api', recommendationRoutes);
+
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
 

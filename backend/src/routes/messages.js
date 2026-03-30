@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
 const { authenticateToken } = require("../middleware/auth");
+const { resolveSubType } = require("./subscription");
+
+const FREE_MESSAGES_LIMIT = 3;
 
 // Helper to check if user is a member of a conversation
 async function userInConversation(userId, conversationId) {
@@ -132,6 +135,47 @@ router.post("/conversations/:id/messages", authenticateToken, async (req, res) =
     const authorized = await userInConversation(req.user.id, id);
     if (!authorized) {
       return res.status(403).json({ message: "Not authorized to access this conversation" });
+    }
+
+    // Check message limit for free stakeholders
+    if (req.user.role === "stakeholder") {
+      const userRes = await pool.query(
+        `SELECT is_subscribed, subscription_expires_at,
+                messages_used_this_month, messages_month_reset_at
+         FROM users WHERE id = $1`,
+        [req.user.id]
+      );
+      const user = userRes.rows[0] || {};
+      const subType = resolveSubType(user);
+
+      if (subType === "free") {
+        // Reset counter if new month
+        const resetAt = user.messages_month_reset_at ? new Date(user.messages_month_reset_at) : new Date(0);
+        const now = new Date();
+        let used = user.messages_used_this_month || 0;
+        if (now.getMonth() !== resetAt.getMonth() || now.getFullYear() !== resetAt.getFullYear()) {
+          await pool.query(
+            "UPDATE users SET messages_used_this_month = 0, messages_month_reset_at = NOW() WHERE id = $1",
+            [req.user.id]
+          );
+          used = 0;
+        }
+
+        if (used >= FREE_MESSAGES_LIMIT) {
+          return res.status(402).json({
+            message: `Free plan allows ${FREE_MESSAGES_LIMIT} messages per month. Upgrade to Premium for unlimited messaging.`,
+            requires_subscription: true,
+            messages_used: used,
+            messages_limit: FREE_MESSAGES_LIMIT,
+          });
+        }
+
+        // Increment counter
+        await pool.query(
+          "UPDATE users SET messages_used_this_month = messages_used_this_month + 1 WHERE id = $1",
+          [req.user.id]
+        );
+      }
     }
 
     const result = await pool.query(

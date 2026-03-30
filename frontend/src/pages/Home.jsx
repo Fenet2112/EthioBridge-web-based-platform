@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../components/Logo";
+import DarkModeToggle from "../components/DarkModeToggle";
 import "./Home.css";
 
 function Home() {
@@ -34,12 +35,13 @@ function Home() {
         <ul className="nav-links">
           <li><Link to="/">Home</Link></li>
           <li><Link to="/products">Products</Link></li>
-          <li><Link to="/services">Services</Link></li>
-          <li><Link to="/about">About</Link></li>
-          <li><Link to="/contact">Contact</Link></li>
+          <li><a href="#services">Services</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
         </ul>
 
         <div className="nav-actions">
+          <DarkModeToggle />
           <Link to="/login" className="nav-login">Log In</Link>
           <Link to="/signup" className="nav-signup">Get Started</Link>
         </div>
@@ -162,7 +164,7 @@ function Home() {
       </section>
 
       {/* ── FEATURES ── */}
-      <section className="features-section">
+      <section className="features-section" id="about">
         <div className="section-header animate-on-scroll">
           <span className="section-tag">Platform Features</span>
           <h2>Everything You Need to Build Smarter</h2>
@@ -212,6 +214,190 @@ function Home() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ── SERVICES ── */}
+      <section className="services-section" id="services">
+        <div className="section-header animate-on-scroll">
+          <span className="section-tag">What We Offer</span>
+          <h2>End-to-End Services for Ethiopia's Construction Sector</h2>
+          <p>From discovery to deal closure — EthioBridge powers every step of your business journey</p>
+        </div>
+
+        <div className="services-grid">
+          {[
+            {
+              icon: "🏭",
+              color: "#0a5c2f",
+              bg: "#e8f5e9",
+              title: "Industry Listings",
+              desc: "Get your construction business in front of thousands of verified stakeholders. Showcase products, certifications, and capabilities with a professional profile.",
+              points: ["Verified company badge", "Product catalog management", "Analytics & visibility insights"],
+            },
+            {
+              icon: "🤝",
+              color: "#667eea",
+              bg: "#f0f0ff",
+              title: "Stakeholder Matching",
+              desc: "Investors, contractors, and buyers find exactly what they need. Advanced filters by region, sector, price, and certification make discovery effortless.",
+              points: ["Smart search & filtering", "Direct purchase requests", "Identity-verified connections"],
+            },
+            {
+              icon: "💬",
+              color: "#0891b2",
+              bg: "#e0f7fa",
+              title: "Real-Time Messaging",
+              desc: "Negotiate, clarify, and close deals through our secure in-platform messaging system. No third-party apps needed — everything stays in one place.",
+              points: ["Instant notifications", "File & document sharing", "Conversation history"],
+            },
+            {
+              icon: "📊",
+              color: "#7c3aed",
+              bg: "#f3e8ff",
+              title: "Business Analytics",
+              desc: "Understand your market position with detailed analytics. Track profile views, request trends, and stakeholder engagement to make data-driven decisions.",
+              points: ["Profile view tracking", "Request conversion rates", "Market trend reports"],
+            },
+            {
+              icon: "🛡️",
+              color: "#dc2626",
+              bg: "#fff5f5",
+              title: "Trust & Verification",
+              desc: "Every industry and stakeholder on EthioBridge goes through a rigorous verification process. Identity documents, business licenses, and admin approval ensure a safe ecosystem.",
+              points: ["ID document verification", "Admin-reviewed approvals", "Fraud prevention system"],
+            },
+            {
+              icon: "⭐",
+              color: "#d97706",
+              bg: "#fffbeb",
+              title: "Premium Subscriptions",
+              desc: "Unlock unlimited listings, featured placement, advanced analytics, and priority support. Designed for businesses serious about growth.",
+              points: ["Unlimited product listings", "Featured search placement", "Priority customer support"],
+            },
+          ].map((s, i) => (
+            <div className="service-card animate-on-scroll" key={i} style={{ animationDelay: `${i * 0.08}s` }}>
+              <div className="service-icon-wrap" style={{ background: s.bg }}>
+                <span className="service-icon" style={{ color: s.color }}>{s.icon}</span>
+              </div>
+              <h3 className="service-title">{s.title}</h3>
+              <p className="service-desc">{s.desc}</p>
+              <ul className="service-points">
+                {s.points.map(pt => (
+                  <li key={pt}>
+                    <span className="service-check" style={{ color: s.color }}>✓</span>
+                    {pt}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        {/* Service CTA strip */}
+        <div className="services-cta animate-on-scroll">
+          <div className="services-cta-text">
+            <h3>Not sure which plan fits your business?</h3>
+            <p>Talk to our team — we'll help you find the right solution.</p>
+          </div>
+          <div className="services-cta-actions">
+            <Link to="/signup" className="btn-primary">Start Free Today →</Link>
+            <a href="#contact" className="services-cta-link">Talk to Sales</a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CONTACT ── */}
+      <section className="contact-section" id="contact">
+        <div className="contact-inner">
+          {/* Left — info */}
+          <div className="contact-info animate-on-scroll">
+            <span className="section-tag">Get in Touch</span>
+            <h2>Let's Build Something Together</h2>
+            <p>
+              Whether you're an industry looking to expand your reach or a stakeholder
+              searching for the right partner — our team is here to help you succeed.
+            </p>
+
+            <div className="contact-details">
+              {[
+                { icon: "📧", label: "Email Us",    value: "info@ethiobridge.et",   href: "mailto:info@ethiobridge.et" },
+                { icon: "📞", label: "Call Us",     value: "+251 911 123 456",       href: "tel:+251911123456" },
+                { icon: "📍", label: "Visit Us",    value: "Bole, Addis Ababa, Ethiopia", href: null },
+                { icon: "🕐", label: "Working Hours", value: "Mon – Fri, 8:00 AM – 6:00 PM EAT", href: null },
+              ].map(d => (
+                <div className="contact-detail" key={d.label}>
+                  <div className="contact-detail-icon">{d.icon}</div>
+                  <div>
+                    <div className="contact-detail-label">{d.label}</div>
+                    {d.href
+                      ? <a href={d.href} className="contact-detail-value link">{d.value}</a>
+                      : <div className="contact-detail-value">{d.value}</div>
+                    }
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="contact-socials">
+              {[
+                { icon: "𝕏", label: "Twitter",  href: "#" },
+                { icon: "in", label: "LinkedIn", href: "#" },
+                { icon: "f",  label: "Facebook", href: "#" },
+                { icon: "▶",  label: "YouTube",  href: "#" },
+              ].map(s => (
+                <a key={s.label} href={s.href} className="social-btn" aria-label={s.label}>{s.icon}</a>
+              ))}
+            </div>
+          </div>
+
+          {/* Right — form */}
+          <div className="contact-form-wrap animate-on-scroll">
+            <div className="contact-form-card">
+              <h3>Send Us a Message</h3>
+              <p>We typically respond within 24 hours.</p>
+
+              <form className="contact-form" onSubmit={e => { e.preventDefault(); alert('Message sent! We\'ll be in touch shortly.'); e.target.reset(); }}>
+                <div className="cf-row">
+                  <div className="cf-field">
+                    <label>First Name</label>
+                    <input type="text" placeholder="Abebe" required />
+                  </div>
+                  <div className="cf-field">
+                    <label>Last Name</label>
+                    <input type="text" placeholder="Kebede" required />
+                  </div>
+                </div>
+                <div className="cf-field">
+                  <label>Email Address</label>
+                  <input type="email" placeholder="abebe@company.et" required />
+                </div>
+                <div className="cf-field">
+                  <label>Phone Number</label>
+                  <input type="tel" placeholder="+251 9XX XXX XXX" />
+                </div>
+                <div className="cf-field">
+                  <label>I am a</label>
+                  <select required>
+                    <option value="">Select your role...</option>
+                    <option>Industry / Supplier</option>
+                    <option>Stakeholder / Investor</option>
+                    <option>Contractor</option>
+                    <option>Government Agency</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div className="cf-field">
+                  <label>Message</label>
+                  <textarea placeholder="Tell us how we can help you..." rows={4} required />
+                </div>
+                <button type="submit" className="cf-submit">
+                  Send Message
+                  <span>→</span>
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
       </section>
 

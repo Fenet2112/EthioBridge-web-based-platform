@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import "./AdminLogin.css";
+import { useNavigate } from "react-router-dom";
+import "./Login.css";
 
-function AdminLogin() {
+function Login() {
   const navigate = useNavigate();
   const [credentials, setCredentials] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -16,22 +16,16 @@ function AdminLogin() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
       const res = await fetch("http://localhost:5000/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
       });
-
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Login failed");
-      }
-
+      if (!res.ok) throw new Error(data.message || "Login failed");
       localStorage.setItem("adminToken", data.token);
-      navigate("/admin-dashboard");
+      navigate("/dashboard");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -46,9 +40,7 @@ function AdminLogin() {
           <h1>Admin Login</h1>
           <p>Sign in to manage the EthioBridge platform</p>
         </div>
-
         {error && <p className="error-message">{error}</p>}
-
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="email">Email</label>
@@ -63,7 +55,6 @@ function AdminLogin() {
               autoFocus
             />
           </div>
-
           <div className="form-group">
             <label htmlFor="password">Password</label>
             <input
@@ -76,20 +67,13 @@ function AdminLogin() {
               required
             />
           </div>
-
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
-
-        <p className="back-to-home">
-          <Link to="/" className="back-home-link">
-            ← Back to Home
-          </Link>
-        </p>
       </div>
     </div>
   );
 }
 
-export default AdminLogin;
+export default Login;

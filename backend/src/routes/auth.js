@@ -4,6 +4,30 @@ const pool = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { getJwtSecret } = require("../middleware/auth");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+
+// ── Multer for stakeholder ID documents ──
+const idStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = "uploads/id_documents";
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const userId = req.body.user_id || "unknown";
+    cb(null, `stakeholder_id_${userId}_${Date.now()}${path.extname(file.originalname)}`);
+  },
+});
+const uploadStakeholderID = multer({
+  storage: idStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /jpeg|jpg|png|pdf/.test(path.extname(file.originalname).toLowerCase());
+    cb(null, ok);
+  },
+});
 
 // ── SIGNUP ──
 router.post("/signup", async (req, res) => {
@@ -61,6 +85,23 @@ router.post("/login", async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    // Block banned or suspended users
+    if (user.status === 'banned') {
+      return res.status(403).json({
+        message: "Your account has been banned. Please contact support at support@ethiobridge.et",
+        status: 'banned'
+      });
+    }
+    if (user.status === 'suspended') {
+      const until = user.suspended_until
+        ? ` until ${new Date(user.suspended_until).toLocaleDateString()}`
+        : '';
+      return res.status(403).json({
+        message: `Your account is temporarily suspended${until}. Please contact support.`,
+        status: 'suspended'
+      });
     }
 
     const token = jwt.sign(
@@ -129,9 +170,9 @@ router.post("/profile/industry", async (req, res) => {
 });
 
 // ── SUBMIT STAKEHOLDER PROFILE ──
-router.post("/profile/stakeholder", async (req, res) => {
+router.post("/profile/stakeholder", uploadStakeholderID.single("id_document"), async (req, res) => {
   try {
-    const { user_id, organization_name, organization_type, location, description, phone, contact_person } = req.body;
+    const { user_id, organization_name, organization_type, location, description, phone, contact_person, id_document_type } = req.body;
 
     console.log('Stakeholder profile submission:', { user_id, organization_name, organization_type, location });
 
@@ -141,29 +182,29 @@ router.post("/profile/stakeholder", async (req, res) => {
 
     const userResult = await pool.query("SELECT * FROM users WHERE id = $1", [user_id]);
     if (userResult.rows.length === 0) {
-      console.log('User not found:', user_id);
       return res.status(404).json({ message: "User not found" });
     }
-    
-    console.log('User found:', { id: userResult.rows[0].id, email: userResult.rows[0].email, role: userResult.rows[0].role });
-    
     if (userResult.rows[0].role !== "stakeholder") {
-      console.log('User is not a stakeholder. Role:', userResult.rows[0].role);
       return res.status(403).json({ message: "User is not a stakeholder account" });
     }
 
+    const idDocUrl = req.file ? `/uploads/id_documents/${req.file.filename}` : null;
+    const idDocType = id_document_type || null;
+
     // Upsert stakeholder profile
     await pool.query(
-      `INSERT INTO stakeholders (user_id, organization_name, organization_type, location, description, phone, contact_person)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO stakeholders (user_id, organization_name, organization_type, location, description, phone, contact_person, id_document_url, id_document_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        ON CONFLICT (user_id) DO UPDATE SET
          organization_name = EXCLUDED.organization_name,
          organization_type = EXCLUDED.organization_type,
          location = EXCLUDED.location,
          description = EXCLUDED.description,
          phone = EXCLUDED.phone,
-         contact_person = EXCLUDED.contact_person`,
-      [user_id, organization_name, organization_type, location, description || null, phone || null, contact_person || null]
+         contact_person = EXCLUDED.contact_person,
+         id_document_url = COALESCE(EXCLUDED.id_document_url, stakeholders.id_document_url),
+         id_document_type = COALESCE(EXCLUDED.id_document_type, stakeholders.id_document_type)`,
+      [user_id, organization_name, organization_type, location, description || null, phone || null, contact_person || null, idDocUrl, idDocType]
     );
 
     // Update user status to pending
@@ -172,14 +213,9 @@ router.post("/profile/stakeholder", async (req, res) => {
     res.json({ message: "Stakeholder profile submitted. Awaiting admin approval." });
   } catch (error) {
     console.error("Stakeholder profile CRASH:", error.message);
-    console.error("Full error details:", error);
     res.status(500).json({
       message: "Server error - see backend logs for details",
-      ...(process.env.NODE_ENV !== "production" && {
-        error: error.message || "Unknown database/server error",
-        code: error.code,
-        detail: error.detail,
-      }),
+      ...(process.env.NODE_ENV !== "production" && { error: error.message, code: error.code }),
     });
   }
 });

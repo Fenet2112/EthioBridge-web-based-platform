@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ProfileDropdown.css';
+import DarkModeToggle from './DarkModeToggle';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
@@ -18,6 +19,7 @@ function ProfileDropdown() {
   const [previewUrl, setPreviewUrl] = useState(null);
   const dropdownRef = useRef(null);
   const fileInputRef = useRef(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -63,11 +65,39 @@ function ProfileDropdown() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB.'); return; }
+
+    // Show local preview immediately
+    setPreviewUrl(URL.createObjectURL(file));
+    setSelectedFile(file);
+    setPhotoUploading(true);
+
+    const token = localStorage.getItem('token');
+    const fd = new FormData();
+    fd.append('profile_picture', file);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/profile/me/picture`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Upload failed');
+      // Replace blob URL with persisted server URL
+      setPreviewUrl(null);
+      setSelectedFile(null);
+      setProfile(prev => ({ ...prev, profile_picture: data.profile_picture }));
+    } catch (err) {
+      alert('Photo upload failed: ' + err.message);
+      setPreviewUrl(null);
+      setSelectedFile(null);
+    } finally {
+      setPhotoUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -75,7 +105,6 @@ function ProfileDropdown() {
     const token = localStorage.getItem('token');
     
     try {
-      // Update profile data
       const res = await fetch(`${API_BASE_URL}/api/profile/me`, {
         method: 'PUT',
         headers: {
@@ -86,20 +115,6 @@ function ProfileDropdown() {
       });
 
       if (!res.ok) throw new Error('Failed to update profile');
-
-      // Upload profile picture if selected
-      if (selectedFile) {
-        const formDataImg = new FormData();
-        formDataImg.append('profile_picture', selectedFile);
-
-        const imgRes = await fetch(`${API_BASE_URL}/api/profile/me/picture`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formDataImg
-        });
-
-        if (!imgRes.ok) throw new Error('Failed to upload picture');
-      }
 
       await fetchProfile();
       setIsEditing(false);
@@ -203,9 +218,28 @@ function ProfileDropdown() {
                 View Full Profile
               </button>
 
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate('/subscription');
+                }}
+              >
+                <span className="item-icon">⭐</span>
+                Subscription
+              </button>
+
               <div className="dropdown-divider"></div>
 
-              <button 
+              <div className="dropdown-item dm-row">
+                <span className="item-icon">🌙</span>
+                <span>Dark Mode</span>
+                <DarkModeToggle />
+              </div>
+
+              <div className="dropdown-divider"></div>
+
+              <button
                 className="dropdown-item logout"
                 onClick={handleLogout}
               >
@@ -218,11 +252,18 @@ function ProfileDropdown() {
               <h3>Edit Profile</h3>
 
               <div className="edit-avatar-section">
-                {profilePicUrl ? (
-                  <img src={profilePicUrl} alt="Profile" className="edit-avatar" />
-                ) : (
-                  <div className="edit-avatar-placeholder">{getInitials()}</div>
-                )}
+                <div className="edit-avatar-wrap">
+                  {profilePicUrl ? (
+                    <img src={profilePicUrl} alt="Profile" className="edit-avatar" />
+                  ) : (
+                    <div className="edit-avatar-placeholder">{getInitials()}</div>
+                  )}
+                  {photoUploading && (
+                    <div className="edit-avatar-uploading">
+                      <div className="edit-upload-spinner"></div>
+                    </div>
+                  )}
+                </div>
                 <div className="avatar-actions">
                   <input
                     type="file"
@@ -231,14 +272,15 @@ function ProfileDropdown() {
                     accept="image/*"
                     style={{ display: 'none' }}
                   />
-                  <button 
+                  <button
                     className="btn-change-photo"
                     onClick={() => fileInputRef.current?.click()}
+                    disabled={photoUploading}
                   >
-                    Change Photo
+                    {photoUploading ? 'Uploading...' : 'Change Photo'}
                   </button>
-                  {profile?.profile_picture && (
-                    <button 
+                  {profile?.profile_picture && !photoUploading && (
+                    <button
                       className="btn-delete-photo"
                       onClick={handleDeletePicture}
                     >

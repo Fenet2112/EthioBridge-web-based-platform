@@ -3,6 +3,21 @@ import { Link, useNavigate } from "react-router-dom";
 import Logo from "../components/Logo";
 import "./Login.css";
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
+async function syncGuestCartOnLogin(token) {
+  try {
+    const guest = JSON.parse(localStorage.getItem("cart_guest") || "[]");
+    if (guest.length === 0) return;
+    await fetch(`${API_BASE_URL}/api/cart/sync`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ items: guest.map(i => ({ product_id: i.product_id ?? i.id, quantity: i.quantity })) }),
+    });
+    localStorage.removeItem("cart_guest");
+  } catch (e) { console.error("Cart sync error:", e); }
+}
+
 function Login() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -38,6 +53,8 @@ function Login() {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
       } else {
+        // Sync guest cart to DB for stakeholders
+        if (role === "stakeholder") await syncGuestCartOnLogin(data.token);
         if (role === "industry") navigate("/industry");
         else if (role === "stakeholder") navigate("/stakeholders");
         else navigate("/");

@@ -1,7 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+﻿import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
-import ProfileDropdown from "../components/ProfileDropdown";
+import StakeholderNav from "../components/StakeholderNav";
+import SubscriptionModal from "../components/SubscriptionModal";
+import RecommendWidget from "../components/RecommendWidget";
 import "./Stakeholders.css";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -23,6 +25,9 @@ function Stakeholders() {
   const [selectedIndustry, setSelectedIndustry] = useState(null);
   const [conversationId, setConversationId] = useState(null);
   const [receiverId, setReceiverId] = useState(null);
+  const [showSubModal, setShowSubModal] = useState(false);
+  // eslint-disable-next-line no-unused-vars
+  const [subStatus, setSubStatus] = useState(null);
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -97,6 +102,12 @@ function Stakeholders() {
             localStorage.setItem("user", JSON.stringify(userData));
           }
         }
+
+        // Fetch subscription status
+        const subRes = await fetch(`${API_BASE_URL}/api/subscription/status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (subRes.ok) setSubStatus(await subRes.json());
         
         // Then fetch industries
         const res = await fetch(`${API_BASE_URL}/api/industries`, {
@@ -150,7 +161,7 @@ function Stakeholders() {
 
     try {
       // Save message to database
-      await fetch(`${API_BASE_URL}/api/conversations/${conversationId}/messages`, {
+      const msgRes = await fetch(`${API_BASE_URL}/api/conversations/${conversationId}/messages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -158,6 +169,14 @@ function Stakeholders() {
         },
         body: JSON.stringify({ content: messageText })
       });
+
+      if (msgRes.status === 402) {
+        // Remove optimistic message
+        setMessages(prev => prev.filter(m => m.id !== newMsg.id));
+        setCurrentMessage(messageText);
+        setShowSubModal(true);
+        return;
+      }
 
       // Send via Socket.IO for real-time delivery
       if (socket && socket.connected) {
@@ -232,47 +251,69 @@ function Stakeholders() {
 
   return (
     <div className="stakeholder-page">
-      {/* Header */}
+      <StakeholderNav />
+
+      {/* Hero */}
       <div className="stakeholder-header">
-        <div className="header-content">
-          <h1>Connect with Trusted Construction Partners in Ethiopia</h1>
-          <p className="subtitle">
-            Search verified industries • Compare products, prices & quality • 
-            Send direct messages • Request quotes • Build reliable relationships
-          </p>
-        </div>
-        <div className="header-actions">
-          <button 
-            className="messages-btn"
-            onClick={() => navigate("/messages")}
-            style={{
-              background: 'white',
-              color: '#667eea',
-              border: '2px solid #667eea',
-              padding: '10px 20px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s',
-              marginRight: '10px'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = '#667eea';
-              e.target.style.color = 'white';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'white';
-              e.target.style.color = '#667eea';
-            }}
-          >
-            <span>💬</span>
-            <span>My Messages</span>
-          </button>
-          <ProfileDropdown />
+        {/* Animated background blobs */}
+        <div className="sh-blob sh-blob-1" />
+        <div className="sh-blob sh-blob-2" />
+        <div className="sh-blob sh-blob-3" />
+        {/* Grid overlay */}
+        <div className="sh-grid" />
+
+        <div className="sh-inner">
+          {/* ── Left: copy ── */}
+          <div className="sh-copy">
+            <div className="sh-badge">
+              <span className="sh-badge-pulse" />
+              🇪🇹 Ethiopia's #1 Construction B2B Platform
+            </div>
+
+            <h1 className="sh-title">
+              Where Ethiopia's<br />
+              Construction Industry<br />
+              <span className="sh-highlight">Comes to Do Business.</span>
+            </h1>
+
+            <p className="sh-subtitle">
+              Connect directly with verified manufacturers, suppliers, and
+              contractors across all 11 regions. Compare products, request
+              quotes, and close deals — faster than ever before.
+            </p>
+
+            <div className="sh-features">
+              {[
+                { icon: "✅", text: "Verified & approved industries only" },
+                { icon: "🔒", text: "Secure identity-verified requests"   },
+                { icon: "⚡", text: "Real-time direct messaging"          },
+                { icon: "📊", text: "Full analytics & market insights"    },
+              ].map(f => (
+                <div key={f.text} className="sh-feature">
+                  <span className="sh-feat-icon">{f.icon}</span>
+                  {f.text}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Right: floating stat cards ── */}
+          <div className="sh-cards">
+            {[
+              { icon: "🏗️", value: "500+",  label: "Active Projects",    delay: "0s"    },
+              { icon: "🏭", value: "200+",  label: "Verified Industries", delay: "0.4s"  },
+              { icon: "🤝", value: "1,200+",label: "Connections Made",    delay: "0.8s"  },
+              { icon: "📍", value: "11",    label: "Regions Covered",     delay: "1.2s"  },
+            ].map(c => (
+              <div key={c.label} className="sh-card" style={{ animationDelay: c.delay }}>
+                <div className="sh-card-icon">{c.icon}</div>
+                <div className="sh-card-body">
+                  <strong>{c.value}</strong>
+                  <span>{c.label}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -289,6 +330,9 @@ function Stakeholders() {
           <span className="search-icon">🔍</span>
         </div>
       </div>
+
+      {/* Recommendation Widget */}
+      <RecommendWidget mode="products" />
 
       {/* Industry Cards */}
       <section className="recommendation-section">
@@ -439,7 +483,22 @@ function Stakeholders() {
             </div>
           )}
         </div>
-      </div>
+    </div>
+
+      {showSubModal && (
+        <SubscriptionModal
+          onClose={() => setShowSubModal(false)}
+          reason="You've reached your free messaging limit (3/month). Upgrade for unlimited messages."
+          onSuccess={() => {
+            setShowSubModal(false);
+            const token = localStorage.getItem("token");
+            fetch(`${API_BASE_URL}/api/subscription/status`, {
+              headers: { Authorization: `Bearer ${token}` }
+            }).then(r => r.json()).then(setSubStatus);
+            alert("🎉 Premium activated! Enjoy unlimited messaging.");
+          }}
+        />
+      )}
     </div>
   );
 }

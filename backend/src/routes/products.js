@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
 const { authenticateToken, requireRole, requireApproved } = require("../middleware/auth");
+const { resolveSubType } = require("./subscription");
+
+const FREE_PRODUCT_LIMIT = 5;
 
 // Helper: verify the requesting user owns the industry resource
 async function getIndustryForUser(userId) {
@@ -76,6 +79,39 @@ router.post(
         return res.status(404).json({ message: "Industry profile not found" });
       }
 
+      // Check product limit for free users
+      const userRes = await pool.query(
+        "SELECT is_subscribed, subscription_expires_at FROM users WHERE id = $1",
+        [req.user.id]
+      );
+      const subType = resolveSubType(userRes.rows[0] || {});
+      if (subType === "free") {
+        const countRes = await pool.query(
+          "SELECT COUNT(*) FROM products WHERE industry_id = $1",
+          [industry.id]
+        );
+        if (parseInt(countRes.rows[0].count) >= FREE_PRODUCT_LIMIT) {
+          return res.status(402).json({
+            message: `Free plan allows up to ${FREE_PRODUCT_LIMIT} products. Upgrade to Premium for unlimited listings.`,
+            requires_subscription: true,
+            limit: FREE_PRODUCT_LIMIT,
+          });
+        }
+      }
+
+      // ── Duplicate name check ──
+      const dupCheck = await pool.query(
+        "SELECT id FROM products WHERE industry_id = $1 AND LOWER(TRIM(name)) = LOWER(TRIM($2))",
+        [industry.id, name]
+      );
+      if (dupCheck.rows.length > 0) {
+        return res.status(409).json({
+          message: "This product already exists. Please update the existing product instead.",
+          duplicate: true,
+          existing_id: dupCheck.rows[0].id,
+        });
+      }
+
       const result = await pool.query(
         `INSERT INTO products (industry_id, name, description, price, unit, category)
          VALUES ($1, $2, $3, $4, $5, $6)
@@ -120,6 +156,21 @@ router.put(
       );
       if (check.rows.length === 0) {
         return res.status(404).json({ message: "Product not found" });
+      }
+
+      // Duplicate name check (exclude self)
+      if (name) {
+        const dupCheck = await pool.query(
+          "SELECT id FROM products WHERE industry_id = $1 AND LOWER(TRIM(name)) = LOWER(TRIM($2)) AND id != $3",
+          [industry.id, name, id]
+        );
+        if (dupCheck.rows.length > 0) {
+          return res.status(409).json({
+            message: "Another product with this name already exists.",
+            duplicate: true,
+            existing_id: dupCheck.rows[0].id,
+          });
+        }
       }
 
       const result = await pool.query(
@@ -180,4 +231,105 @@ router.delete(
   }
 );
 
+// ── INDUSTRY DASHBOARD SUMMARY ──
+router.get(
+  "/industry/dashboard-summary",
+  authenticateToken,
+  requireRole("industry"),
+  requireApproved,
+  async (req, res) => {
+    try {
+      const industry = await getIndustryForUser(req.user.id);
+      if (!industry) return res.status(404).json({ message: "Industry profile not found" });
+      const id = industry.id;
+
+      const [products, requests, stakeholders] = await Promise.all([
+        pool.query("SELECT COUNT(*) FROM products WHERE industry_id = $1", [id]),
+        pool.query(
+          `SELECT
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE status = 'pending')  AS pending,
+            COUNT(*) FILTER (WHERE status = 'approved') AS approved,
+            COUNT(*) FILTER (WHERE status = 'rejected') AS rejected
+           FROM purchase_requests WHERE industry_id = $1`, [id]
+        ),
+        pool.query(
+          "SELECT COUNT(DISTINCT stakeholder_id) FROM purchase_requests WHERE industry_id = $1", [id]
+        ),
+      ]);
+
+      res.json({
+        total_products:     parseInt(products.rows[0].count),
+        total_requests:     parseInt(requests.rows[0].total),
+        pending_requests:   parseInt(requests.rows[0].pending),
+        approved_requests:  parseInt(requests.rows[0].approved),
+        rejected_requests:  parseInt(requests.rows[0].rejected),
+        total_stakeholders: parseInt(stakeholders.rows[0].count),
+      });
+    } catch (err) {
+      console.error("Dashboard summary error:", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
+// ── RECENT PURCHASE REQUESTS (dashboard) ──
+router.get(
+  "/industry/recent-requests",
+  authenticateToken,
+  requireRole("industry"),
+  requireApproved,
+  async (req, res) => {
+    try {
+      const industry = await getIndustryForUser(req.user.id);
+      if (!industry) return res.status(404).json({ message: "Industry profile not found" });
+
+      const result = await pool.query(
+        `SELECT
+          pr.id, pr.status, pr.quantity, pr.notes, pr.full_name,
+          pr.organization_name, pr.phone, pr.created_at,
+          p.name AS product_name,
+          s.identity_verified
+         FROM purchase_requests pr
+         JOIN products p ON p.id = pr.product_id
+         JOIN stakeholders s ON s.id = pr.stakeholder_id
+         WHERE pr.industry_id = $1
+         ORDER BY pr.created_at DESC
+         LIMIT 5`,
+        [industry.id]
+      );
+      res.json(result.rows);
+    } catch (err) {
+      console.error("Recent requests error:", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
+// ── PRODUCTS SUMMARY (dashboard) ──
+router.get(
+  "/industry/products-summary",
+  authenticateToken,
+  requireRole("industry"),
+  requireApproved,
+  async (req, res) => {
+    try {
+      const industry = await getIndustryForUser(req.user.id);
+      if (!industry) return res.status(404).json({ message: "Industry profile not found" });
+
+      const result = await pool.query(
+        `SELECT id, name, category, price, unit, is_available, created_at
+         FROM products WHERE industry_id = $1
+         ORDER BY created_at DESC LIMIT 5`,
+        [industry.id]
+      );
+      res.json(result.rows);
+    } catch (err) {
+      console.error("Products summary error:", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
 module.exports = router;
+

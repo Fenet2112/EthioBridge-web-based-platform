@@ -4,7 +4,6 @@
   align-items: center;
   justify-content: center;
   background: #defceb;
-  color: white;
 }
 
 .login-container {
@@ -18,9 +17,15 @@
   text-align: center;
 }
 
-.login-container h1 {
+.login-header h1 {
   color: #0a5c2f;
   margin-bottom: 0.5rem;
+}
+
+.login-header p {
+  color: #666;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
 }
 
 .form-group {
@@ -39,9 +44,11 @@
   padding: 12px;
   border: 1px solid #ccc;
   border-radius: 8px;
+  font-size: 1rem;
+  box-sizing: border-box;
 }
 
-button {
+.login-btn {
   background: #0a5c2f;
   color: white;
   border: none;
@@ -49,32 +56,22 @@ button {
   width: 100%;
   border-radius: 8px;
   font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
+  transition: background 0.2s;
 }
 
-button:disabled {
+.login-btn:hover:not(:disabled) {
+  background: #084d27;
+}
+
+.login-btn:disabled {
   background: #ccc;
+  cursor: not-allowed;
 }
 
-.error {
+.error-message {
   color: #e74c3c;
   margin-bottom: 1rem;
-}
-/* Back to Home button/link */
-.back-to-home {
-  margin-top: 2rem;
-  font-size: 1.05rem;
-}
-
-.back-home-link {
-  color: #0a5c2f;
-  text-decoration: none;
-  font-weight: 600;
-  transition: all 0.25s;
-}
-
-.back-home-link:hover {
-  color: #084d27;
-  text-decoration: underline;
-  transform: translateX(-4px); /* subtle left shift for visual feedback */
+  font-size: 0.9rem;
 }

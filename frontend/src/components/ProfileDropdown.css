@@ -7,8 +7,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: white;
-  border: 2px solid #e0e0e0;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
   border-radius: 50px;
   padding: 4px 12px 4px 4px;
   cursor: pointer;
@@ -40,7 +40,7 @@
 
 .dropdown-arrow {
   font-size: 10px;
-  color: #666;
+  color: var(--text-muted);
   transition: transform 0.3s ease;
 }
 
@@ -52,9 +52,9 @@
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  background: white;
+  background: var(--bg-card);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 32px var(--shadow-md);
   min-width: 320px;
   max-width: 400px;
   overflow: hidden;
@@ -113,20 +113,20 @@
 
 .dropdown-bio {
   padding: 16px 20px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e0e0e0;
+  background: var(--bg-input);
+  border-bottom: 1px solid var(--border);
 }
 
 .dropdown-bio p {
   margin: 0;
   font-size: 14px;
-  color: #555;
+  color: var(--text-muted);
   line-height: 1.5;
 }
 
 .dropdown-divider {
   height: 1px;
-  background: #e0e0e0;
+  background: var(--border);
   margin: 8px 0;
 }
 
@@ -141,12 +141,12 @@
   text-align: left;
   cursor: pointer;
   font-size: 15px;
-  color: #333;
+  color: var(--text);
   transition: background 0.2s ease;
 }
 
 .dropdown-item:hover {
-  background: #f5f5f5;
+  background: var(--bg-hover);
 }
 
 .dropdown-item.logout {
@@ -163,6 +163,13 @@
   text-align: center;
 }
 
+/* Dark mode row in dropdown */
+.dm-row {
+  cursor: default;
+  justify-content: space-between;
+}
+.dm-row:hover { background: none; }
+
 /* Edit Form Styles */
 .dropdown-edit-form {
   padding: 20px;
@@ -173,7 +180,7 @@
 .dropdown-edit-form h3 {
   margin: 0 0 20px 0;
   font-size: 18px;
-  color: #333;
+  color: var(--text);
 }
 
 .edit-avatar-section {
@@ -182,7 +189,7 @@
   gap: 16px;
   margin-bottom: 20px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--border);
 }
 
 .edit-avatar,
@@ -250,18 +257,20 @@
   margin-bottom: 6px;
   font-size: 13px;
   font-weight: 600;
-  color: #555;
+  color: var(--text-muted);
 }
 
 .form-group input,
 .form-group textarea {
   width: 100%;
   padding: 10px 12px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--input-border);
   border-radius: 8px;
   font-size: 14px;
   font-family: inherit;
   transition: border-color 0.2s ease;
+  background: var(--bg-input);
+  color: var(--text);
 }
 
 .form-group input:focus,
@@ -307,12 +316,12 @@
 }
 
 .btn-cancel {
-  background: #f5f5f5;
-  color: #666;
+  background: var(--bg-input);
+  color: var(--text-muted);
 }
 
 .btn-cancel:hover {
-  background: #e0e0e0;
+  background: var(--bg-hover);
 }
 
 /* Scrollbar styling for edit form */
@@ -340,4 +349,35 @@
     min-width: 280px;
     right: -10px;
   }
+}
+
+/* ── Photo upload state ── */
+.edit-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.edit-avatar-uploading {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-upload-spinner {
+  width: 24px; height: 24px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: dropdownSpin 0.8s linear infinite;
+}
+
+@keyframes dropdownSpin { to { transform: rotate(360deg); } }
+
+.btn-change-photo:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

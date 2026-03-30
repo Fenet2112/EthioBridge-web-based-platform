@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
+import StakeholderNav from "../components/StakeholderNav";
 import "./StakeholderMessages.css";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -170,13 +171,7 @@ function StakeholderMessages() {
 
   return (
     <div className="stakeholder-messages-page">
-      {/* Header */}
-      <div className="messages-page-header">
-        <button className="back-btn" onClick={() => navigate("/stakeholders")}>
-          ← Back to Industries
-        </button>
-        <h1>My Messages {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}</h1>
-      </div>
+      <StakeholderNav unreadCount={unreadCount} />
 
       <div className="messages-container">
         {/* Conversations List */}
