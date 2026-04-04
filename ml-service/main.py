@@ -1,33 +1,64 @@
 """
-EthioBridge Hybrid Recommendation Service
-FastAPI + scikit-learn (cosine similarity + KNN)
-Port: 8000
+EthioBridge Hybrid Recommendation Service — Inference API
+==========================================================
+FastAPI service that loads a pre-trained KNN model and serves recommendations.
+
+Startup:
+    1. Run  python train_model.py  to build models/knn_model.pkl
+    2. Run  uvicorn main:app --reload --port 8000
+
+If no model file exists the service falls back to content-based scoring only
+(no collaborative filtering) so it always returns something useful.
 """
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 import psycopg2
 import psycopg2.extras
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.neighbors import NearestNeighbors
 from dotenv import load_dotenv
 import os
-import re
+import threading
+import time
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../backend/.env"))
 
-app = FastAPI(title="EthioBridge ML Service", version="1.0.0")
+from model_store import (
+    load_model, CATEGORIES,
+    cat_vec, normalize_price,
+    product_feature_vec, user_query_vec,
+)
+
+app = FastAPI(title="EthioBridge ML Service", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5000", "http://localhost:3000"],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ── DB connection ──────────────────────────────────────────────────────────────
+# ── Global model state ─────────────────────────────────────────────────────────
+_model: dict | None = None
+_model_lock = threading.Lock()
+
+def get_model() -> dict | None:
+    return _model
+
+@app.on_event("startup")
+def startup_event():
+    global _model
+    payload = load_model()
+    if payload:
+        _model = payload
+        print(f"[startup] Loaded model version {payload.get('version')} "
+              f"trained at {payload.get('trained_at')}")
+    else:
+        print("[startup] No pre-trained model found. "
+              "Run  python train_model.py  to build one. "
+              "Falling back to content-based scoring.")
+
+# ── DB helpers (still needed for live data: interactions, product list) ────────
 def get_conn():
     return psycopg2.connect(
         host=os.getenv("DB_HOST", "localhost"),
@@ -46,58 +77,8 @@ def query(sql, params=None):
     finally:
         conn.close()
 
-# ── Category encoding ──────────────────────────────────────────────────────────
-CATEGORIES = [
-    "cement", "steel", "brick", "wood", "paint", "sand", "glass",
-    "tile", "concrete", "pipe", "electrical", "tool", "roof", "other",
-]
-
-def cat_vec(text: str) -> list:
-    """One-hot encode a category string."""
-    t = (text or "").lower()
-    return [1.0 if c in t else 0.0 for c in CATEGORIES]
-
-def normalize_price(price, max_price=500_000):
-    if price is None:
-        return 0.5
-    return min(float(price) / max_price, 1.0)
-
-# ── Cosine similarity helper ───────────────────────────────────────────────────
-def cosine_sim(a, b):
-    a, b = np.array(a, dtype=float), np.array(b, dtype=float)
-    denom = np.linalg.norm(a) * np.linalg.norm(b)
-    return float(np.dot(a, b) / denom) if denom > 0 else 0.0
-
-# ── Popularity score (purchase request count) ─────────────────────────────────
-def product_popularity() -> dict:
-    rows = query("""
-        SELECT product_id, COUNT(*) AS cnt
-        FROM purchase_requests
-        WHERE status = 'approved'
-        GROUP BY product_id
-    """)
-    counts = {r["product_id"]: r["cnt"] for r in rows}
-    if not counts:
-        return {}
-    max_cnt = max(counts.values())
-    return {pid: cnt / max_cnt for pid, cnt in counts.items()}
-
-def industry_popularity() -> dict:
-    rows = query("""
-        SELECT industry_id, COUNT(*) AS cnt
-        FROM purchase_requests
-        WHERE status = 'approved'
-        GROUP BY industry_id
-    """)
-    counts = {r["industry_id"]: r["cnt"] for r in rows}
-    if not counts:
-        return {}
-    max_cnt = max(counts.values())
-    return {iid: cnt / max_cnt for iid, cnt in counts.items()}
-
-# ── User interaction history ───────────────────────────────────────────────────
+# ── Live helpers (small, cheap queries) ───────────────────────────────────────
 def user_product_interactions(user_id: int) -> set:
-    """Products this user has already requested."""
     rows = query("""
         SELECT DISTINCT pr.product_id
         FROM purchase_requests pr
@@ -115,71 +96,59 @@ def user_industry_interactions(user_id: int) -> set:
     """, (user_id,))
     return {r["industry_id"] for r in rows}
 
-# ── KNN: find similar users ────────────────────────────────────────────────────
-def knn_similar_users(user_id: int, role: str, n_neighbors: int = 5) -> list:
+# ── Cosine similarity ──────────────────────────────────────────────────────────
+def cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
+    denom = np.linalg.norm(a) * np.linalg.norm(b)
+    return float(np.dot(a, b) / denom) if denom > 0 else 0.0
+
+# ── KNN collaborative boost (uses pre-trained model) ──────────────────────────
+def knn_boost_from_model(user_id: int, model: dict) -> dict:
     """
-    Build a user-item interaction matrix and find the N most similar users.
-    Returns list of similar user_ids.
+    Use the pre-trained KNN to find similar users, then return
+    a {product_id: boost_score} dict.
     """
-    if role == "stakeholder":
-        rows = query("""
-            SELECT s.user_id, pr.product_id
-            FROM purchase_requests pr
-            JOIN stakeholders s ON s.id = pr.stakeholder_id
-            WHERE pr.status = 'approved'
-        """)
-        item_key = "product_id"
-    else:
-        return []
+    knn      = model.get("knn_model")
+    user_idx = model.get("user_index", {})
+    all_users = model.get("all_users", [])
+    all_products = model.get("all_products", [])
+    product_pop = model.get("product_pop", {})
 
-    if not rows:
-        return []
-
-    # Build interaction matrix
-    all_users = list({r["user_id"] for r in rows})
-    all_items = list({r[item_key] for r in rows})
-    if len(all_users) < 2:
-        return []
-
-    user_idx = {u: i for i, u in enumerate(all_users)}
-    item_idx = {it: i for i, it in enumerate(all_items)}
-
-    matrix = np.zeros((len(all_users), len(all_items)))
-    for r in rows:
-        ui = user_idx.get(r["user_id"])
-        ii = item_idx.get(r[item_key])
-        if ui is not None and ii is not None:
-            matrix[ui][ii] = 1.0
-
-    if user_id not in user_idx:
-        return []
-
-    k = min(n_neighbors + 1, len(all_users))
-    knn = NearestNeighbors(n_neighbors=k, metric="cosine", algorithm="brute")
-    knn.fit(matrix)
-
-    target_vec = matrix[user_idx[user_id]].reshape(1, -1)
-    distances, indices = knn.kneighbors(target_vec)
-
-    similar = []
-    for dist, idx in zip(distances[0], indices[0]):
-        uid = all_users[idx]
-        if uid != user_id:
-            similar.append(uid)
-    return similar[:n_neighbors]
-
-def knn_boosted_products(similar_users: list) -> dict:
-    """Products liked by similar users → boost scores."""
-    if not similar_users:
+    if knn is None or user_id not in user_idx or len(all_users) < 2:
         return {}
-    placeholders = ",".join(["%s"] * len(similar_users))
+
+    # Reconstruct the user's row from the stored interaction data
+    # We need the matrix row — rebuild it from live interactions for this user
+    user_interactions = user_product_interactions(user_id)
+    product_index = model.get("product_index", {})
+
+    row = np.zeros(len(all_products), dtype=float)
+    for pid in user_interactions:
+        if pid in product_index:
+            row[product_index[pid]] = 1.0
+
+    try:
+        distances, indices = knn.kneighbors(row.reshape(1, -1))
+    except Exception:
+        return {}
+
+    similar_user_ids = [
+        all_users[idx] for idx, dist in zip(indices[0], distances[0])
+        if all_users[idx] != user_id
+    ]
+
+    if not similar_user_ids:
+        return {}
+
+    # Products liked by similar users
+    placeholders = ",".join(["%s"] * len(similar_user_ids))
     rows = query(f"""
         SELECT pr.product_id, COUNT(*) AS cnt
         FROM purchase_requests pr
         JOIN stakeholders s ON s.id = pr.stakeholder_id
         WHERE s.user_id IN ({placeholders}) AND pr.status = 'approved'
         GROUP BY pr.product_id
-    """, tuple(similar_users))
+    """, tuple(similar_user_ids))
+
     if not rows:
         return {}
     max_cnt = max(r["cnt"] for r in rows)
@@ -195,80 +164,87 @@ def recommend_products(
     budget: float = Query(default=0),
     top_n: int = Query(default=10),
 ):
-    # 1. Fetch all available products
-    products = query("""
-        SELECT p.id, p.name, p.category, p.price, p.description,
-               p.image_url, p.unit,
-               i.company_name, i.sector, i.location, i.id AS industry_id
-        FROM products p
-        JOIN industries i ON i.id = p.industry_id
-        JOIN users u ON u.id = i.user_id
-        WHERE p.is_available = TRUE AND u.status = 'approved'
-    """)
+    model = get_model()
+
+    # Use cached product list from model if available, else query live
+    if model and model.get("product_lookup"):
+        products = list(model["product_lookup"].values())
+        product_pop = model.get("product_pop", {})
+    else:
+        products = query("""
+            SELECT p.id, p.name, p.category, p.price, p.unit,
+                   p.image_url, i.company_name, i.sector, i.location, i.id AS industry_id
+            FROM products p
+            JOIN industries i ON i.id = p.industry_id
+            JOIN users u ON u.id = i.user_id
+            WHERE p.is_available = TRUE AND u.status = 'approved'
+        """)
+        # Compute popularity live
+        pop_rows = query("SELECT product_id, COUNT(*) AS cnt FROM purchase_requests WHERE status='approved' GROUP BY product_id")
+        max_cnt = max((r["cnt"] for r in pop_rows), default=1) or 1
+        product_pop = {r["product_id"]: r["cnt"] / max_cnt for r in pop_rows}
 
     if not products:
-        return {"recommendations": []}
+        return {"recommendations": [], "model_version": None}
 
-    # 2. Rule-based filter
-    filtered = []
-    for p in products:
-        price = float(p["price"] or 0)
-        if budget > 0 and price > budget:
-            continue
-        if category and category.lower() not in (p["category"] or "").lower() \
-                and category.lower() not in (p["name"] or "").lower():
-            continue
-        filtered.append(p)
-
+    # Soft filter — budget is a scoring signal, NOT a hard cutoff
+    # All products matching the category are included; over-budget ones get penalised
+    filtered = [
+        p for p in products
+        if not category
+        or category.lower() in (p.get("category") or "").lower()
+        or category.lower() in (p.get("name") or "").lower()
+    ]
     if not filtered:
-        filtered = products  # fallback: no filter
+        return {"recommendations": [], "model_version": None}
 
-    # 3. User preference vector
-    user_cat_vec = cat_vec(category) if category else [0.5] * len(CATEGORIES)
-    user_price_norm = normalize_price(budget) if budget > 0 else 0.5
-    user_vec = user_cat_vec + [user_price_norm]
-
-    # 4. Popularity & KNN
-    pop = product_popularity()
+    user_vec     = user_query_vec(category, budget)
     already_seen = user_product_interactions(user_id)
-    similar_users = knn_similar_users(user_id, "stakeholder")
-    knn_boost = knn_boosted_products(similar_users)
+    knn_boost    = knn_boost_from_model(user_id, model) if model else {}
 
-    # 5. Score each product
     scored = []
     for p in filtered:
         pid = p["id"]
         if pid in already_seen:
-            continue  # don't re-recommend already requested
+            continue
 
-        p_cat_vec = cat_vec((p["category"] or "") + " " + (p["name"] or ""))
-        p_price_norm = normalize_price(p["price"])
-        p_vec = p_cat_vec + [p_price_norm]
+        p_vec      = product_feature_vec(p.get("category"), p.get("name"), p.get("price"))
+        sim        = cosine_sim(user_vec, p_vec)
+        popularity = product_pop.get(pid, 0.0)
+        knn_score  = knn_boost.get(pid, 0.0)
 
-        sim = cosine_sim(user_vec, p_vec)
-        popularity = pop.get(pid, 0.0)
-        knn_score = knn_boost.get(pid, 0.0)
+        # Soft budget penalty: reduce score proportionally if over budget
+        budget_penalty = 0.0
+        if budget > 0 and p.get("price"):
+            price = float(p["price"])
+            if price > budget:
+                # penalty grows with how far over budget (capped at 0.3 reduction)
+                over_ratio = min((price - budget) / budget, 1.0)
+                budget_penalty = 0.3 * over_ratio
 
-        # Hybrid score
-        score = (0.45 * sim) + (0.30 * popularity) + (0.25 * knn_score)
+        score = (0.45 * sim) + (0.30 * popularity) + (0.25 * knn_score) - budget_penalty
 
         scored.append({
-            "product_id": pid,
-            "name": p["name"],
-            "category": p["category"],
-            "price": float(p["price"]) if p["price"] else None,
-            "unit": p["unit"],
-            "image_url": p["image_url"],
-            "company_name": p["company_name"],
-            "industry_id": p["industry_id"],
-            "location": p["location"],
-            "score": round(score, 4),
-            "similarity": round(sim, 4),
-            "popularity": round(popularity, 4),
+            "product_id":    pid,
+            "name":          p.get("name"),
+            "category":      p.get("category"),
+            "price":         float(p["price"]) if p.get("price") else None,
+            "unit":          p.get("unit"),
+            "image_url":     p.get("image_url"),
+            "company_name":  p.get("company_name"),
+            "industry_id":   p.get("industry_id"),
+            "location":      p.get("location"),
+            "score":         round(score, 4),
+            "similarity":    round(sim, 4),
+            "popularity":    round(popularity, 4),
+            "over_budget":   budget > 0 and p.get("price") and float(p["price"]) > budget,
         })
 
     scored.sort(key=lambda x: x["score"], reverse=True)
-    return {"recommendations": scored[:top_n]}
+    return {
+        "recommendations": scored[:top_n],
+        "model_version": model.get("version") if model else None,
+    }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -281,43 +257,42 @@ def recommend_industries(
     budget: float = Query(default=0),
     top_n: int = Query(default=10),
 ):
-    industries = query("""
-        SELECT i.id, i.company_name, i.sector, i.location,
-               i.description, i.established_year,
-               COUNT(p.id) AS product_count,
-               COUNT(DISTINCT pr.stakeholder_id) AS customer_count
-        FROM industries i
-        JOIN users u ON u.id = i.user_id
-        LEFT JOIN products p ON p.industry_id = i.id AND p.is_available = TRUE
-        LEFT JOIN purchase_requests pr ON pr.industry_id = i.id AND pr.status = 'approved'
-        WHERE u.status = 'approved'
-        GROUP BY i.id, i.company_name, i.sector, i.location, i.description, i.established_year
-    """)
+    model = get_model()
+
+    if model and model.get("industry_lookup"):
+        industries  = list(model["industry_lookup"].values())
+        industry_pop = model.get("industry_pop", {})
+    else:
+        industries = query("""
+            SELECT i.id, i.company_name, i.sector, i.location,
+                   COUNT(DISTINCT p.id) AS product_count,
+                   COUNT(DISTINCT pr.stakeholder_id) AS customer_count
+            FROM industries i
+            JOIN users u ON u.id = i.user_id
+            LEFT JOIN products p ON p.industry_id = i.id AND p.is_available = TRUE
+            LEFT JOIN purchase_requests pr ON pr.industry_id = i.id AND pr.status = 'approved'
+            WHERE u.status = 'approved'
+            GROUP BY i.id, i.company_name, i.sector, i.location
+        """)
+        pop_rows = query("SELECT industry_id, COUNT(*) AS cnt FROM purchase_requests WHERE status='approved' GROUP BY industry_id")
+        max_cnt = max((r["cnt"] for r in pop_rows), default=1) or 1
+        industry_pop = {r["industry_id"]: r["cnt"] / max_cnt for r in pop_rows}
 
     if not industries:
-        return {"recommendations": []}
+        return {"recommendations": [], "model_version": None}
 
-    # Rule-based filter
-    filtered = []
-    for ind in industries:
-        if category and category.lower() not in (ind["sector"] or "").lower():
-            continue
-        filtered.append(ind)
-
+    filtered = [
+        i for i in industries
+        if not category or category.lower() in (i.get("sector") or "").lower()
+    ]
     if not filtered:
-        filtered = industries
+        return {"recommendations": [], "model_version": None}
 
-    # Popularity
-    ind_pop = industry_popularity()
     already_seen = user_industry_interactions(user_id)
+    user_vec     = user_query_vec(category, budget)
 
-    # User vector
-    user_cat_vec = cat_vec(category) if category else [0.5] * len(CATEGORIES)
-    user_vec = user_cat_vec + [normalize_price(budget)]
-
-    # Max values for normalization
-    max_products = max((i["product_count"] or 0 for i in filtered), default=1) or 1
-    max_customers = max((i["customer_count"] or 0 for i in filtered), default=1) or 1
+    max_products  = max((i.get("product_count") or 0 for i in filtered), default=1) or 1
+    max_customers = max((i.get("customer_count") or 0 for i in filtered), default=1) or 1
 
     scored = []
     for ind in filtered:
@@ -325,33 +300,67 @@ def recommend_industries(
         if iid in already_seen:
             continue
 
-        ind_cat_vec = cat_vec(ind["sector"] or "")
-        ind_vec = ind_cat_vec + [0.5]  # no price for industries
+        ind_vec    = np.concatenate([cat_vec(ind.get("sector") or ""), [0.5]])
+        sim        = cosine_sim(user_vec, ind_vec)
+        popularity = industry_pop.get(iid, 0.0)
+        prod_score = (ind.get("product_count") or 0) / max_products
+        cust_score = (ind.get("customer_count") or 0) / max_customers
 
-        sim = cosine_sim(user_vec, ind_vec)
-        popularity = ind_pop.get(iid, 0.0)
-        product_score = (ind["product_count"] or 0) / max_products
-        customer_score = (ind["customer_count"] or 0) / max_customers
-
-        score = (0.40 * sim) + (0.25 * popularity) + (0.20 * product_score) + (0.15 * customer_score)
+        score = (0.40 * sim) + (0.25 * popularity) + (0.20 * prod_score) + (0.15 * cust_score)
 
         scored.append({
-            "industry_id": iid,
-            "company_name": ind["company_name"],
-            "sector": ind["sector"],
-            "location": ind["location"],
-            "product_count": ind["product_count"],
-            "customer_count": ind["customer_count"],
-            "score": round(score, 4),
-            "similarity": round(sim, 4),
-            "popularity": round(popularity, 4),
+            "industry_id":   iid,
+            "company_name":  ind.get("company_name"),
+            "sector":        ind.get("sector"),
+            "location":      ind.get("location"),
+            "product_count": ind.get("product_count"),
+            "customer_count":ind.get("customer_count"),
+            "score":         round(score, 4),
+            "similarity":    round(sim, 4),
+            "popularity":    round(popularity, 4),
         })
 
     scored.sort(key=lambda x: x["score"], reverse=True)
-    return {"recommendations": scored[:top_n]}
+    return {
+        "recommendations": scored[:top_n],
+        "model_version": model.get("version") if model else None,
+    }
 
 
-# ── Health check ──────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# ENDPOINT: /train  (trigger retraining without restarting the service)
+# ══════════════════════════════════════════════════════════════════════════════
+@app.post("/train")
+def trigger_training(background_tasks: BackgroundTasks):
+    """
+    Kick off a background retraining job.
+    The new model is hot-swapped into memory when done.
+    """
+    def _retrain():
+        global _model
+        print("[/train] Background retraining started...")
+        try:
+            from train_model import train
+            train()
+            with _model_lock:
+                from model_store import load_model
+                _model = load_model()
+            print("[/train] Model hot-swapped successfully.")
+        except Exception as e:
+            print(f"[/train] Retraining failed: {e}")
+
+    background_tasks.add_task(_retrain)
+    return {"message": "Retraining started in background. Model will be hot-swapped when done."}
+
+
+# ── Health / info ──────────────────────────────────────────────────────────────
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "EthioBridge ML Service"}
+    model = get_model()
+    return {
+        "status":        "ok",
+        "service":       "EthioBridge ML Service",
+        "model_loaded":  model is not None,
+        "model_version": model.get("version") if model else None,
+        "trained_at":    model.get("trained_at") if model else None,
+    }

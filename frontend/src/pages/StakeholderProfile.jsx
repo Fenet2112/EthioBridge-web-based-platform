@@ -103,7 +103,7 @@ function StakeholderProfile() {
     const userData = JSON.parse(localStorage.getItem("user") || "{}");
     if (!userData?.id) { setError("Session expired. Please log in again."); navigate("/login"); return; }
 
-    // Require ID on first submission
+    // Require ID on first submission only if no existing ID
     if (profileStatus === "incomplete" && !idFile && !existingIdUrl) {
       setError("Please upload a valid ID document before submitting.");
       return;

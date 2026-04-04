@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { sendPurchaseApprovedEmail, sendPurchaseRejectedEmail } = require("../utils/sendEmail");
 
 // ── Multer setup for ID documents ──
 const idStorage = multer.diskStorage({
@@ -226,7 +227,7 @@ router.post(
       const fileUrl = `/uploads/id_documents/${req.file.filename}`;
       await pool.query(
         `UPDATE purchase_requests
-         SET id_document_url = $1, id_document_type = $2, status = 'pending', updated_at = NOW()
+         SET id_document_url = $1, id_document_type = $2, updated_at = NOW()
          WHERE id = $3`,
         [fileUrl, id_document_type || 'national_id', id]
       );
@@ -369,6 +370,25 @@ router.patch("/admin/purchases/:id/approve", requireAdminAuth, async (req, res) 
       [request.stakeholder_id, request.industry_id, request.id]
     );
 
+    // Send approval email to stakeholder (non-fatal)
+    try {
+      const emailRes = await pool.query(
+        `SELECT u.email, pr.product_id, p.name AS product_name, i.company_name
+         FROM purchase_requests pr
+         JOIN stakeholders s ON s.id = pr.stakeholder_id
+         JOIN users u ON u.id = s.user_id
+         JOIN products p ON p.id = pr.product_id
+         JOIN industries i ON i.id = pr.industry_id
+         WHERE pr.id = $1`, [id]
+      );
+      if (emailRes.rows.length > 0) {
+        const { email, product_name, company_name } = emailRes.rows[0];
+        await sendPurchaseApprovedEmail(email, product_name, company_name);
+      }
+    } catch (emailErr) {
+      console.error("Purchase approval email failed (non-fatal):", emailErr.message);
+    }
+
     res.json({ message: "Purchase request approved and stakeholder verified", request });
   } catch (error) {
     console.error("Admin approve purchase error:", error);
@@ -389,6 +409,26 @@ router.patch("/admin/purchases/:id/reject", requireAdminAuth, async (req, res) =
       [admin_notes, id]
     );
     if (result.rows.length === 0) return res.status(404).json({ message: "Purchase request not found" });
+
+    // Send rejection email to stakeholder (non-fatal)
+    try {
+      const emailRes = await pool.query(
+        `SELECT u.email, p.name AS product_name, i.company_name
+         FROM purchase_requests pr
+         JOIN stakeholders s ON s.id = pr.stakeholder_id
+         JOIN users u ON u.id = s.user_id
+         JOIN products p ON p.id = pr.product_id
+         JOIN industries i ON i.id = pr.industry_id
+         WHERE pr.id = $1`, [id]
+      );
+      if (emailRes.rows.length > 0) {
+        const { email, product_name, company_name } = emailRes.rows[0];
+        await sendPurchaseRejectedEmail(email, product_name, company_name, admin_notes);
+      }
+    } catch (emailErr) {
+      console.error("Purchase rejection email failed (non-fatal):", emailErr.message);
+    }
+
     res.json({ message: "Purchase request rejected", request: result.rows[0] });
   } catch (error) {
     console.error("Admin reject purchase error:", error);

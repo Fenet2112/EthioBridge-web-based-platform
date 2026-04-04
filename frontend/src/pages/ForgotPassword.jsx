@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import "./ForgotPassword.css";
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
 function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -16,26 +18,19 @@ function ForgotPassword() {
     setError("");
     setLoading(true);
 
-    if (!email.trim()) {
-      setError("Please enter your registered email address");
-      setLoading(false);
-      return;
-    }
-
     try {
-      // Simulate real backend call (replace with your actual API later)
-      // Example: await fetch("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) });
-      await new Promise(resolve => setTimeout(resolve, 1800)); // fake network delay
+      const res = await fetch(`${API_BASE_URL}/api/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
 
-      // Mock success (in real app, backend sends email if account exists)
-      setMessage(
-        "If an account with this email exists, you will receive a password reset link shortly. " +
-        "Please check your inbox (and spam/junk folder)."
-      );
+      if (!res.ok) throw new Error(data.message || "Failed to send reset link.");
+
       setSubmitted(true);
-      setError("");
     } catch (err) {
-      setError("Failed to send reset link. Please try again later.");
+      setError(err.message || "Failed to send reset link. Please try again later.");
     } finally {
       setLoading(false);
     }

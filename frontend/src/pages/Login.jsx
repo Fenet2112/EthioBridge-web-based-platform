@@ -24,6 +24,8 @@ function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState(null);
+  const [resendSent, setResendSent] = useState(false);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -33,14 +35,20 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/login", {
+      const response = await fetch(`${API_BASE_URL}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email, password: formData.password }),
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Login failed");
+      if (!response.ok) {
+        if (data.status === 'unverified') {
+          setUnverifiedEmail(data.email || formData.email);
+          return;
+        }
+        throw new Error(data.message || "Login failed");
+      }
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
@@ -78,6 +86,26 @@ function Login() {
         </div>
 
         {error && <p className="error-message">{error}</p>}
+
+        {unverifiedEmail && (
+          <div style={{ background: "#fff8e1", border: "1px solid #f59e0b", borderRadius: 10, padding: "14px 16px", marginBottom: 16, fontSize: "0.88rem", color: "#92400e" }}>
+            <strong>✉️ Email not verified.</strong> Please check your inbox for the verification link.
+            <br />
+            <button
+              style={{ background: "none", border: "none", color: "#0a5c2f", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem", padding: "6px 0 0", textDecoration: "underline" }}
+              onClick={async () => {
+                await fetch(`${API_BASE_URL}/api/resend-verification`, {
+                  method: "POST", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email: unverifiedEmail }),
+                });
+                setResendSent(true);
+              }}
+              disabled={resendSent}
+            >
+              {resendSent ? "✅ Email resent!" : "Resend verification email"}
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">

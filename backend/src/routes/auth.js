@@ -3,7 +3,9 @@ const router = express.Router();
 const pool = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const { getJwtSecret } = require("../middleware/auth");
+const { sendVerificationEmail, sendSignupNotification, sendPasswordResetEmail } = require("../utils/sendEmail");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -50,14 +52,34 @@ router.post("/signup", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generate email verification token (expires in 24h)
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
     const newUser = await pool.query(
-      "INSERT INTO users (email, password, role, status) VALUES ($1, $2, $3, 'incomplete') RETURNING id, email, role, status",
-      [email, hashedPassword, role]
+      `INSERT INTO users (email, password, role, status, email_verified, verification_token, verification_token_expires)
+       VALUES ($1, $2, $3, 'incomplete', FALSE, $4, $5)
+       RETURNING id, email, role, status`,
+      [email, hashedPassword, role, verificationToken, tokenExpires]
     );
 
+    // Send emails (non-fatal — don't fail signup if email fails)
+    const appUrl = process.env.APP_URL || "http://localhost:3000";
+    try {
+      await sendVerificationEmail(email, verificationToken);
+    } catch (emailErr) {
+      console.error("Verification email failed (non-fatal):", emailErr.message);
+    }
+    try {
+      await sendSignupNotification(email);
+    } catch (emailErr) {
+      console.error("Signup notification failed (non-fatal):", emailErr.message);
+    }
+
     res.status(201).json({
-      message: "Account created successfully",
+      message: "Account created. Please check your email to verify your address.",
       user: newUser.rows[0],
+      emailSent: true,
     });
   } catch (error) {
     console.error("Signup error:", error);
@@ -104,7 +126,14 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const token = jwt.sign(
+    // Block unverified email
+    if (!user.email_verified) {
+      return res.status(403).json({
+        message: "Please verify your email address before logging in. Check your inbox for the verification link.",
+        status: 'unverified',
+        email: user.email,
+      });
+    }    const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role, status: user.status },
       getJwtSecret(),
       { expiresIn: "7d" }
@@ -282,6 +311,187 @@ router.get("/profile/stakeholder/status", async (req, res) => {
     });
   } catch (error) {
     console.error("Get stakeholder profile status error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── VERIFY EMAIL (direct link from email — verifies token and redirects to frontend) ──
+router.get("/verify-email", async (req, res) => {
+  const { token } = req.query;
+  const frontendUrl = process.env.APP_URL || "http://localhost:3000";
+
+  if (!token) {
+    return res.redirect(`${frontendUrl}/verify-email?status=invalid`);
+  }
+
+  try {
+    const result = await pool.query(
+      "SELECT id, email_verified, verification_token_expires FROM users WHERE verification_token = $1",
+      [token]
+    );
+
+    if (result.rows.length === 0) {
+      return res.redirect(`${frontendUrl}/verify-email?status=invalid`);
+    }
+
+    const user = result.rows[0];
+
+    if (user.email_verified) {
+      return res.redirect(`${frontendUrl}/verify-email?status=already_verified`);
+    }
+
+    if (new Date() > new Date(user.verification_token_expires)) {
+      return res.redirect(`${frontendUrl}/verify-email?status=expired`);
+    }
+
+    await pool.query(
+      "UPDATE users SET email_verified = TRUE, verification_token = NULL, verification_token_expires = NULL WHERE id = $1",
+      [user.id]
+    );
+
+    return res.redirect(`${frontendUrl}/verify-email?status=success`);
+  } catch (error) {
+    console.error("Verify email error:", error);
+    return res.redirect(`${frontendUrl}/verify-email?status=invalid`);
+  }
+});
+
+// ── RESEND VERIFICATION EMAIL ──
+router.post("/resend-verification", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: "Email is required." });
+
+  try {
+    const result = await pool.query(
+      "SELECT id, email_verified FROM users WHERE email = $1",
+      [email]
+    );
+
+    if (result.rows.length === 0) {
+      // Don't reveal if email exists
+      return res.json({ message: "If that email is registered, a verification link has been sent." });
+    }
+
+    const user = result.rows[0];
+    if (user.email_verified) {
+      return res.json({ message: "This email is already verified. You can log in." });
+    }
+
+    const verificationToken = require("crypto").randomBytes(32).toString("hex");
+    const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await pool.query(
+      "UPDATE users SET verification_token = $1, verification_token_expires = $2 WHERE id = $3",
+      [verificationToken, tokenExpires, user.id]
+    );
+
+    try {
+      await sendVerificationEmail(email, verificationToken);
+    } catch (emailErr) {
+      console.error("Resend verification email failed:", emailErr.message);
+    }
+
+    res.json({ message: "Verification email sent. Please check your inbox." });
+  } catch (error) {
+    console.error("Resend verification error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── FORGOT PASSWORD ──
+router.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: "Email is required." });
+
+  try {
+    const result = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
+
+    // Always return success to avoid revealing whether email exists
+    if (result.rows.length === 0) {
+      return res.json({ message: "If that email is registered, a reset link has been sent." });
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await pool.query(
+      "UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3",
+      [token, expires, result.rows[0].id]
+    );
+
+    try {
+      await sendPasswordResetEmail(email, token);
+    } catch (emailErr) {
+      console.error("Password reset email failed:", emailErr.message);
+      return res.status(500).json({ message: "Failed to send reset email. Please try again." });
+    }
+
+    res.json({ message: "If that email is registered, a reset link has been sent." });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── RESET PASSWORD (GET — validate token, redirect to frontend form) ──
+router.get("/reset-password", async (req, res) => {
+  const { token } = req.query;
+  const frontendUrl = process.env.APP_URL || "http://localhost:3000";
+
+  if (!token) return res.redirect(`${frontendUrl}/reset-password?status=invalid`);
+
+  try {
+    const result = await pool.query(
+      "SELECT id, reset_token_expires FROM users WHERE reset_token = $1",
+      [token]
+    );
+
+    if (result.rows.length === 0) {
+      return res.redirect(`${frontendUrl}/reset-password?status=invalid`);
+    }
+
+    if (new Date() > new Date(result.rows[0].reset_token_expires)) {
+      return res.redirect(`${frontendUrl}/reset-password?status=expired`);
+    }
+
+    // Token valid — redirect to frontend with token so user can set new password
+    return res.redirect(`${frontendUrl}/reset-password?token=${token}`);
+  } catch (error) {
+    console.error("Reset password GET error:", error);
+    return res.redirect(`${frontendUrl}/reset-password?status=invalid`);
+  }
+});
+
+// ── RESET PASSWORD (POST — save new password) ──
+router.post("/reset-password", async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ message: "Token and password are required." });
+  if (password.length < 8) return res.status(400).json({ message: "Password must be at least 8 characters." });
+
+  try {
+    const result = await pool.query(
+      "SELECT id, reset_token_expires FROM users WHERE reset_token = $1",
+      [token]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ message: "Invalid or already used reset link.", code: "invalid" });
+    }
+
+    if (new Date() > new Date(result.rows[0].reset_token_expires)) {
+      return res.status(400).json({ message: "Reset link has expired. Please request a new one.", code: "expired" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await pool.query(
+      "UPDATE users SET password = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2",
+      [hashedPassword, result.rows[0].id]
+    );
+
+    res.json({ message: "Password reset successfully. You can now log in.", code: "success" });
+  } catch (error) {
+    console.error("Reset password POST error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });

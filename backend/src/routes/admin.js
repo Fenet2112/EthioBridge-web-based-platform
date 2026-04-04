@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
-const { sendApprovalEmail, sendRejectionEmail } = require('../utils/sendEmail');
+const { sendApprovalEmail, sendRejectionEmail, sendSuspensionEmail } = require('../utils/sendEmail');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
@@ -262,9 +262,109 @@ router.patch('/users/:id/status', requireAdminAuth, async (req, res) => {
       [status, ban_reason || null, suspended_until || null, id]
     );
     if (result.rows.length === 0) return res.status(404).json({ message: "User not found" });
+
+    // Send suspension/ban email (non-fatal)
+    if (status === 'suspended' || status === 'banned') {
+      try {
+        await sendSuspensionEmail(result.rows[0].email, status, ban_reason);
+      } catch (emailErr) {
+        console.error("Suspension email failed (non-fatal):", emailErr.message);
+      }
+    }
+
     res.json({ message: `User ${status} successfully`, user: result.rows[0] });
   } catch (err) {
     console.error("Update user status error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+router.get('/industries', requireAdminAuth, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT i.id, i.company_name, i.sector, i.location, i.phone, i.website,
+             i.established_year, i.description, i.created_at,
+             u.email, u.status,
+             COUNT(DISTINCT p.id) AS product_count,
+             COUNT(DISTINCT pr.id) AS request_count
+      FROM industries i
+      JOIN users u ON u.id = i.user_id
+      LEFT JOIN products p ON p.industry_id = i.id
+      LEFT JOIN purchase_requests pr ON pr.industry_id = i.id
+      WHERE u.status = 'approved'
+      GROUP BY i.id, u.email, u.status
+      ORDER BY i.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Admin get industries error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── DELETE INDUSTRY ──
+router.delete('/industries/:id', requireAdminAuth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM industries WHERE id = $1', [id]);
+    res.json({ message: 'Industry removed successfully' });
+  } catch (err) {
+    console.error("Delete industry error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── GET ALL PRODUCTS (admin) ──
+router.get('/products', requireAdminAuth, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT p.id, p.name, p.description, p.price, p.unit, p.category,
+             p.is_available, p.image_url, p.created_at,
+             i.company_name AS industry_name, i.sector,
+             COUNT(pr.id) AS request_count
+      FROM products p
+      JOIN industries i ON i.id = p.industry_id
+      JOIN users u ON u.id = i.user_id
+      LEFT JOIN purchase_requests pr ON pr.product_id = p.id
+      WHERE u.status = 'approved'
+      GROUP BY p.id, i.company_name, i.sector
+      ORDER BY request_count DESC, p.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Admin get products error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── DELETE PRODUCT ──
+router.delete('/products/:id', requireAdminAuth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM products WHERE id = $1', [id]);
+    res.json({ message: 'Product removed successfully' });
+  } catch (err) {
+    console.error("Delete product error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── ANALYTICS SUMMARY ──
+router.get('/analytics', requireAdminAuth, async (req, res) => {
+  try {
+    const [users, products, requests, sectors] = await Promise.all([
+      pool.query(`SELECT DATE_TRUNC('month', created_at) AS month, COUNT(*) AS count FROM users GROUP BY month ORDER BY month DESC LIMIT 12`),
+      pool.query(`SELECT COUNT(*) AS total FROM products p JOIN industries i ON i.id = p.industry_id JOIN users u ON u.id = i.user_id WHERE u.status = 'approved'`),
+      pool.query(`SELECT status, COUNT(*) AS count FROM purchase_requests GROUP BY status`),
+      pool.query(`SELECT sector, COUNT(*) AS count FROM industries i JOIN users u ON u.id = i.user_id WHERE u.status = 'approved' GROUP BY sector ORDER BY count DESC LIMIT 8`),
+    ]);
+    res.json({
+      userGrowth: users.rows,
+      totalProducts: products.rows[0]?.total || 0,
+      requestsByStatus: requests.rows,
+      sectorDistribution: sectors.rows,
+    });
+  } catch (err) {
+    console.error("Analytics error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

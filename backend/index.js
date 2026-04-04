@@ -10,15 +10,42 @@ const app = express();
 const server = http.createServer(app);
 
 // 2. Setup Socket.IO with CORS
+const allowedOrigins = [
+  'http://localhost:3000',
+  process.env.APP_URL,
+  /\.vercel\.app$/ // Allow all Vercel preview deployments
+].filter(Boolean);
+
 const io = new Server(server, {
   cors: {
-    origin: process.env.APP_URL || "http://localhost:3000",
-    methods: ["GET", "POST"]
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
-// 3. Apply middleware
-app.use(cors());
+// 3. Apply middleware with CORS configuration
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is allowed
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') return allowed === origin;
+      if (allowed instanceof RegExp) return allowed.test(origin);
+      return false;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 
 // 4. Make io accessible to routes
@@ -48,6 +75,10 @@ app.use('/api/profile', profileRoutes);
 
 const subscriptionRoutes = require('./src/routes/subscription');
 app.use('/api', subscriptionRoutes);
+
+const { router: googleAuthRoutes, passport: googlePassport } = require('./src/routes/google-auth');
+app.use(googlePassport.initialize());
+app.use('/api', googleAuthRoutes);
 
 const cartRoutes = require('./src/routes/cart');
 app.use('/api', cartRoutes);

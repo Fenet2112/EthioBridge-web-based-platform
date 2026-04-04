@@ -65,14 +65,13 @@ router.get("/stakeholder/status", authenticateToken, async (req, res) => {
 // ── GET MY PROFILE ──
 router.get("/me", authenticateToken, async (req, res) => {
   try {
-    let query, table;
-    
+    let query;
+
     if (req.user.role === "stakeholder") {
-      table = "stakeholders";
       query = `
-        SELECT 
+        SELECT
           s.id, s.username, s.full_name, s.bio, s.profile_picture,
-          s.organization_name, s.organization_type, s.location, 
+          s.organization_name, s.organization_type, s.location,
           s.phone, s.contact_person, s.description,
           u.email, u.status, u.created_at
         FROM stakeholders s
@@ -80,11 +79,10 @@ router.get("/me", authenticateToken, async (req, res) => {
         WHERE s.user_id = $1
       `;
     } else if (req.user.role === "industry") {
-      table = "industries";
       query = `
-        SELECT 
+        SELECT
           i.id, i.username, i.full_name, i.bio, i.profile_picture,
-          i.company_name, i.sector, i.location, 
+          i.company_name, i.sector, i.location,
           i.phone, i.website, i.description, i.established_year,
           u.email, u.status, u.created_at
         FROM industries i
@@ -95,8 +93,19 @@ router.get("/me", authenticateToken, async (req, res) => {
       return res.status(403).json({ message: "Invalid user role" });
     }
 
-    const result = await pool.query(query, [req.user.id]);
-    
+    let result = await pool.query(query, [req.user.id]);
+
+    // Auto-create a minimal stakeholder row so new users can set photo/username/bio
+    // before they submit their org profile
+    if (result.rows.length === 0 && req.user.role === "stakeholder") {
+      await pool.query(
+        `INSERT INTO stakeholders (user_id, organization_name, organization_type, location)
+         VALUES ($1, '', '', '') ON CONFLICT (user_id) DO NOTHING`,
+        [req.user.id]
+      );
+      result = await pool.query(query, [req.user.id]);
+    }
+
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Profile not found" });
     }
@@ -115,14 +124,22 @@ router.put("/me", authenticateToken, async (req, res) => {
   try {
     let query, table, profileId;
 
-    // Get profile ID first
+    // Get or create profile row
     if (req.user.role === "stakeholder") {
       table = "stakeholders";
       const idResult = await pool.query("SELECT id FROM stakeholders WHERE user_id = $1", [req.user.id]);
       if (idResult.rows.length === 0) {
-        return res.status(404).json({ message: "Profile not found" });
+        // Auto-create minimal row so user can set username/bio before org profile
+        await pool.query(
+          `INSERT INTO stakeholders (user_id, organization_name, organization_type, location)
+           VALUES ($1, '', '', '') ON CONFLICT (user_id) DO NOTHING`,
+          [req.user.id]
+        );
+        const newRow = await pool.query("SELECT id FROM stakeholders WHERE user_id = $1", [req.user.id]);
+        profileId = newRow.rows[0].id;
+      } else {
+        profileId = idResult.rows[0].id;
       }
-      profileId = idResult.rows[0].id;
     } else if (req.user.role === "industry") {
       table = "industries";
       const idResult = await pool.query("SELECT id FROM industries WHERE user_id = $1", [req.user.id]);
@@ -190,6 +207,21 @@ router.post("/me/picture", authenticateToken, upload.single("profile_picture"), 
       table = "industries";
     } else {
       return res.status(403).json({ message: "Invalid user role" });
+    }
+
+    // Auto-create minimal row if it doesn't exist
+    if (req.user.role === "stakeholder") {
+      await pool.query(
+        `INSERT INTO stakeholders (user_id, organization_name, organization_type, location)
+         VALUES ($1, '', '', '') ON CONFLICT (user_id) DO NOTHING`,
+        [req.user.id]
+      );
+    } else if (req.user.role === "industry") {
+      await pool.query(
+        `INSERT INTO industries (user_id, company_name, sector, location)
+         VALUES ($1, '', '', '') ON CONFLICT (user_id) DO NOTHING`,
+        [req.user.id]
+      );
     }
 
     // Get old profile picture to delete it

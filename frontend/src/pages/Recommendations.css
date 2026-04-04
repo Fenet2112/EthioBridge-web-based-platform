@@ -29,7 +29,7 @@
 .rp-blob-1 {
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, #667eea 0%, transparent 70%);
+  background: radial-gradient(circle, #165a18 0%, transparent 70%);
   top: -100px;
   left: -100px;
   animation: rp-float 8s ease-in-out infinite;
@@ -38,7 +38,7 @@
 .rp-blob-2 {
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, #0ea5e9 0%, transparent 70%);
+  background: radial-gradient(circle, #2a6e13 0%, transparent 70%);
   bottom: -50px;
   right: -50px;
   animation: rp-float 10s ease-in-out infinite reverse;
@@ -91,7 +91,7 @@
 }
 
 .rp-hero-highlight {
-  background: linear-gradient(135deg, #667eea 0%, #0ea5e9 100%);
+  background: linear-gradient(135deg, #0a5221 0%, #0e5e12 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -258,14 +258,14 @@
 }
 
 .rp-chip:hover {
-  border-color: #667eea;
-  color: #667eea;
+  border-color: #0c4c29;
+  color: #0c5226;
   background: rgba(102, 126, 234, 0.05);
 }
 
 .rp-chip.active {
-  border-color: #667eea;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #0f570f;
+  background: linear-gradient(135deg, #0e5e23 0%, #1b5723 100%);
   color: #ffffff;
 }
 
@@ -298,7 +298,7 @@
 
 .rp-budget-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #0c5a22;
   box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
 }
 
@@ -333,7 +333,7 @@
   padding: 14px 24px;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2c5f11 0%, #1b520f 100%);
   color: #ffffff;
   font-size: 0.95rem;
   font-weight: 600;
@@ -389,7 +389,7 @@
 .rp-af-chip {
   padding: 6px 12px;
   border-radius: 50px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #085117 0%, #0f6921 100%);
   color: #ffffff;
   font-size: 0.78rem;
   font-weight: 600;
@@ -509,10 +509,10 @@
 
 .rp-error-state button {
   padding: 12px 24px;
-  border: 2px solid #667eea;
+  border: 2px solid #0e4e0f;
   border-radius: 12px;
   background: transparent;
-  color: #667eea;
+  color: #145619;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
@@ -520,7 +520,7 @@
 }
 
 .rp-error-state button:hover {
-  background: #667eea;
+  background: #206013;
   color: #ffffff;
 }
 
@@ -549,7 +549,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #126e1e 0%, #135613 100%);
   color: #ffffff;
   font-size: 0.8rem;
   font-weight: 600;
@@ -651,7 +651,7 @@
 }
 
 .tag-good {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #145c23 0%, #145c23 100%);
   color: #ffffff;
 }
 
@@ -736,12 +736,12 @@
   border-top: 2px solid #f1f5f9;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #667eea;
+  color: #134e1f;
   transition: all 0.2s ease;
 }
 
 .rp-card:hover .rp-card-cta {
-  color: #764ba2;
+  color: #115725;
 }
 
 /* ═══════════════════════════════════════════════════════════

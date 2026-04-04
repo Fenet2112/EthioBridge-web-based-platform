@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ProfileForm.css";
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
 function IndustryProfile() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -33,7 +35,7 @@ function IndustryProfile() {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/profile/industry", {
+      const response = await fetch(`${API_BASE_URL}/api/profile/industry`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userData.id, ...formData }),

@@ -15,6 +15,11 @@ import AccountStatus from "./pages/AccountStatus";
 import Products from "./pages/Products";
 import Subscription from "./pages/Subscription";
 import Recommendations from "./pages/Recommendations";
+import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
+import VerifyEmail from "./pages/VerifyEmail";
+import ResetPassword from "./pages/ResetPassword";
+import Dashboard from "./pages/admin/Dashboard";
+import AdminLogin from "./pages/admin/Login";
 
 function App() {
   return (
@@ -24,6 +29,8 @@ function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/dashboard" element={<Dashboard />} />  
 
         {/* Profile completion forms (after signup) */}
         <Route path="/profile/industry" element={<IndustryProfile />} />
@@ -41,6 +48,11 @@ function App() {
 
         {/* Subscription Page */}
         <Route path="/subscription" element={<Subscription />} />
+
+        {/* Google OAuth callback */}
+        <Route path="/auth/google/success" element={<GoogleAuthSuccess />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Recommendations Page */}
         <Route path="/recommendations" element={<Recommendations />} />
