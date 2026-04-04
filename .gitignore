@@ -12,12 +12,14 @@ ml-service/.venv/
 .env
 .env.local
 .env.development
-.env.production
 .env.test
 backend/.env
 frontend/.env
 frontend/.env.local
 Admin/.env
+
+# Keep production env for build config
+!frontend/.env.production
 
 # Build outputs
 frontend/build/
