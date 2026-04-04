@@ -65,12 +65,19 @@ router.post("/signup", async (req, res) => {
 
     // Send emails asynchronously (don't block response)
     // Fire and forget - emails will be sent in background
-    sendVerificationEmail(email, verificationToken).catch(err => {
-      console.error("Verification email failed (non-fatal):", err.message);
-    });
-    sendSignupNotification(email).catch(err => {
-      console.error("Signup notification failed (non-fatal):", err.message);
-    });
+    console.log(`[SIGNUP] Sending verification email to ${email} with token ${verificationToken.substring(0, 10)}...`);
+    sendVerificationEmail(email, verificationToken)
+      .then(() => console.log(`[SIGNUP] Verification email sent successfully to ${email}`))
+      .catch(err => {
+        console.error(`[SIGNUP] Verification email FAILED for ${email}:`, err.message);
+        console.error('Email error details:', err);
+      });
+    
+    sendSignupNotification(email)
+      .then(() => console.log(`[SIGNUP] Signup notification sent successfully to ${email}`))
+      .catch(err => {
+        console.error(`[SIGNUP] Signup notification FAILED for ${email}:`, err.message);
+      });
 
     // Respond immediately without waiting for emails
     res.status(201).json({

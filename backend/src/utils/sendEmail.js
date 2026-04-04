@@ -41,7 +41,12 @@ const wrap = (title, body) => `
 // ── 1. Email Verification ──
 const sendVerificationEmail = async (userEmail, token) => {
   // Link goes to backend which verifies token then redirects to frontend
-  const link = `${BACKEND()}/api/verify-email?token=${token}`;
+  const backendUrl = BACKEND();
+  const link = `${backendUrl}/api/verify-email?token=${token}`;
+  
+  console.log(`[EMAIL] Sending verification email to ${userEmail}`);
+  console.log(`[EMAIL] Verification link: ${link}`);
+  
   await transporter.sendMail({
     from: FROM(), to: userEmail,
     subject: 'Verify your EthioBridge email address',
@@ -56,6 +61,8 @@ const sendVerificationEmail = async (userEmail, token) => {
       <p style="font-size:13px;color:#888">You signed up using this email address. If this was not you, please ignore this message or contact support.</p>
     `),
   });
+  
+  console.log(`[EMAIL] Verification email sent successfully to ${userEmail}`);
 };
 
 // ── 2. Signup Notification ──
