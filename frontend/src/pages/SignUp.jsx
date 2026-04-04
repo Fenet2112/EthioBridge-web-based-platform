@@ -43,7 +43,14 @@ function SignUp() {
         body: JSON.stringify({ email: formData.email, password: formData.password, role: formData.role }),
       });
       const signupData = await signupRes.json();
-      if (!signupRes.ok) throw new Error(signupData.message || "Signup failed");
+      
+      if (!signupRes.ok) {
+        // Handle specific error cases
+        if (signupRes.status === 409) {
+          throw new Error("This email is already registered. Please log in or use a different email.");
+        }
+        throw new Error(signupData.message || "Signup failed");
+      }
 
       // Show "check your email" — don't auto-login until verified
       setEmailSent(formData.email);
