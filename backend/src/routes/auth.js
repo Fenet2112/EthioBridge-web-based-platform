@@ -130,13 +130,11 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Block unverified email
+    // TEMPORARY: Auto-verify email if not verified (until SendGrid is configured)
     if (!user.email_verified) {
-      return res.status(403).json({
-        message: "Please verify your email address before logging in. Check your inbox for the verification link.",
-        status: 'unverified',
-        email: user.email,
-      });
+      console.log(`[LOGIN] Auto-verifying email for ${email} (SendGrid not configured yet)`);
+      await pool.query("UPDATE users SET email_verified = TRUE WHERE id = $1", [user.id]);
+      user.email_verified = true;
     }
 
     const token = jwt.sign(
