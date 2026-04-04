@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
   greetingTimeout: 10000,
 });
 
-const FROM = () => `"EthioBridge" <${process.env.EMAIL_USER}>`;
+const FROM = () => `"EthioBridge" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`;
 const APP  = () => process.env.APP_URL || 'http://localhost:3000';
 const BACKEND = () => process.env.BACKEND_URL || 'http://localhost:5000';
 

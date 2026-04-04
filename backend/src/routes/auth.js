@@ -130,14 +130,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // TEMPORARY: Auto-verify email if not verified (workaround for email sending issues)
-    if (!user.email_verified && process.env.NODE_ENV === 'production') {
-      console.log(`[LOGIN] Auto-verifying email for ${email} due to email service limitations`);
-      await pool.query("UPDATE users SET email_verified = TRUE WHERE id = $1", [user.id]);
-      user.email_verified = true;
-    }
-
-    // Block unverified email (only in development where emails work)
+    // Block unverified email
     if (!user.email_verified) {
       return res.status(403).json({
         message: "Please verify your email address before logging in. Check your inbox for the verification link.",
