@@ -63,19 +63,16 @@ router.post("/signup", async (req, res) => {
       [email, hashedPassword, role, verificationToken, tokenExpires]
     );
 
-    // Send emails (non-fatal — don't fail signup if email fails)
-    const appUrl = process.env.APP_URL || "http://localhost:3000";
-    try {
-      await sendVerificationEmail(email, verificationToken);
-    } catch (emailErr) {
-      console.error("Verification email failed (non-fatal):", emailErr.message);
-    }
-    try {
-      await sendSignupNotification(email);
-    } catch (emailErr) {
-      console.error("Signup notification failed (non-fatal):", emailErr.message);
-    }
+    // Send emails asynchronously (don't block response)
+    // Fire and forget - emails will be sent in background
+    sendVerificationEmail(email, verificationToken).catch(err => {
+      console.error("Verification email failed (non-fatal):", err.message);
+    });
+    sendSignupNotification(email).catch(err => {
+      console.error("Signup notification failed (non-fatal):", err.message);
+    });
 
+    // Respond immediately without waiting for emails
     res.status(201).json({
       message: "Account created. Please check your email to verify your address.",
       user: newUser.rows[0],
