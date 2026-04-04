@@ -131,7 +131,9 @@
   align-items: center;
   justify-content: center;
   padding: 100px 60px 80px;
-  background: linear-gradient(135deg, #0a5c2f 0%, #0d7a3e 35%, #1a8a4a 65%, #064020 100%);
+  background: 
+    linear-gradient(135deg, rgba(10, 92, 47, 0.95) 0%, rgba(13, 122, 62, 0.92) 35%, rgba(26, 138, 74, 0.90) 65%, rgba(6, 64, 32, 0.95) 100%),
+    url('/background.jpg') center/cover no-repeat;
   overflow: hidden;
   gap: 60px;
   flex-wrap: wrap;
