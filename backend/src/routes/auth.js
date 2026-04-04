@@ -130,14 +130,23 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Block unverified email
+    // TEMPORARY: Auto-verify email if not verified (workaround for email sending issues)
+    if (!user.email_verified && process.env.NODE_ENV === 'production') {
+      console.log(`[LOGIN] Auto-verifying email for ${email} due to email service limitations`);
+      await pool.query("UPDATE users SET email_verified = TRUE WHERE id = $1", [user.id]);
+      user.email_verified = true;
+    }
+
+    // Block unverified email (only in development where emails work)
     if (!user.email_verified) {
       return res.status(403).json({
         message: "Please verify your email address before logging in. Check your inbox for the verification link.",
         status: 'unverified',
         email: user.email,
       });
-    }    const token = jwt.sign(
+    }
+
+    const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role, status: user.status },
       getJwtSecret(),
       { expiresIn: "7d" }

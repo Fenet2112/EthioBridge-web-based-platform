@@ -8,6 +8,8 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  connectionTimeout: 10000, // 10 second timeout
+  greetingTimeout: 10000,
 });
 
 const FROM = () => `"EthioBridge" <${process.env.EMAIL_USER}>`;
