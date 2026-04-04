@@ -133,7 +133,7 @@
   padding: 100px 60px 80px;
   background: 
     linear-gradient(135deg, rgba(10, 92, 47, 0.95) 0%, rgba(13, 122, 62, 0.92) 35%, rgba(26, 138, 74, 0.90) 65%, rgba(6, 64, 32, 0.95) 100%),
-    url('/background.jpg') center/cover no-repeat;
+    url('%PUBLIC_URL%/background.jpg') center/cover no-repeat;
   overflow: hidden;
   gap: 60px;
   flex-wrap: wrap;
