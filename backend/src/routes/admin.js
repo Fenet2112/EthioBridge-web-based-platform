@@ -107,7 +107,7 @@ router.get('/pending', requireAdminAuth, async (req, res) => {
         i.website, i.established_year,
         s.organization_name, s.organization_type, s.location AS stakeholder_location,
         s.description AS stakeholder_description, s.phone AS stakeholder_phone,
-        s.contact_person, s.id_document_url, s.id_document_type, s.identity_verified
+        s.contact_person
       FROM users u
       LEFT JOIN industries i ON i.user_id = u.id
       LEFT JOIN stakeholders s ON s.user_id = u.id
@@ -232,9 +232,7 @@ router.get('/users/all', requireAdminAuth, async (req, res) => {
         u.id, u.email, u.role, u.status, u.email_verified, u.created_at,
         COALESCE(i.company_name, s.organization_name) AS display_name,
         i.sector,
-        s.organization_type,
-        s.identity_verified,
-        s.id_document_url
+        s.organization_type
       FROM users u
       LEFT JOIN industries  i ON i.user_id = u.id
       LEFT JOIN stakeholders s ON s.user_id = u.id
