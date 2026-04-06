@@ -98,6 +98,7 @@ router.post('/login', async (req, res) => {
 // ── GET ALL PENDING USERS WITH PROFILE DATA ──
 router.get('/pending', requireAdminAuth, async (req, res) => {
   try {
+    console.log('[ADMIN] Fetching pending users...');
     const result = await pool.query(`
       SELECT
         u.id, u.email, u.role, u.status, u.created_at,
@@ -113,16 +114,19 @@ router.get('/pending', requireAdminAuth, async (req, res) => {
       WHERE u.status = 'pending'
       ORDER BY u.created_at DESC
     `);
+    console.log(`[ADMIN] Found ${result.rows.length} pending users`);
     res.json(result.rows);
   } catch (error) {
-    console.error("Get pending error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("[ADMIN] Get pending error:", error.message);
+    console.error("[ADMIN] Error details:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
 // ── GET ALL USERS (for admin overview) ──
 router.get('/users', requireAdminAuth, async (req, res) => {
   try {
+    console.log('[ADMIN] Fetching all users...');
     const result = await pool.query(`
       SELECT
         u.id, u.email, u.role, u.status, u.created_at,
@@ -133,10 +137,12 @@ router.get('/users', requireAdminAuth, async (req, res) => {
       LEFT JOIN stakeholders s ON s.user_id = u.id
       ORDER BY u.created_at DESC
     `);
+    console.log(`[ADMIN] Found ${result.rows.length} total users`);
     res.json(result.rows);
   } catch (error) {
-    console.error("Get users error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("[ADMIN] Get users error:", error.message);
+    console.error("[ADMIN] Error details:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
@@ -220,6 +226,7 @@ router.patch('/users/:id/reject', requireAdminAuth, async (req, res) => {
 // ── GET ALL USERS — full management view ──
 router.get('/users/all', requireAdminAuth, async (req, res) => {
   try {
+    console.log('[ADMIN] Fetching all users for management...');
     const result = await pool.query(`
       SELECT
         u.id, u.email, u.role, u.status, u.is_verified, u.ban_reason,
@@ -234,10 +241,12 @@ router.get('/users/all', requireAdminAuth, async (req, res) => {
       LEFT JOIN stakeholders s ON s.user_id = u.id
       ORDER BY u.created_at DESC
     `);
+    console.log(`[ADMIN] Found ${result.rows.length} users for management`);
     res.json(result.rows);
   } catch (err) {
-    console.error("Get all users error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error("[ADMIN] Get all users error:", err.message);
+    console.error("[ADMIN] Error details:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
