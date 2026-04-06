@@ -370,3 +370,100 @@ router.get('/analytics', requireAdminAuth, async (req, res) => {
 });
 
 module.exports = router;
+
+
+// ═══════════════════════════════════════════════════════════
+// ADMIN SETTINGS ENDPOINTS
+// ═══════════════════════════════════════════════════════════
+
+// Get approval workflow settings
+router.get('/settings/workflows', requireAdminAuth, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM approval_workflows ORDER BY workflow_type');
+    res.json({ workflows: result.rows });
+  } catch (error) {
+    console.error('Get workflows error:', error);
+    res.status(500).json({ message: 'Failed to fetch workflow settings' });
+  }
+});
+
+// Update approval workflow
+router.put('/settings/workflows/:type', requireAdminAuth, async (req, res) => {
+  try {
+    const { type } = req.params;
+    const { mode, conditions } = req.body;
+
+    if (!['automatic', 'manual', 'conditional'].includes(mode)) {
+      return res.status(400).json({ message: 'Invalid workflow mode' });
+    }
+
+    const result = await pool.query(
+      `UPDATE approval_workflows 
+       SET mode = $1, conditions = $2, updated_at = CURRENT_TIMESTAMP 
+       WHERE workflow_type = $3 
+       RETURNING *`,
+      [mode, conditions || {}, type]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Workflow type not found' });
+    }
+
+    res.json({ 
+      message: 'Workflow updated successfully', 
+      workflow: result.rows[0] 
+    });
+  } catch (error) {
+    console.error('Update workflow error:', error);
+    res.status(500).json({ message: 'Failed to update workflow' });
+  }
+});
+
+// Change admin password
+router.put('/settings/password', requireAdminAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current and new passwords are required' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: 'New password must be at least 8 characters' });
+    }
+
+    const adminAuth = await getAdminAuth();
+    const validPassword = await bcrypt.compare(currentPassword, adminAuth.password);
+
+    if (!validPassword) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    // Update the in-memory admin credentials
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    adminCredentials.password = hashedNewPassword;
+
+    // Note: This only updates in-memory. For persistent storage, 
+    // you'd need to update environment variables or use a database
+    console.log('[ADMIN] Password changed successfully');
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ message: 'Failed to change password' });
+  }
+});
+
+// Get admin profile
+router.get('/settings/profile', requireAdminAuth, async (req, res) => {
+  try {
+    const adminAuth = await getAdminAuth();
+    res.json({ 
+      email: adminAuth.email,
+      // Don't send password or secret
+    });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ message: 'Failed to fetch profile' });
+  }
+});

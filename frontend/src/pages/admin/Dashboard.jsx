@@ -7,7 +7,7 @@ import ProductsView from "../views/ProductsView";
 import AnalyticsView from "../views/AnalyticsView";
 import ActivityLogsView, { logAction } from "../views/ActivityLogsView";
 import NotificationsView from "../views/NotificationsView";
-import SettingsView from "../views/SettingsView";
+import Settings from "./Settings";
 
 const API = "http://localhost:5000";
 
@@ -275,7 +275,7 @@ function Dashboard() {
           {view === "analytics"  && <AnalyticsView tok={tok} />}
           {view === "logs"       && <ActivityLogsView />}
           {view === "notifs"     && <NotificationsView tok={tok} />}
-          {view === "settings"   && <SettingsView darkMode={darkMode} setDarkMode={setDarkMode} />}
+          {view === "settings"   && <Settings />}
 
           {/* ════ APPROVALS VIEW ════ */}
           {view === "users" && (
