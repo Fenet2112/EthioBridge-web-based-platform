@@ -369,9 +369,6 @@ router.get('/analytics', requireAdminAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
-
-
 // ═══════════════════════════════════════════════════════════
 // ADMIN SETTINGS ENDPOINTS
 // ═══════════════════════════════════════════════════════════
@@ -467,3 +464,5 @@ router.get('/settings/profile', requireAdminAuth, async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch profile' });
   }
 });
+
+module.exports = router;
