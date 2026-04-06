@@ -229,8 +229,7 @@ router.get('/users/all', requireAdminAuth, async (req, res) => {
     console.log('[ADMIN] Fetching all users for management...');
     const result = await pool.query(`
       SELECT
-        u.id, u.email, u.role, u.status, u.is_verified, u.ban_reason,
-        u.suspended_until, u.created_at,
+        u.id, u.email, u.role, u.status, u.email_verified, u.created_at,
         COALESCE(i.company_name, s.organization_name) AS display_name,
         i.sector,
         s.organization_type,
