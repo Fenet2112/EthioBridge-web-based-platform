@@ -10,12 +10,29 @@ function Settings({ darkMode, setDarkMode }) {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [saved, setSaved] = useState(false);
   
+  // Dropdown/Accordion state
+  const [expandedSections, setExpandedSections] = useState({
+    workflows: true,
+    account: false,
+    appearance: true,
+    notifications: true,
+    systemRules: true,
+    categories: true
+  });
+  
   // Password change state
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   useEffect(() => {
     fetchWorkflows();
@@ -145,127 +162,145 @@ function Settings({ darkMode, setDarkMode }) {
       )}
 
       {/* Approval Workflows Section */}
-      <section className="settings-section">
-        <div className="section-title">
-          <h2>🔄 Approval Workflows</h2>
-          <p>Control how registrations and requests are approved</p>
+      <section className="settings-section collapsible">
+        <div className="section-title clickable" onClick={() => toggleSection('workflows')}>
+          <div>
+            <h2>🔄 Approval Workflows</h2>
+            <p>Control how registrations and requests are approved</p>
+          </div>
+          <span className={`collapse-icon ${expandedSections.workflows ? 'expanded' : ''}`}>
+            ▼
+          </span>
         </div>
 
-        <div className="workflows-grid">
-          {workflows.map(workflow => (
-            <div key={workflow.workflow_type} className="workflow-card">
-              <div className="workflow-header">
-                <span className="workflow-icon">{getWorkflowIcon(workflow.workflow_type)}</span>
-                <h3>{getWorkflowLabel(workflow.workflow_type)}</h3>
-              </div>
-
-              <div className="workflow-modes">
-                <label className={`mode-option ${workflow.mode === 'automatic' ? 'active' : ''}`}>
-                  <input
-                    type="radio"
-                    name={`workflow-${workflow.workflow_type}`}
-                    checked={workflow.mode === 'automatic'}
-                    onChange={() => updateWorkflow(workflow.workflow_type, 'automatic')}
-                    disabled={saving}
-                  />
-                  <div className="mode-content">
-                    <span className="mode-icon">⚡</span>
-                    <div>
-                      <strong>Automatic</strong>
-                      <p>Approve instantly without review</p>
-                    </div>
+        {expandedSections.workflows && (
+          <div className="section-content">
+            <div className="workflows-grid">
+              {workflows.map(workflow => (
+                <div key={workflow.workflow_type} className="workflow-card">
+                  <div className="workflow-header">
+                    <span className="workflow-icon">{getWorkflowIcon(workflow.workflow_type)}</span>
+                    <h3>{getWorkflowLabel(workflow.workflow_type)}</h3>
                   </div>
-                </label>
 
-                <label className={`mode-option ${workflow.mode === 'manual' ? 'active' : ''}`}>
-                  <input
-                    type="radio"
-                    name={`workflow-${workflow.workflow_type}`}
-                    checked={workflow.mode === 'manual'}
-                    onChange={() => updateWorkflow(workflow.workflow_type, 'manual')}
-                    disabled={saving}
-                  />
-                  <div className="mode-content">
-                    <span className="mode-icon">👤</span>
-                    <div>
-                      <strong>Manual</strong>
-                      <p>Require admin review for all</p>
-                    </div>
-                  </div>
-                </label>
+                  <div className="workflow-modes">
+                    <label className={`mode-option ${workflow.mode === 'automatic' ? 'active' : ''}`}>
+                      <input
+                        type="radio"
+                        name={`workflow-${workflow.workflow_type}`}
+                        checked={workflow.mode === 'automatic'}
+                        onChange={() => updateWorkflow(workflow.workflow_type, 'automatic')}
+                        disabled={saving}
+                      />
+                      <div className="mode-content">
+                        <span className="mode-icon">⚡</span>
+                        <div>
+                          <strong>Automatic</strong>
+                          <p>Approve instantly without review</p>
+                        </div>
+                      </div>
+                    </label>
 
-                <label className={`mode-option ${workflow.mode === 'conditional' ? 'active' : ''}`}>
-                  <input
-                    type="radio"
-                    name={`workflow-${workflow.workflow_type}`}
-                    checked={workflow.mode === 'conditional'}
-                    onChange={() => updateWorkflow(workflow.workflow_type, 'conditional')}
-                    disabled={saving}
-                  />
-                  <div className="mode-content">
-                    <span className="mode-icon">🎯</span>
-                    <div>
-                      <strong>Conditional</strong>
-                      <p>Auto-approve based on rules</p>
-                    </div>
+                    <label className={`mode-option ${workflow.mode === 'manual' ? 'active' : ''}`}>
+                      <input
+                        type="radio"
+                        name={`workflow-${workflow.workflow_type}`}
+                        checked={workflow.mode === 'manual'}
+                        onChange={() => updateWorkflow(workflow.workflow_type, 'manual')}
+                        disabled={saving}
+                      />
+                      <div className="mode-content">
+                        <span className="mode-icon">👤</span>
+                        <div>
+                          <strong>Manual</strong>
+                          <p>Require admin review for all</p>
+                        </div>
+                      </div>
+                    </label>
+
+                    <label className={`mode-option ${workflow.mode === 'conditional' ? 'active' : ''}`}>
+                      <input
+                        type="radio"
+                        name={`workflow-${workflow.workflow_type}`}
+                        checked={workflow.mode === 'conditional'}
+                        onChange={() => updateWorkflow(workflow.workflow_type, 'conditional')}
+                        disabled={saving}
+                      />
+                      <div className="mode-content">
+                        <span className="mode-icon">🎯</span>
+                        <div>
+                          <strong>Conditional</strong>
+                          <p>Auto-approve based on rules</p>
+                        </div>
+                      </div>
+                    </label>
                   </div>
-                </label>
-              </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </section>
 
       {/* Account Management Section */}
-      <section className="settings-section">
-        <div className="section-title">
-          <h2>🔐 Account Management</h2>
-          <p>Manage your admin account credentials</p>
+      <section className="settings-section collapsible">
+        <div className="section-title clickable" onClick={() => toggleSection('account')}>
+          <div>
+            <h2>🔐 Account Management</h2>
+            <p>Manage your admin account credentials</p>
+          </div>
+          <span className={`collapse-icon ${expandedSections.account ? 'expanded' : ''}`}>
+            ▼
+          </span>
         </div>
 
-        <div className="account-card">
-          <form onSubmit={handlePasswordChange} className="password-form">
-            <h3>Change Password</h3>
-            
-            <div className="form-group">
-              <label>Current Password</label>
-              <input
-                type="password"
-                value={passwordForm.currentPassword}
-                onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                required
-                placeholder="Enter current password"
-              />
-            </div>
+        {expandedSections.account && (
+          <div className="section-content">
+            <div className="account-card">
+              <form onSubmit={handlePasswordChange} className="password-form">
+                <h3>Change Password</h3>
+                
+                <div className="form-group">
+                  <label>Current Password</label>
+                  <input
+                    type="password"
+                    value={passwordForm.currentPassword}
+                    onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                    required
+                    placeholder="Enter current password"
+                  />
+                </div>
 
-            <div className="form-group">
-              <label>New Password</label>
-              <input
-                type="password"
-                value={passwordForm.newPassword}
-                onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                required
-                placeholder="At least 8 characters"
-                minLength={8}
-              />
-            </div>
+                <div className="form-group">
+                  <label>New Password</label>
+                  <input
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                    required
+                    placeholder="At least 8 characters"
+                    minLength={8}
+                  />
+                </div>
 
-            <div className="form-group">
-              <label>Confirm New Password</label>
-              <input
-                type="password"
-                value={passwordForm.confirmPassword}
-                onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                required
-                placeholder="Re-enter new password"
-              />
-            </div>
+                <div className="form-group">
+                  <label>Confirm New Password</label>
+                  <input
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                    required
+                    placeholder="Re-enter new password"
+                  />
+                </div>
 
-            <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? 'Changing...' : 'Change Password'}
-            </button>
-          </form>
-        </div>
+                <button type="submit" className="btn-primary" disabled={saving}>
+                  {saving ? 'Changing...' : 'Change Password'}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Appearance Section */}
