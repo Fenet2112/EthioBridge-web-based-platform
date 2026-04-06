@@ -1,36 +1,64 @@
 const nodemailer = require('nodemailer');
 
 // Gmail SMTP Configuration
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // Use STARTTLS
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // Must be Gmail App Password (16 characters)
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-});
-
-// Verify transporter configuration on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('[EMAIL] ❌ Gmail SMTP connection failed:', error.message);
-    console.error('[EMAIL] Please check:');
-    console.error('  1. EMAIL_USER is set correctly');
-    console.error('  2. EMAIL_PASS is a Gmail App Password (not regular password)');
-    console.error('  3. 2-Step Verification is enabled on Gmail account');
-  } else {
-    console.log('[EMAIL] ✓ Gmail SMTP connection verified successfully');
-    console.log(`[EMAIL] Using email: ${process.env.EMAIL_USER}`);
+const createTransporter = () => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn('[EMAIL] ⚠️  EMAIL_USER or EMAIL_PASS not set - email functionality disabled');
+    return null;
   }
-});
+
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // Use STARTTLS
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS, // Must be Gmail App Password (16 characters)
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
+  });
+};
+
+const transporter = createTransporter();
+
+// Verify transporter configuration on startup (only if transporter exists)
+if (transporter) {
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error('[EMAIL] ❌ Gmail SMTP connection failed:', error.message);
+      console.error('[EMAIL] Please check:');
+      console.error('  1. EMAIL_USER is set correctly');
+      console.error('  2. EMAIL_PASS is a Gmail App Password (not regular password)');
+      console.error('  3. 2-Step Verification is enabled on Gmail account');
+    } else {
+      console.log('[EMAIL] ✓ Gmail SMTP connection verified successfully');
+      console.log(`[EMAIL] Using email: ${process.env.EMAIL_USER}`);
+    }
+  });
+}
 
 const FROM = () => `"EthioBridge" <${process.env.EMAIL_USER}>`;
 const APP  = () => process.env.APP_URL || 'http://localhost:3000';
 const BACKEND = () => process.env.BACKEND_URL || 'http://localhost:5000';
+
+// Helper function to safely send emails
+const safeSendMail = async (mailOptions, emailType = 'email') => {
+  if (!transporter) {
+    console.warn(`[EMAIL] ⚠️  Email not configured - skipping ${emailType}`);
+    return { skipped: true };
+  }
+  
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[EMAIL] ✓ ${emailType} sent successfully`);
+    return info;
+  } catch (error) {
+    console.error(`[EMAIL] ❌ Failed to send ${emailType}:`, error.message);
+    throw error;
+  }
+};
 
 // ── Shared HTML wrapper ──
 const wrap = (title, body) => `
@@ -58,6 +86,11 @@ const wrap = (title, body) => `
 
 // ── 1. Email Verification ──
 const sendVerificationEmail = async (userEmail, token) => {
+  if (!transporter) {
+    console.warn('[EMAIL] ⚠️  Email not configured - skipping verification email');
+    return { skipped: true };
+  }
+
   try {
     // Link goes to backend which verifies token then redirects to frontend
     const backendUrl = BACKEND();
@@ -66,7 +99,7 @@ const sendVerificationEmail = async (userEmail, token) => {
     console.log(`[EMAIL] 📧 Preparing verification email for ${userEmail}`);
     console.log(`[EMAIL] Verification link: ${link}`);
     
-    const mailOptions = {
+    const info = await safeSendMail({
       from: FROM(),
       to: userEmail,
       subject: 'Verify your EthioBridge email address',
@@ -80,15 +113,12 @@ const sendVerificationEmail = async (userEmail, token) => {
         <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
         <p style="font-size:13px;color:#888">You signed up using this email address. If this was not you, please ignore this message or contact support.</p>
       `),
-    };
+    }, 'verification email');
     
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[EMAIL] ✓ Verification email sent successfully to ${userEmail}`);
     console.log(`[EMAIL] Message ID: ${info.messageId}`);
     return info;
   } catch (error) {
     console.error(`[EMAIL] ❌ Failed to send verification email to ${userEmail}`);
-    console.error(`[EMAIL] Error: ${error.message}`);
     console.error(`[EMAIL] Full error:`, error);
     throw error;
   }
@@ -96,7 +126,7 @@ const sendVerificationEmail = async (userEmail, token) => {
 
 // ── 2. Signup Notification ──
 const sendSignupNotification = async (userEmail) => {
-  await transporter.sendMail({
+  return safeSendMail({
     from: FROM(), to: userEmail,
     subject: 'Welcome to EthioBridge – Account Created',
     html: wrap('Account Created', `
@@ -106,12 +136,12 @@ const sendSignupNotification = async (userEmail) => {
       <p>If this was <strong>not you</strong>, please ignore this message or contact our support team immediately at
       <a href="mailto:support@ethiobridge.et">support@ethiobridge.et</a>.</p>
     `),
-  });
+  }, 'signup notification');
 };
 
 // ── 3. Industry Approval ──
 const sendApprovalEmail = async (userEmail, companyName) => {
-  await transporter.sendMail({
+  return safeSendMail({
     from: FROM(), to: userEmail,
     subject: '✅ Your EthioBridge Industry Account Has Been Approved',
     html: wrap('Account Approved', `
@@ -127,12 +157,12 @@ const sendApprovalEmail = async (userEmail, companyName) => {
       <a href="${APP()}/login" class="btn">Log In Now →</a>
       <p>Welcome to Ethiopia's construction marketplace!</p>
     `),
-  });
+  }, 'approval email');
 };
 
 // ── 4. Industry / User Rejection ──
 const sendRejectionEmail = async (userEmail, companyName, reason) => {
-  await transporter.sendMail({
+  return safeSendMail({
     from: FROM(), to: userEmail,
     subject: 'Update on Your EthioBridge Application',
     html: wrap('Application Update', `
@@ -148,12 +178,12 @@ const sendRejectionEmail = async (userEmail, companyName, reason) => {
       <a href="${APP()}/login" class="btn">Update Profile →</a>
       <p>For questions, contact <a href="mailto:support@ethiobridge.et">support@ethiobridge.et</a></p>
     `),
-  });
+  }, 'rejection email');
 };
 
 // ── 5. Purchase Request Approved ──
 const sendPurchaseApprovedEmail = async (userEmail, productName, industryName) => {
-  await transporter.sendMail({
+  return safeSendMail({
     from: FROM(), to: userEmail,
     subject: '✅ Your Purchase Request Has Been Approved',
     html: wrap('Purchase Request Approved', `
@@ -163,12 +193,12 @@ const sendPurchaseApprovedEmail = async (userEmail, productName, industryName) =
       <p>The industry will be in touch with you shortly to proceed with the transaction.</p>
       <a href="${APP()}/messages" class="btn">View Messages →</a>
     `),
-  });
+  }, 'purchase approved email');
 };
 
 // ── 6. Purchase Request Rejected ──
 const sendPurchaseRejectedEmail = async (userEmail, productName, industryName, reason) => {
-  await transporter.sendMail({
+  return safeSendMail({
     from: FROM(), to: userEmail,
     subject: 'Update on Your Purchase Request',
     html: wrap('Purchase Request Update', `
@@ -179,13 +209,13 @@ const sendPurchaseRejectedEmail = async (userEmail, productName, industryName, r
       <p>You may submit a new request or contact support if you believe this is an error.</p>
       <a href="${APP()}/stakeholders" class="btn">Browse Industries →</a>
     `),
-  });
+  }, 'purchase rejected email');
 };
 
 // ── 7. Account Suspended / Banned ──
 const sendSuspensionEmail = async (userEmail, action, reason) => {
   const isBan = action === 'banned';
-  await transporter.sendMail({
+  return safeSendMail({
     from: FROM(), to: userEmail,
     subject: `Important: Your EthioBridge Account Has Been ${isBan ? 'Banned' : 'Suspended'}`,
     html: wrap(`Account ${isBan ? 'Banned' : 'Suspended'}`, `
@@ -199,13 +229,13 @@ const sendSuspensionEmail = async (userEmail, action, reason) => {
         ${isBan ? 'Banned accounts cannot be reactivated without admin review.' : 'Suspended accounts may be reactivated after the suspension period ends.'}
       </p>
     `),
-  });
+  }, 'suspension email');
 };
 
 // ── 8. Password Reset ──
 const sendPasswordResetEmail = async (userEmail, token) => {
   const link = `${BACKEND()}/api/reset-password?token=${token}`;
-  await transporter.sendMail({
+  return safeSendMail({
     from: FROM(), to: userEmail,
     subject: '🔑 Reset Your EthioBridge Password',
     html: wrap('Password Reset Request', `
@@ -218,7 +248,7 @@ const sendPasswordResetEmail = async (userEmail, token) => {
       <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
       <p style="font-size:13px;color:#888">If you did not request a password reset, you can safely ignore this email. Your password will not change.</p>
     `),
-  });
+  }, 'password reset email');
 };
 
 module.exports = {
