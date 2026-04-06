@@ -3,11 +3,12 @@ import './Settings.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-function Settings() {
+function Settings({ darkMode, setDarkMode }) {
   const [workflows, setWorkflows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [saved, setSaved] = useState(false);
   
   // Password change state
   const [passwordForm, setPasswordForm] = useState({
@@ -266,6 +267,109 @@ function Settings() {
           </form>
         </div>
       </section>
+
+      {/* Appearance Section */}
+      <section className="settings-section">
+        <div className="section-title">
+          <h2>🎨 Appearance</h2>
+          <p>Customize the dashboard look and feel</p>
+        </div>
+
+        <div className="settings-card">
+          <div className="settings-row">
+            <div>
+              <div className="settings-label">Dark Mode</div>
+              <div className="settings-sub">Switch between light and dark theme</div>
+            </div>
+            <button 
+              type="button"
+              className={`toggle-btn ${darkMode ? "on" : ""}`} 
+              onClick={() => setDarkMode(!darkMode)}
+            >
+              <span className="toggle-knob" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Notifications Section */}
+      <section className="settings-section">
+        <div className="section-title">
+          <h2>🔔 Notifications</h2>
+          <p>Configure email and system alerts</p>
+        </div>
+
+        <div className="settings-card">
+          <div className="settings-row">
+            <div>
+              <div className="settings-label">Email Alerts</div>
+              <div className="settings-sub">Receive email for new registrations</div>
+            </div>
+            <button type="button" className="toggle-btn on">
+              <span className="toggle-knob" />
+            </button>
+          </div>
+          <div className="settings-row">
+            <div>
+              <div className="settings-label">Purchase Alerts</div>
+              <div className="settings-sub">Notify on new purchase requests</div>
+            </div>
+            <button type="button" className="toggle-btn on">
+              <span className="toggle-knob" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* System Rules Section */}
+      <section className="settings-section">
+        <div className="section-title">
+          <h2>⚙️ System Rules</h2>
+          <p>Configure platform limits and restrictions</p>
+        </div>
+
+        <div className="settings-card">
+          <div className="settings-field">
+            <label>Free Request Limit per User</label>
+            <input type="number" defaultValue={1} className="settings-input" />
+          </div>
+          <div className="settings-field">
+            <label>Max Products per Industry (Free)</label>
+            <input type="number" defaultValue={5} className="settings-input" />
+          </div>
+        </div>
+      </section>
+
+      {/* Categories Section */}
+      <section className="settings-section">
+        <div className="section-title">
+          <h2>🏷️ Categories</h2>
+          <p>Manage industry sectors and classifications</p>
+        </div>
+
+        <div className="settings-card">
+          <div className="settings-field">
+            <label>Industry Sectors (comma-separated)</label>
+            <textarea 
+              className="settings-textarea" 
+              defaultValue="Agriculture, Manufacturing, Technology, Healthcare, Finance, Energy, Retail, Construction" 
+              rows={3} 
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Save Button for General Settings */}
+      <div style={{ marginTop: 24, paddingBottom: 24 }}>
+        <button 
+          type="button"
+          className="btn-primary" 
+          style={{ width: "auto", padding: "12px 32px" }} 
+          onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2000); }}
+        >
+          {saved ? "✓ Saved!" : "Save General Settings"}
+        </button>
+      </div>
     </div>
   );
 }

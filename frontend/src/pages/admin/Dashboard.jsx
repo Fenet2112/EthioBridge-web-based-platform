@@ -275,7 +275,7 @@ function Dashboard() {
           {view === "analytics"  && <AnalyticsView tok={tok} />}
           {view === "logs"       && <ActivityLogsView />}
           {view === "notifs"     && <NotificationsView tok={tok} />}
-          {view === "settings"   && <Settings />}
+          {view === "settings"   && <Settings darkMode={darkMode} setDarkMode={setDarkMode} />}
 
           {/* ════ APPROVALS VIEW ════ */}
           {view === "users" && (
