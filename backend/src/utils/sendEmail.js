@@ -1,18 +1,34 @@
 const nodemailer = require('nodemailer');
 
+// Gmail SMTP Configuration
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT) || 587,
-  secure: false,
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // Use STARTTLS
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    pass: process.env.EMAIL_PASS, // Must be Gmail App Password (16 characters)
   },
-  connectionTimeout: 10000, // 10 second timeout
+  connectionTimeout: 10000,
   greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
 
-const FROM = () => `"EthioBridge" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`;
+// Verify transporter configuration on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('[EMAIL] ❌ Gmail SMTP connection failed:', error.message);
+    console.error('[EMAIL] Please check:');
+    console.error('  1. EMAIL_USER is set correctly');
+    console.error('  2. EMAIL_PASS is a Gmail App Password (not regular password)');
+    console.error('  3. 2-Step Verification is enabled on Gmail account');
+  } else {
+    console.log('[EMAIL] ✓ Gmail SMTP connection verified successfully');
+    console.log(`[EMAIL] Using email: ${process.env.EMAIL_USER}`);
+  }
+});
+
+const FROM = () => `"EthioBridge" <${process.env.EMAIL_USER}>`;
 const APP  = () => process.env.APP_URL || 'http://localhost:3000';
 const BACKEND = () => process.env.BACKEND_URL || 'http://localhost:5000';
 
@@ -42,29 +58,40 @@ const wrap = (title, body) => `
 
 // ── 1. Email Verification ──
 const sendVerificationEmail = async (userEmail, token) => {
-  // Link goes to backend which verifies token then redirects to frontend
-  const backendUrl = BACKEND();
-  const link = `${backendUrl}/api/verify-email?token=${token}`;
-  
-  console.log(`[EMAIL] Sending verification email to ${userEmail}`);
-  console.log(`[EMAIL] Verification link: ${link}`);
-  
-  await transporter.sendMail({
-    from: FROM(), to: userEmail,
-    subject: 'Verify your EthioBridge email address',
-    html: wrap('Email Verification', `
-      <p>Hi there,</p>
-      <p>Thanks for signing up on <strong>EthioBridge</strong>! Please verify your email address to activate your account.</p>
-      <a href="${link}" class="btn">✉️ Verify Email Address</a>
-      <p style="font-size:13px;color:#888">Or copy this link into your browser:<br>
-      <a href="${link}" style="color:#0a5c2f;word-break:break-all">${link}</a></p>
-      <p style="font-size:13px;color:#888">This link expires in <strong>24 hours</strong>.</p>
-      <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
-      <p style="font-size:13px;color:#888">You signed up using this email address. If this was not you, please ignore this message or contact support.</p>
-    `),
-  });
-  
-  console.log(`[EMAIL] Verification email sent successfully to ${userEmail}`);
+  try {
+    // Link goes to backend which verifies token then redirects to frontend
+    const backendUrl = BACKEND();
+    const link = `${backendUrl}/api/verify-email?token=${token}`;
+    
+    console.log(`[EMAIL] 📧 Preparing verification email for ${userEmail}`);
+    console.log(`[EMAIL] Verification link: ${link}`);
+    
+    const mailOptions = {
+      from: FROM(),
+      to: userEmail,
+      subject: 'Verify your EthioBridge email address',
+      html: wrap('Email Verification', `
+        <p>Hi there,</p>
+        <p>Thanks for signing up on <strong>EthioBridge</strong>! Please verify your email address to activate your account.</p>
+        <a href="${link}" class="btn">✉️ Verify Email Address</a>
+        <p style="font-size:13px;color:#888">Or copy this link into your browser:<br>
+        <a href="${link}" style="color:#0a5c2f;word-break:break-all">${link}</a></p>
+        <p style="font-size:13px;color:#888">This link expires in <strong>24 hours</strong>.</p>
+        <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
+        <p style="font-size:13px;color:#888">You signed up using this email address. If this was not you, please ignore this message or contact support.</p>
+      `),
+    };
+    
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[EMAIL] ✓ Verification email sent successfully to ${userEmail}`);
+    console.log(`[EMAIL] Message ID: ${info.messageId}`);
+    return info;
+  } catch (error) {
+    console.error(`[EMAIL] ❌ Failed to send verification email to ${userEmail}`);
+    console.error(`[EMAIL] Error: ${error.message}`);
+    console.error(`[EMAIL] Full error:`, error);
+    throw error;
+  }
 };
 
 // ── 2. Signup Notification ──

@@ -1,55 +1,85 @@
 require('dotenv').config();
-const nodemailer = require('nodemailer');
+const { sendVerificationEmail } = require('./src/utils/sendEmail');
 
-console.log('Testing email configuration...');
-console.log('EMAIL_HOST:', process.env.EMAIL_HOST);
-console.log('EMAIL_PORT:', process.env.EMAIL_PORT);
-console.log('EMAIL_USER:', process.env.EMAIL_USER);
-console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? '***' + process.env.EMAIL_PASS.slice(-4) : 'NOT SET');
+console.log('='.repeat(60));
+console.log('Gmail SMTP Email Test');
+console.log('='.repeat(60));
+console.log('');
+console.log('Configuration:');
+console.log(`  EMAIL_USER: ${process.env.EMAIL_USER || '❌ NOT SET'}`);
+console.log(`  EMAIL_PASS: ${process.env.EMAIL_PASS ? '✓ SET (hidden)' : '❌ NOT SET'}`);
+console.log(`  BACKEND_URL: ${process.env.BACKEND_URL || 'http://localhost:5000'}`);
+console.log('');
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+  console.error('❌ ERROR: EMAIL_USER and EMAIL_PASS must be set in .env file');
+  console.error('');
+  console.error('Steps to fix:');
+  console.error('1. Enable 2-Step Verification on your Gmail account');
+  console.error('2. Generate App Password at: https://myaccount.google.com/apppasswords');
+  console.error('3. Add to backend/.env:');
+  console.error('   EMAIL_USER=your-email@gmail.com');
+  console.error('   EMAIL_PASS=your-16-char-app-password');
+  console.error('');
+  process.exit(1);
+}
 
 async function testEmail() {
   try {
-    console.log('\n1. Verifying SMTP connection...');
-    await transporter.verify();
-    console.log('✓ SMTP connection verified successfully!');
-
-    console.log('\n2. Sending test email...');
-    const info = await transporter.sendMail({
-      from: `"EthioBridge Test" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER, // Send to yourself
-      subject: 'Test Email from EthioBridge',
-      html: '<h1>Test Email</h1><p>If you receive this, email is working!</p>',
-    });
-
-    console.log('✓ Test email sent successfully!');
-    console.log('Message ID:', info.messageId);
-    console.log('\nCheck your inbox at:', process.env.EMAIL_USER);
-  } catch (error) {
-    console.error('\n✗ Email test FAILED:');
-    console.error('Error:', error.message);
-    console.error('Code:', error.code);
+    console.log('Testing email verification...');
+    console.log('');
     
-    if (error.code === 'EAUTH') {
-      console.error('\n⚠ Authentication failed. Possible issues:');
-      console.error('  1. Wrong email password');
-      console.error('  2. Gmail "Less secure app access" is disabled');
-      console.error('  3. Need to use App Password instead of regular password');
-      console.error('\nTo fix:');
-      console.error('  1. Go to https://myaccount.google.com/security');
-      console.error('  2. Enable 2-Step Verification');
-      console.error('  3. Generate an App Password');
-      console.error('  4. Use the App Password in EMAIL_PASS');
+    const testEmail = process.env.EMAIL_USER; // Send to yourself for testing
+    const testToken = 'test-token-' + Date.now();
+    
+    console.log(`Sending test verification email to: ${testEmail}`);
+    console.log('');
+    
+    await sendVerificationEmail(testEmail, testToken);
+    
+    console.log('');
+    console.log('='.repeat(60));
+    console.log('✓ SUCCESS! Email sent successfully');
+    console.log('='.repeat(60));
+    console.log('');
+    console.log('Next steps:');
+    console.log('1. Check your inbox: ' + testEmail);
+    console.log('2. Check spam/junk folder if not in inbox');
+    console.log('3. Click the verification link to test the flow');
+    console.log('');
+    
+  } catch (error) {
+    console.error('');
+    console.error('='.repeat(60));
+    console.error('❌ FAILED! Email sending failed');
+    console.error('='.repeat(60));
+    console.error('');
+    console.error('Error:', error.message);
+    console.error('');
+    
+    if (error.message.includes('Invalid login')) {
+      console.error('Common causes:');
+      console.error('1. Using regular Gmail password instead of App Password');
+      console.error('2. App Password not generated correctly');
+      console.error('3. 2-Step Verification not enabled');
+      console.error('');
+      console.error('Solution:');
+      console.error('- Go to: https://myaccount.google.com/apppasswords');
+      console.error('- Generate a new App Password');
+      console.error('- Update EMAIL_PASS in .env with the 16-character password');
+    } else if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+      console.error('Common causes:');
+      console.error('1. Firewall blocking port 587');
+      console.error('2. Network connectivity issues');
+      console.error('3. ISP blocking SMTP ports');
+      console.error('');
+      console.error('Solution:');
+      console.error('- Try from a different network');
+      console.error('- Check firewall settings');
+      console.error('- Contact your hosting provider');
     }
+    console.error('');
+    process.exit(1);
   }
 }
 
