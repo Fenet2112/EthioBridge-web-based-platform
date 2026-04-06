@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { path: "/recommendations", icon: "✨", label: "For You"      },
   { path: "/profile",         icon: "👤", label: "Profile"      },
   { path: "/subscription",    icon: "⭐", label: "Subscription" },
+  { path: "/help",            icon: "❓", label: "Help"         },
 ];
 
 function StakeholderNav({ unreadCount = 0 }) {

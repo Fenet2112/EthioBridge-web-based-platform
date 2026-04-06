@@ -3,8 +3,41 @@ const router = express.Router();
 const pool = require("../config/db");
 const { authenticateToken } = require("../middleware/auth");
 const { resolveSubType } = require("./subscription");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
 const FREE_MESSAGES_LIMIT = 3;
+
+// ── Multer configuration for message attachments ──
+const messageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = "uploads/message_attachments";
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `msg_${uniqueSuffix}${path.extname(file.originalname)}`);
+  },
+});
+
+const uploadMessageFile = multer({
+  storage: messageStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    // Allow common file types
+    const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|xls|xlsx|txt|zip|rar/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (extname && mimetype) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Allowed: images, PDFs, documents, and archives.'));
+    }
+  },
+});
 
 // Helper to check if user is a member of a conversation
 async function userInConversation(userId, conversationId) {
@@ -123,12 +156,13 @@ router.get("/conversations/:id/messages", authenticateToken, async (req, res) =>
 });
 
 // ── SEND MESSAGE (REST fallback) ──
-router.post("/conversations/:id/messages", authenticateToken, async (req, res) => {
+router.post("/conversations/:id/messages", authenticateToken, uploadMessageFile.single("file"), async (req, res) => {
   const { id } = req.params;
   const { content } = req.body;
 
-  if (!content || !content.trim()) {
-    return res.status(400).json({ message: "Message content is required" });
+  // Either content or file must be provided
+  if ((!content || !content.trim()) && !req.file) {
+    return res.status(400).json({ message: "Message content or file attachment is required" });
   }
 
   try {
@@ -178,10 +212,14 @@ router.post("/conversations/:id/messages", authenticateToken, async (req, res) =
       }
     }
 
+    // Prepare file data if file was uploaded
+    const fileUrl = req.file ? `/uploads/message_attachments/${req.file.filename}` : null;
+    const fileName = req.file ? req.file.originalname : null;
+
     const result = await pool.query(
-      `INSERT INTO messages (conversation_id, sender_id, content)
-       VALUES ($1, $2, $3) RETURNING *`,
-      [id, req.user.id, content.trim()]
+      `INSERT INTO messages (conversation_id, sender_id, content, file_url, file_name)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [id, req.user.id, content ? content.trim() : null, fileUrl, fileName]
     );
 
     res.status(201).json(result.rows[0]);

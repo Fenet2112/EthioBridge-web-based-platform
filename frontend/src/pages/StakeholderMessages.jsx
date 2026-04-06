@@ -15,9 +15,11 @@ function StakeholderMessages() {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const fileInputRef = useRef(null);
 
   // Check authentication and approval status
   useEffect(() => {
@@ -122,47 +124,80 @@ function StakeholderMessages() {
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation) return;
+    if ((!newMessage.trim() && !selectedFile) || !selectedConversation) return;
 
     const token = localStorage.getItem("token");
     const userData = JSON.parse(localStorage.getItem("user") || "{}");
     const messageText = newMessage;
+    const file = selectedFile;
     
     // Optimistically add message to UI
     const tempMsg = {
       id: Date.now(),
-      content: messageText,
+      content: messageText || (file ? `📎 ${file.name}` : ''),
       sender_id: userData.id,
       sender_role: 'stakeholder',
       created_at: new Date().toISOString(),
+      file_name: file ? file.name : null,
     };
     setMessages((prev) => [...prev, tempMsg]);
     setNewMessage("");
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
 
     try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      if (messageText) formData.append('content', messageText);
+      if (file) formData.append('file', file);
+
       // Save to database
-      await fetch(`${API_BASE_URL}/api/conversations/${selectedConversation.id}/messages`, {
+      const response = await fetch(`${API_BASE_URL}/api/conversations/${selectedConversation.id}/messages`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ content: messageText })
+        body: formData
       });
 
-      // Send via Socket.IO
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      const savedMessage = await response.json();
+
+      // Send via Socket.IO (text only, file info will be fetched)
       if (socket && socket.connected) {
         socket.emit('send_message', {
           conversationId: selectedConversation.id,
           senderId: userData.id,
           receiverId: selectedConversation.industry_user_id,
-          message: messageText
+          message: messageText || `📎 ${file?.name || 'File attachment'}`,
+          hasFile: !!file
         });
       }
     } catch (error) {
       console.error("Failed to send message:", error);
       alert("Failed to send message. Please try again.");
     }
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Check file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB');
+        e.target.value = '';
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const removeSelectedFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   if (loading) {
@@ -231,7 +266,16 @@ function StakeholderMessages() {
                         key={msg.id}
                         className={`message-bubble ${msg.sender_role === 'stakeholder' ? 'sent' : 'received'}`}
                       >
-                        <div className="message-content">{msg.content}</div>
+                        <div className="message-content">
+                          {msg.content}
+                          {msg.file_url && (
+                            <div className="message-attachment">
+                              <a href={`${API_BASE_URL}${msg.file_url}`} target="_blank" rel="noopener noreferrer" className="attachment-link">
+                                📎 {msg.file_name || 'Download attachment'}
+                              </a>
+                            </div>
+                          )}
+                        </div>
                         <div className="message-time">
                           {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
@@ -243,16 +287,39 @@ function StakeholderMessages() {
               </div>
 
               <div className="message-input-area">
-                <input
-                  type="text"
-                  placeholder="Type your message..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                />
-                <button onClick={sendMessage} disabled={!newMessage.trim()}>
-                  Send
-                </button>
+                {selectedFile && (
+                  <div className="selected-file-preview">
+                    <span>📎 {selectedFile.name}</span>
+                    <button type="button" onClick={removeSelectedFile} className="remove-file-btn">✕</button>
+                  </div>
+                )}
+                <div className="input-row">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    style={{ display: 'none' }}
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => fileInputRef.current?.click()} 
+                    className="attach-btn"
+                    title="Attach file"
+                  >
+                    📎
+                  </button>
+                  <input
+                    type="text"
+                    placeholder="Type your message..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                  />
+                  <button onClick={sendMessage} disabled={!newMessage.trim() && !selectedFile}>
+                    Send
+                  </button>
+                </div>
               </div>
             </>
           )}

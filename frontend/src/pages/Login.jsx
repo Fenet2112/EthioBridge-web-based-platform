@@ -76,6 +76,9 @@ function Login() {
 
   return (
     <div className="login-page">
+      <Link to="/" className="home-icon-btn" title="Back to Home">
+        🏠
+      </Link>
       <div className="login-container">
         <div className="login-icon">
           <Logo size={80} color="#667eea" />

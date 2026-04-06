@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import DashboardHome from "./DashboardHome";
 import IndustriesView from "../views/IndustriesView";
@@ -40,6 +40,7 @@ const NAV = [
   { id: "notifs",    icon: "🔔", label: "Notifications" },
   { id: "logs",      icon: "📝", label: "Activity Logs" },
   { id: "settings",  icon: "⚙️", label: "Settings" },
+  { id: "help",      icon: "❓", label: "Help", external: true, path: "/help" },
 ];
 
 function Dashboard() {
@@ -214,6 +215,9 @@ function Dashboard() {
 
   return (
     <div className={`admin-dashboard${darkMode ? " dark-mode" : ""}`}>
+      <Link to="/" className="home-icon-btn" title="Back to Home">
+        🏠
+      </Link>
       {/* Mobile overlay */}
       {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
 
@@ -243,9 +247,15 @@ function Dashboard() {
         <div className="sidebar-section-label">INSIGHTS</div>
         <nav className="admin-nav">
           {NAV.slice(6).map(n => (
-            <button key={n.id} className={view === n.id ? "active" : ""} onClick={() => navTo(n.id)}>
-              <span className="nav-icon">{n.icon}</span>{n.label}
-            </button>
+            n.external ? (
+              <Link key={n.id} to={n.path} className="admin-nav-link">
+                <span className="nav-icon">{n.icon}</span>{n.label}
+              </Link>
+            ) : (
+              <button key={n.id} className={view === n.id ? "active" : ""} onClick={() => navTo(n.id)}>
+                <span className="nav-icon">{n.icon}</span>{n.label}
+              </button>
+            )
           ))}
         </nav>
         <div style={{ marginTop: "auto", padding: "0 12px 24px" }}>

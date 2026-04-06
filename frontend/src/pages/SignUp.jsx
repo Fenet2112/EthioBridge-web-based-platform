@@ -63,6 +63,9 @@ function SignUp() {
 
   return (
     <div className="signup-page">
+      <Link to="/" className="home-icon-btn" title="Back to Home">
+        🏠
+      </Link>
       <div className="signup-container">
 
         {/* ── Email sent confirmation screen ── */}

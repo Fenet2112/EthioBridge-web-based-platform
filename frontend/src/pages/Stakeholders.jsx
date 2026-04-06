@@ -1,5 +1,5 @@
 ﻿import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import StakeholderNav from "../components/StakeholderNav";
 import SubscriptionModal from "../components/SubscriptionModal";
@@ -251,6 +251,9 @@ function Stakeholders() {
 
   return (
     <div className="stakeholder-page">
+      <Link to="/" className="home-icon-btn" title="Back to Home">
+        🏠
+      </Link>
       <StakeholderNav />
 
       {/* Hero */}

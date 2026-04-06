@@ -20,6 +20,7 @@ import VerifyEmail from "./pages/VerifyEmail";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/admin/Dashboard";
 import AdminLogin from "./pages/admin/Login";
+import Help from "./pages/Help";
 
 function App() {
   return (
@@ -48,6 +49,9 @@ function App() {
 
         {/* Subscription Page */}
         <Route path="/subscription" element={<Subscription />} />
+
+        {/* Help Page */}
+        <Route path="/help" element={<Help />} />
 
         {/* Google OAuth callback */}
         <Route path="/auth/google/success" element={<GoogleAuthSuccess />} />

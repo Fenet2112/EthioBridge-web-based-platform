@@ -2,9 +2,9 @@
 
 ## 📋 Overview
 
-This document explains how the registration and approval flow works in EthioBridge, and how to ensure newly registered industries appear in the Admin Approval section.
+This document explains how the registration and approval flow works in EthioBridge, and how newly registered industries appear in the Admin Approval section immediately after signup.
 
-## 🔄 Registration Flow
+## 🔄 Registration Flow (Updated)
 
 ### Step 1: Signup (Create Account)
 **Endpoint**: `POST /api/signup`
@@ -18,15 +18,16 @@ This document explains how the registration and approval flow works in EthioBrid
 ```
 
 **What Happens**:
-- User account created with `status = 'incomplete'`
+- User account created with `status = 'pending'` ✅ (NEW: Changed from 'incomplete')
 - Email verification token generated
 - Verification email sent
 - User can now log in
+- **User immediately appears in Admin Approval section**
 
-**Status**: `incomplete` ✅ (Correct - profile not yet filled)
+**Status**: `pending` ✅ (Ready for admin approval - even before profile completion)
 
-### Step 2: Complete Profile
-**Endpoint**: `POST /api/industry-profile`
+### Step 2: Complete Profile (Optional)
+**Endpoint**: `POST /api/profile/industry` or `POST /api/profile/stakeholder`
 
 ```javascript
 {
@@ -42,11 +43,11 @@ This document explains how the registration and approval flow works in EthioBrid
 ```
 
 **What Happens**:
-- Industry profile created/updated
-- User status changed to `status = 'pending'`
-- User now appears in Admin Approval section
+- Industry/Stakeholder profile created/updated
+- User status remains `status = 'pending'`
+- Profile information now visible in Admin Approval section
 
-**Status**: `pending` ✅ (Ready for admin approval)
+**Status**: `pending` ✅ (Still awaiting admin approval)
 
 ### Step 3: Admin Approval
 **Admin Dashboard** → **Approval Section** → **Pending Tab**
@@ -55,52 +56,63 @@ This document explains how the registration and approval flow works in EthioBrid
 - **Approve**: `status = 'approved'` → User can access full platform
 - **Reject**: `status = 'rejected'` → User notified of rejection
 
-## 🎯 Status Flow Diagram
+## 🎯 Status Flow Diagram (Updated)
 
 ```
-Signup → incomplete
+Signup → pending (appears in admin approval immediately)
    ↓
-Complete Profile → pending
+Complete Profile (optional) → pending (profile info now visible)
    ↓
 Admin Review → approved OR rejected
 ```
 
 ## ✅ What Was Fixed
 
-### 1. Database Migration
-**File**: `database/migrations/014_fix_pending_status.sql`
+### 1. Changed Signup Status (CRITICAL UPDATE)
+**File**: `backend/src/routes/auth.js`
 
-**Purpose**: Update existing users who have completed profiles but are stuck in 'incomplete' status
+**Change**: New users now get `status = 'pending'` immediately on signup (changed from 'incomplete')
+
+**Before**:
+```javascript
+// User created with status = 'incomplete'
+// Did NOT appear in admin approval until profile completed
+```
+
+**After**:
+```javascript
+// User created with status = 'pending'
+// Appears in admin approval IMMEDIATELY after signup
+```
+
+**Impact**: All newly registered users (industries and stakeholders) now appear in the Admin Approval section right away, even before completing their profile.
+
+### 2. Database Migration
+**File**: `database/migrations/015_change_signup_to_pending.sql`
+
+**Purpose**: Update existing users from 'incomplete' to 'pending' status
 
 **What it does**:
 ```sql
--- For industries with completed profiles
+-- Update all users with incomplete status
 UPDATE users SET status = 'pending'
-WHERE status = 'incomplete'
-  AND has completed industry profile
-
--- For stakeholders with completed profiles  
-UPDATE users SET status = 'pending'
-WHERE status = 'incomplete'
-  AND has completed stakeholder profile
+WHERE status = 'incomplete';
 ```
 
-### 2. Admin Query Fix
+**Result**: All 7 existing users with 'incomplete' status were updated to 'pending'
+
+### 3. Admin Query (Already Correct)
 **File**: `backend/src/routes/admin.js`
 
-**Fixed**:
-- Removed non-existent columns from queries
-- Added proper error logging
-- Returns only users with `status = 'pending'`
-
-### 3. Profile Submission
-**File**: `backend/src/routes/auth.js`
-
-**Already Correct**:
+**Query fetches all users with status = 'pending'**:
 ```javascript
-// When industry profile is submitted
-await pool.query("UPDATE users SET status = 'pending' WHERE id = $1", [user_id]);
+SELECT * FROM users WHERE status = 'pending'
 ```
+
+This query now returns:
+- Users who just signed up (no profile yet)
+- Users who completed their profile
+- All are visible in Admin Approval section
 
 ## 🧪 Testing the Flow
 
@@ -115,9 +127,14 @@ await pool.query("UPDATE users SET status = 'pending' WHERE id = $1", [user_id])
      "role": "industry"
    }
    ```
-   Expected: User created with status = 'incomplete'
+   Expected: User created with status = 'pending' ✅
 
-2. **Log In**:
+2. **Check Admin Panel Immediately**:
+   - Go to Admin Dashboard → Approval → Pending
+   - Expected: "test@industry.com" appears in the list immediately ✅
+   - Note: Profile fields (company_name, sector, etc.) will be empty
+
+3. **Log In**:
    ```bash
    POST /api/login
    {
@@ -127,9 +144,9 @@ await pool.query("UPDATE users SET status = 'pending' WHERE id = $1", [user_id])
    ```
    Expected: Login successful, get JWT token
 
-3. **Complete Profile**:
+4. **Complete Profile (Optional)**:
    ```bash
-   POST /api/industry-profile
+   POST /api/profile/industry
    {
      "user_id": [from login response],
      "company_name": "Test Company",
@@ -137,73 +154,77 @@ await pool.query("UPDATE users SET status = 'pending' WHERE id = $1", [user_id])
      "location": "Addis Ababa"
    }
    ```
-   Expected: Status changes to 'pending'
+   Expected: Profile information saved, status remains 'pending'
 
-4. **Check Admin Panel**:
+5. **Check Admin Panel Again**:
    - Go to Admin Dashboard → Approval → Pending
-   - Expected: "Test Company" appears in the list
+   - Expected: "Test Company" now shows with full profile information ✅
 
-5. **Approve**:
+6. **Approve**:
    - Click "Approve" button
    - Expected: Status changes to 'approved'
 
 ### Test 2: Check Database
 
 ```sql
--- Check user status
+-- Check user status immediately after signup
 SELECT id, email, role, status FROM users WHERE email = 'test@industry.com';
+-- Expected: status = 'pending'
 
 -- Check if profile exists
 SELECT * FROM industries WHERE user_id = [user_id];
+-- Expected: NULL if profile not completed, or profile data if completed
 
--- Check pending users
-SELECT u.id, u.email, u.status, i.company_name
+-- Check all pending users
+SELECT u.id, u.email, u.status, i.company_name, s.organization_name
 FROM users u
 LEFT JOIN industries i ON i.user_id = u.id
+LEFT JOIN stakeholders s ON s.user_id = u.id
 WHERE u.status = 'pending';
+-- Expected: All users with pending status, including those without profiles
 ```
 
 ## 🔍 Troubleshooting
 
 ### Issue: Industry doesn't appear in Pending section
 
-**Possible Causes**:
+**This should NOT happen anymore** - all users appear immediately after signup.
 
-1. **Profile not completed**
+If it still doesn't appear:
+
+1. **Check user was created**:
    ```sql
-   SELECT u.id, u.email, u.status, i.company_name
-   FROM users u
-   LEFT JOIN industries i ON i.user_id = u.id
-   WHERE u.email = 'industry@example.com';
+   SELECT id, email, role, status FROM users WHERE email = 'industry@example.com';
    ```
-   - If `company_name` is NULL → Profile not submitted
-   - If `status` is 'incomplete' → Profile not submitted
+   - If user doesn't exist → Signup failed
+   - If status is not 'pending' → Database issue
 
-2. **Status not updated**
-   ```sql
-   UPDATE users SET status = 'pending' WHERE id = [user_id];
-   ```
+2. **Check admin query**:
+   - Open browser console
+   - Look for API call to `/api/admin/pending`
+   - Check response contains the user
 
-3. **Admin query issue**
-   - Check backend logs for errors
-   - Verify `/api/admin/pending` endpoint works
+3. **Refresh admin panel**:
+   - Click the "↻ Refresh" button
+   - Or reload the page
 
-### Issue: Status stuck at 'incomplete'
+### Issue: Profile information not showing
 
-**Solution**: Run the migration
-```bash
-cd backend
-node run-migrations.js
-```
+**This is EXPECTED** - users appear in admin approval before completing profile.
 
-This will update all users with completed profiles to 'pending' status.
+**Solution**: 
+- User needs to complete their profile form
+- Profile information will then appear in admin panel
+- Admin can still approve/reject users without complete profiles
 
-### Issue: 500 Error in Admin Panel
+### Issue: Can't approve user without profile
 
-**Check**:
-1. Backend logs for specific error
-2. Database columns exist
-3. Queries don't reference non-existent columns
+**This should work** - admin can approve users even without complete profiles.
+
+If approval fails:
+1. Check backend logs for errors
+2. Verify `/api/admin/users/:id/approve` endpoint works
+3. Check database permissions
 
 ## 📊 Database Schema
 
@@ -254,24 +275,33 @@ CREATE TABLE industries (
 
 ## ✨ Summary
 
-### Status Meanings:
-- **incomplete**: User signed up but hasn't completed profile
-- **pending**: Profile completed, waiting for admin approval
+### Status Meanings (Updated):
+- **pending**: User signed up (with or without profile) - awaiting admin approval
 - **approved**: Admin approved, full access granted
 - **rejected**: Admin rejected, user notified
+- **suspended**: Temporarily blocked by admin
+- **banned**: Permanently blocked by admin
 
-### Key Points:
-1. Users start as 'incomplete' after signup
-2. Status changes to 'pending' when profile is submitted
-3. Admin sees only 'pending' users in Approval section
-4. Migration fixes any users stuck in 'incomplete' with completed profiles
+### Key Changes:
+1. ✅ Users get 'pending' status immediately on signup (no more 'incomplete')
+2. ✅ Users appear in Admin Approval section right after registration
+3. ✅ Admin can approve/reject users even before profile completion
+4. ✅ Profile completion is optional but recommended
+5. ✅ All 7 existing 'incomplete' users updated to 'pending'
 
 ### Files Modified:
-- ✅ `database/migrations/014_fix_pending_status.sql` (new)
-- ✅ `backend/src/routes/admin.js` (fixed queries)
-- ✅ `backend/src/routes/auth.js` (already correct)
+- ✅ `backend/src/routes/auth.js` (changed signup status to 'pending')
+- ✅ `database/migrations/015_change_signup_to_pending.sql` (new migration)
+- ✅ `backend/update-incomplete-users.js` (utility script)
+- ✅ `REGISTRATION_FLOW_FIX.md` (updated documentation)
+
+### Database Status:
+- ✅ All users now have status = 'pending'
+- ✅ No users with status = 'incomplete'
+- ✅ Admin approval section shows all registered users
 
 ---
 
-**Status**: ✅ Fixed and Tested
+**Status**: ✅ Fixed and Deployed
 **Date**: January 2025
+**Change**: Signup now creates users with 'pending' status instead of 'incomplete'

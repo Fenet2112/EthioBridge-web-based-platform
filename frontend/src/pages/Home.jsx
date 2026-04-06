@@ -37,6 +37,7 @@ function Home() {
           <li><Link to="/products">Products</Link></li>
           <li><a href="#services">Services</a></li>
           <li><a href="#about">About</a></li>
+          <li><Link to="/help">Help</Link></li>
           <li><a href="#contact">Contact</a></li>
         </ul>
 

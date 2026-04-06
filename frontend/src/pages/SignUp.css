@@ -297,3 +297,43 @@
     font-size: 1.6rem;
   }
 }
+
+/* Home icon button */
+.home-icon-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 50px;
+  height: 50px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  z-index: 1000;
+  cursor: pointer;
+}
+
+.home-icon-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  background: #f0f0f0;
+}
+
+.home-icon-btn:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 768px) {
+  .home-icon-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 1.3rem;
+    top: 15px;
+    left: 15px;
+  }
+}
