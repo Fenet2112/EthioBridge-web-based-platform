@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { 
+  FaRocket, 
+  FaHandshake, 
+  FaIndustry, 
+  FaCog, 
+  FaBullseye, 
+  FaQuestionCircle,
+  FaBook,
+  FaSearch,
+  FaHome,
+  FaEnvelope
+} from 'react-icons/fa';
 import './Help.css';
 
 function Help() {
@@ -13,7 +25,7 @@ function Help() {
   const sections = [
     {
       id: 'getting-started',
-      icon: '🚀',
+      icon: <FaRocket />,
       title: 'Getting Started',
       content: [
         {
@@ -55,7 +67,7 @@ function Help() {
     },
     {
       id: 'stakeholder',
-      icon: '🤝',
+      icon: <FaHandshake />,
       title: 'Stakeholder Guide',
       content: [
         {
@@ -122,7 +134,7 @@ function Help() {
     },
     {
       id: 'industry',
-      icon: '🏭',
+      icon: <FaIndustry />,
       title: 'Industry Guide',
       content: [
         {
@@ -213,7 +225,7 @@ function Help() {
     },
     {
       id: 'admin',
-      icon: '⚙️',
+      icon: <FaCog />,
       title: 'Admin Guide',
       content: [
         {
@@ -301,7 +313,7 @@ function Help() {
     },
     {
       id: 'recommendations',
-      icon: '🎯',
+      icon: <FaBullseye />,
       title: 'Recommendation System',
       content: [
         {
@@ -357,7 +369,7 @@ function Help() {
     },
     {
       id: 'faq',
-      icon: '❓',
+      icon: <FaQuestionCircle />,
       title: 'Frequently Asked Questions',
       content: [
         {
@@ -520,23 +532,24 @@ function Help() {
   return (
     <div className="help-page">
       <Link to="/" className="home-icon-btn" title="Back to Home">
-        🏠
+        <FaHome />
       </Link>
 
       <div className="help-container">
         <div className="help-header">
-          <h1>📚 Help Center</h1>
+          <h1><FaBook style={{ marginRight: '12px' }} />Help Center</h1>
           <p>Everything you need to know about using EthioBridge</p>
         </div>
 
         <div className="help-search">
           <input
             type="text"
-            placeholder="🔍 Search for help topics..."
+            placeholder="Search for help topics..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-input"
           />
+          <FaSearch className="search-icon" />
         </div>
 
         <div className="help-content">
@@ -587,7 +600,8 @@ function Help() {
             <h3>Still need help?</h3>
             <p>Can't find what you're looking for? Our support team is here to help!</p>
             <a href="mailto:support@ethiobridge.et" className="support-btn">
-              📧 Contact Support
+              <FaEnvelope style={{ marginRight: '8px' }} />
+              Contact Support
             </a>
           </div>
 

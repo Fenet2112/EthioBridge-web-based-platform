@@ -64,6 +64,12 @@ function requireApproved(req, res, next) {
   if (req.user.status !== "approved") {
     return res.status(403).json({
       message: "Your account must be approved by admin before accessing this feature.",
+      current_status: req.user.status,
+      required_status: "approved",
+      action_required: req.user.status === "pending" 
+        ? "Please wait for admin approval. You will be notified via email once approved."
+        : "Please complete your profile and submit for approval.",
+      hint: "If you were recently approved, try logging out and logging back in to refresh your session."
     });
   }
   next();

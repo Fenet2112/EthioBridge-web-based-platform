@@ -137,15 +137,53 @@ function Industry() {
       setDashLoading(true);
       const token = localStorage.getItem("token");
       Promise.all([
-        fetch(`${API_BASE_URL}/api/industry/dashboard-summary`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-        fetch(`${API_BASE_URL}/api/industry/recent-requests`,   { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-        fetch(`${API_BASE_URL}/api/industry/products-summary`,  { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+        fetch(`${API_BASE_URL}/api/industry/dashboard-summary`, { headers: { Authorization: `Bearer ${token}` } })
+          .then(async r => {
+            if (r.status === 403) {
+              const error = await r.json();
+              console.error('Dashboard summary 403:', error);
+              if (error.hint && error.hint.includes('logging out')) {
+                alert('Your account status has changed. Please log out and log back in to refresh your session.');
+              }
+              throw new Error(error.message || 'Access denied');
+            }
+            return r.json();
+          }),
+        fetch(`${API_BASE_URL}/api/industry/recent-requests`, { headers: { Authorization: `Bearer ${token}` } })
+          .then(async r => {
+            if (r.status === 403) {
+              const error = await r.json();
+              console.error('Recent requests 403:', error);
+              if (error.hint && error.hint.includes('logging out')) {
+                alert('Your account status has changed. Please log out and log back in to refresh your session.');
+              }
+              throw new Error(error.message || 'Access denied');
+            }
+            return r.json();
+          }),
+        fetch(`${API_BASE_URL}/api/industry/products-summary`, { headers: { Authorization: `Bearer ${token}` } })
+          .then(async r => {
+            if (r.status === 403) {
+              const error = await r.json();
+              console.error('Products summary 403:', error);
+              if (error.hint && error.hint.includes('logging out')) {
+                alert('Your account status has changed. Please log out and log back in to refresh your session.');
+              }
+              throw new Error(error.message || 'Access denied');
+            }
+            return r.json();
+          }),
       ]).then(([summary, reqs, prods]) => {
         setDashSummary(summary);
         setDashRequests(Array.isArray(reqs) ? reqs : []);
         setDashProducts(Array.isArray(prods) ? prods : []);
-      }).catch(console.error)
-        .finally(() => setDashLoading(false));
+      }).catch(err => {
+        console.error('Dashboard data fetch error:', err);
+        // Don't show alert if we already showed one above
+        if (!err.message.includes('Access denied')) {
+          console.error('Failed to load dashboard data:', err);
+        }
+      }).finally(() => setDashLoading(false));
     }
   }, [activeSection, profileStatus]);
 

@@ -505,4 +505,51 @@ router.post("/reset-password", async (req, res) => {
   }
 });
 
+// ── REFRESH TOKEN (get updated user status) ──
+router.post("/refresh-token", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  
+  if (!token) {
+    return res.status(401).json({ message: "No token provided" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, getJwtSecret());
+    
+    const result = await pool.query(
+      "SELECT id, email, role, status FROM users WHERE id = $1",
+      [decoded.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    const user = result.rows[0];
+    const newToken = jwt.sign(
+      { id: user.id, email: user.email, role: user.role, status: user.status },
+      getJwtSecret(),
+      { expiresIn: "7d" }
+    );
+    
+    res.json({
+      message: "Token refreshed successfully",
+      token: newToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        status: user.status
+      }
+    });
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return res.status(403).json({ message: "Invalid or expired token" });
+    }
+    console.error("Token refresh error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;
