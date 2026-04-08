@@ -73,6 +73,8 @@ function Dashboard() {
   const [umStatus, setUmStatus]   = useState("all");
   const [actionModal, setActionModal] = useState(null);
   const [actionReason, setActionReason] = useState("");
+  const [userDetailsModal, setUserDetailsModal] = useState(null);
+  const [userDetailsLoading, setUserDetailsLoading] = useState(false);
 
   const handleLogout = () => { localStorage.removeItem("adminToken"); navigate("/login"); };
 
@@ -195,6 +197,22 @@ function Dashboard() {
       setActionModal(null); setActionReason(""); fetchAllUsers();
     } catch (e) { alert("Error: " + e.message); }
     finally { setActionLoading(null); }
+  };
+
+  const fetchUserDetails = async (userId) => {
+    setUserDetailsLoading(true);
+    try {
+      const res = await fetch(`${API}/api/admin/users/${userId}/details`, {
+        headers: { Authorization: `Bearer ${tok()}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      setUserDetailsModal(data);
+    } catch (e) {
+      alert("Error loading user details: " + e.message);
+    } finally {
+      setUserDetailsLoading(false);
+    }
   };
 
   const filteredUsers = allUsers.filter(u => {
@@ -460,6 +478,7 @@ function Dashboard() {
                           <td className="um-date">{new Date(u.created_at).toLocaleDateString()}</td>
                           <td>
                             <div className="um-actions">
+                              <button className="um-btn um-view" onClick={() => fetchUserDetails(u.id)}>👁️ View</button>
                               {u.status !== "banned" && <button className="um-btn um-ban" onClick={() => { setActionModal({ user: u, action: "ban" }); setActionReason(""); }}>🚫 Ban</button>}
                               {u.status !== "suspended" && u.status !== "banned" && <button className="um-btn um-suspend" onClick={() => { setActionModal({ user: u, action: "suspend" }); setActionReason(""); }}>⏸ Suspend</button>}
                               {(u.status === "suspended" || u.status === "banned") && <button className="um-btn um-activate" onClick={() => { setActionModal({ user: u, action: "activate" }); setActionReason(""); }}>🔓 Activate</button>}
@@ -579,6 +598,130 @@ function Dashboard() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── User Details Modal (User Management) ── */}
+      {userDetailsModal && (
+        <div className="modal-overlay" onClick={() => setUserDetailsModal(null)}>
+          <div className="modal user-details-modal" onClick={e => e.stopPropagation()}>
+            <div className={`details-modal-header ${userDetailsModal.role}`}>
+              <button className="modal-close-btn" onClick={() => setUserDetailsModal(null)}>✕</button>
+              <div style={{ fontSize: "44px", marginBottom: "8px" }}>{userDetailsModal.role === "industry" ? "🏭" : "🤝"}</div>
+              <h2>{userDetailsModal.company_name || userDetailsModal.organization_name || userDetailsModal.email}</h2>
+              <p>{userDetailsModal.role === "industry" ? "Industry Profile" : "Stakeholder Profile"}</p>
+            </div>
+            <div style={{ padding: "28px" }}>
+              <div style={{ marginBottom: "18px" }}><StatusBadge status={userDetailsModal.status} /></div>
+              
+              <div style={{ display: "grid", gap: "16px" }}>
+                {/* Basic Information */}
+                <div className="details-section">
+                  <h3>📋 Basic Information</h3>
+                  <div className="details-row"><span>🆔</span><div><div className="details-label">User ID</div><div>#{userDetailsModal.id}</div></div></div>
+                  <div className="details-row"><span>📧</span><div><div className="details-label">Email</div><div>{userDetailsModal.email}</div></div></div>
+                  <div className="details-row"><span>👤</span><div><div className="details-label">Role</div><div style={{ textTransform: "capitalize" }}>{userDetailsModal.role}</div></div></div>
+                  <div className="details-row"><span>📅</span><div><div className="details-label">Registration Date</div><div>{new Date(userDetailsModal.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div></div></div>
+                  <div className="details-row">
+                    <span>{userDetailsModal.email_verified ? "✅" : "❌"}</span>
+                    <div><div className="details-label">Email Verification</div><div>{userDetailsModal.email_verified ? "Verified" : "Not Verified"}</div></div>
+                  </div>
+                </div>
+
+                {/* Industry-specific details */}
+                {userDetailsModal.role === "industry" && (
+                  <>
+                    <div className="details-section">
+                      <h3>🏢 Company Information</h3>
+                      {userDetailsModal.company_name && <div className="details-row"><span>🏭</span><div><div className="details-label">Company Name</div><div>{userDetailsModal.company_name}</div></div></div>}
+                      {userDetailsModal.sector && <div className="details-row"><span>🏗️</span><div><div className="details-label">Sector</div><div>{userDetailsModal.sector}</div></div></div>}
+                      {userDetailsModal.industry_location && <div className="details-row"><span>📍</span><div><div className="details-label">Location</div><div>{userDetailsModal.industry_location}</div></div></div>}
+                      {userDetailsModal.established_year && <div className="details-row"><span>📆</span><div><div className="details-label">Established Year</div><div>{userDetailsModal.established_year}</div></div></div>}
+                    </div>
+                    
+                    <div className="details-section">
+                      <h3>📞 Contact Information</h3>
+                      {userDetailsModal.industry_phone && <div className="details-row"><span>📱</span><div><div className="details-label">Phone</div><div>{userDetailsModal.industry_phone}</div></div></div>}
+                      {userDetailsModal.website && <div className="details-row"><span>🌐</span><div><div className="details-label">Website</div><div><a href={userDetailsModal.website} target="_blank" rel="noopener noreferrer" style={{ color: "#0a5c2f", textDecoration: "underline" }}>{userDetailsModal.website}</a></div></div></div>}
+                    </div>
+
+                    {userDetailsModal.industry_description && (
+                      <div className="details-section">
+                        <h3>📝 Description</h3>
+                        <p style={{ margin: 0, color: "#555", lineHeight: "1.6", fontSize: "0.9rem" }}>{userDetailsModal.industry_description}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Stakeholder-specific details */}
+                {userDetailsModal.role === "stakeholder" && (
+                  <>
+                    <div className="details-section">
+                      <h3>🏢 Organization Information</h3>
+                      {userDetailsModal.organization_name && <div className="details-row"><span>🤝</span><div><div className="details-label">Organization Name</div><div>{userDetailsModal.organization_name}</div></div></div>}
+                      {userDetailsModal.organization_type && <div className="details-row"><span>🏢</span><div><div className="details-label">Organization Type</div><div>{userDetailsModal.organization_type}</div></div></div>}
+                      {userDetailsModal.stakeholder_location && <div className="details-row"><span>📍</span><div><div className="details-label">Location</div><div>{userDetailsModal.stakeholder_location}</div></div></div>}
+                      {userDetailsModal.contact_person && <div className="details-row"><span>👤</span><div><div className="details-label">Contact Person</div><div>{userDetailsModal.contact_person}</div></div></div>}
+                    </div>
+                    
+                    {userDetailsModal.stakeholder_phone && (
+                      <div className="details-section">
+                        <h3>📞 Contact Information</h3>
+                        <div className="details-row"><span>📱</span><div><div className="details-label">Phone</div><div>{userDetailsModal.stakeholder_phone}</div></div></div>
+                      </div>
+                    )}
+
+                    {userDetailsModal.stakeholder_description && (
+                      <div className="details-section">
+                        <h3>📝 Description</h3>
+                        <p style={{ margin: 0, color: "#555", lineHeight: "1.6", fontSize: "0.9rem" }}>{userDetailsModal.stakeholder_description}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Account Status Details */}
+                {(userDetailsModal.status === "banned" || userDetailsModal.status === "suspended") && (
+                  <div className="details-section" style={{ background: "#fff5f5", borderColor: "#fecaca" }}>
+                    <h3>⚠️ Account Restrictions</h3>
+                    <div className="details-row"><span>🚫</span><div><div className="details-label">Status</div><div style={{ textTransform: "capitalize", fontWeight: "700", color: "#dc2626" }}>{userDetailsModal.status}</div></div></div>
+                    {userDetailsModal.ban_reason && <div className="details-row"><span>📝</span><div><div className="details-label">Reason</div><div>{userDetailsModal.ban_reason}</div></div></div>}
+                    {userDetailsModal.suspended_until && <div className="details-row"><span>⏰</span><div><div className="details-label">Suspended Until</div><div>{new Date(userDetailsModal.suspended_until).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</div></div></div>}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="details-modal-footer">
+              <button className="modal-cancel" onClick={() => setUserDetailsModal(null)}>Close</button>
+              {userDetailsModal.status !== "banned" && (
+                <button className="reject-btn" style={{ flex: "unset", padding: "10px 20px" }}
+                  onClick={() => { setActionModal({ user: userDetailsModal, action: "ban" }); setUserDetailsModal(null); setActionReason(""); }}>
+                  🚫 Ban User
+                </button>
+              )}
+              {userDetailsModal.status !== "suspended" && userDetailsModal.status !== "banned" && (
+                <button className="um-btn um-suspend" style={{ flex: "unset", padding: "10px 20px" }}
+                  onClick={() => { setActionModal({ user: userDetailsModal, action: "suspend" }); setUserDetailsModal(null); setActionReason(""); }}>
+                  ⏸ Suspend User
+                </button>
+              )}
+              {(userDetailsModal.status === "suspended" || userDetailsModal.status === "banned") && (
+                <button className="approve-btn" style={{ flex: "unset", padding: "10px 20px" }}
+                  onClick={() => { setActionModal({ user: userDetailsModal, action: "activate" }); setUserDetailsModal(null); setActionReason(""); }}>
+                  🔓 Activate User
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading overlay for user details */}
+      {userDetailsLoading && (
+        <div className="modal-overlay">
+          <div className="admin-loading">Loading user details...</div>
         </div>
       )}
     </div>

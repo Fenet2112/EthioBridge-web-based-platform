@@ -247,6 +247,39 @@ router.get('/users/all', requireAdminAuth, async (req, res) => {
   }
 });
 
+// ── GET SINGLE USER DETAILS ──
+router.get('/users/:id/details', requireAdminAuth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    console.log(`[ADMIN] Fetching details for user ${id}...`);
+    const result = await pool.query(`
+      SELECT
+        u.id, u.email, u.role, u.status, u.email_verified, u.created_at,
+        u.ban_reason, u.suspended_until,
+        i.company_name, i.sector, i.location AS industry_location,
+        i.description AS industry_description, i.phone AS industry_phone,
+        i.website, i.established_year,
+        s.organization_name, s.organization_type, s.location AS stakeholder_location,
+        s.description AS stakeholder_description, s.phone AS stakeholder_phone,
+        s.contact_person
+      FROM users u
+      LEFT JOIN industries i ON i.user_id = u.id
+      LEFT JOIN stakeholders s ON s.user_id = u.id
+      WHERE u.id = $1
+    `, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    console.log(`[ADMIN] User details fetched successfully`);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("[ADMIN] Get user details error:", err.message);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
 // ── UPDATE USER STATUS (ban / suspend / activate) ──
 router.patch('/users/:id/status', requireAdminAuth, async (req, res) => {
   const { id } = req.params;
