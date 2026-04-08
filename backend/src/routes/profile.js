@@ -232,7 +232,7 @@ router.post("/me/picture", authenticateToken, upload.single("profile_picture"), 
 
     // Update profile picture in database
     const result = await pool.query(
-      `UPDATE ${table} SET profile_picture = $1, updated_at = NOW() WHERE user_id = $2 RETURNING profile_picture`,
+      `UPDATE ${table} SET profile_picture = $1 WHERE user_id = $2 RETURNING profile_picture`,
       [profilePictureUrl, req.user.id]
     );
 
@@ -283,7 +283,7 @@ router.delete("/me/picture", authenticateToken, async (req, res) => {
 
       // Remove from database
       await pool.query(
-        `UPDATE ${table} SET profile_picture = NULL, updated_at = NOW() WHERE user_id = $1`,
+        `UPDATE ${table} SET profile_picture = NULL WHERE user_id = $1`,
         [req.user.id]
       );
     }
