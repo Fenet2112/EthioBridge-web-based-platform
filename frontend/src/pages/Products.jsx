@@ -70,8 +70,11 @@ function Products() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/products/all`);
       if (!res.ok) throw new Error('Failed to fetch products');
-      setProducts(await res.json());
+      const data = await res.json();
+      console.log('Fetched products:', data.length);
+      setProducts(data);
     } catch (err) {
+      console.error('Products fetch error:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -109,7 +112,12 @@ function Products() {
       {/* ── Products Grid ── */}
       <div className="products-container">
         {products.length === 0 ? (
-          <div className="no-products"><p>No products available at the moment.</p></div>
+          <div className="no-products">
+            <p>📦 No products available yet.</p>
+            <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '8px' }}>
+              Industries can add products from their dashboard. Check back soon!
+            </p>
+          </div>
         ) : (
           <div className="products-grid">
             {products.map(product => (
