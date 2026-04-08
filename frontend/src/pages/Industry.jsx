@@ -107,11 +107,9 @@ function Industry() {
         setProfileStatus(data.status);
         console.log('Setting profileStatus to:', data.status);
         
-        // Update localStorage if status changed
-        if (userData.status !== data.status) {
-          userData.status = data.status;
-          localStorage.setItem("user", JSON.stringify(userData));
-        }
+        // ALWAYS update localStorage with fresh status from API (JWT token may be stale)
+        userData.status = data.status;
+        localStorage.setItem("user", JSON.stringify(userData));
         
         // Load profile data if it exists
         if (data.profile) {
