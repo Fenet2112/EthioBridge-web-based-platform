@@ -135,17 +135,8 @@ router.get('/payment/verify/:tx_ref', authenticateToken, async (req, res) => {
           
           // Insert/update subscriptions table
           await pool.query(
-            `INSERT INTO subscriptions (user_id, plan, amount, start_date, end_date, status, payment_method, transaction_id)
-             VALUES ($1, $2, $3, NOW(), $4, 'active', 'chapa', $5)
-             ON CONFLICT (user_id) 
-             DO UPDATE SET 
-               plan = $2, 
-               amount = $3, 
-               start_date = NOW(), 
-               end_date = $4, 
-               status = 'active',
-               payment_method = 'chapa',
-               transaction_id = $5`,
+            `INSERT INTO subscriptions (user_id, plan, amount, started_at, expires_at, status, payment_method, transaction_id)
+             VALUES ($1, $2, $3, NOW(), $4, 'active', 'chapa', $5)`,
             [user_id, plan, amount, endDate, tx_ref]
           );
         }
@@ -217,17 +208,8 @@ router.post('/callback', async (req, res) => {
         
         // Insert/update subscriptions table
         await pool.query(
-          `INSERT INTO subscriptions (user_id, plan, amount, start_date, end_date, status, payment_method, transaction_id)
-           VALUES ($1, $2, $3, NOW(), $4, 'active', 'chapa', $5)
-           ON CONFLICT (user_id) 
-           DO UPDATE SET 
-             plan = $2, 
-             amount = $3, 
-             start_date = NOW(), 
-             end_date = $4, 
-             status = 'active',
-             payment_method = 'chapa',
-             transaction_id = $5`,
+          `INSERT INTO subscriptions (user_id, plan, amount, started_at, expires_at, status, payment_method, transaction_id)
+           VALUES ($1, $2, $3, NOW(), $4, 'active', 'chapa', $5)`,
           [user_id, plan, amount, endDate, tx_ref]
         );
       }
