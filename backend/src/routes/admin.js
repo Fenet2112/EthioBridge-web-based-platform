@@ -223,31 +223,8 @@ router.patch('/users/:id/reject', requireAdminAuth, async (req, res) => {
   }
 });
 
-// ── GET ALL USERS — full management view ──
-router.get('/users/all', requireAdminAuth, async (req, res) => {
-  try {
-    console.log('[ADMIN] Fetching all users for management...');
-    const result = await pool.query(`
-      SELECT
-        u.id, u.email, u.role, u.status, u.email_verified, u.created_at,
-        COALESCE(i.company_name, s.organization_name) AS display_name,
-        i.sector,
-        s.organization_type
-      FROM users u
-      LEFT JOIN industries  i ON i.user_id = u.id
-      LEFT JOIN stakeholders s ON s.user_id = u.id
-      ORDER BY u.created_at DESC
-    `);
-    console.log(`[ADMIN] Found ${result.rows.length} users for management`);
-    res.json(result.rows);
-  } catch (err) {
-    console.error("[ADMIN] Get all users error:", err.message);
-    console.error("[ADMIN] Error details:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
-
 // ── GET SINGLE USER DETAILS ──
+// IMPORTANT: This route must come BEFORE /users/all to avoid route conflicts
 router.get('/users/:id/details', requireAdminAuth, async (req, res) => {
   const { id } = req.params;
   try {
@@ -276,6 +253,30 @@ router.get('/users/:id/details', requireAdminAuth, async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error("[ADMIN] Get user details error:", err.message);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// ── GET ALL USERS — full management view ──
+router.get('/users/all', requireAdminAuth, async (req, res) => {
+  try {
+    console.log('[ADMIN] Fetching all users for management...');
+    const result = await pool.query(`
+      SELECT
+        u.id, u.email, u.role, u.status, u.email_verified, u.created_at,
+        COALESCE(i.company_name, s.organization_name) AS display_name,
+        i.sector,
+        s.organization_type
+      FROM users u
+      LEFT JOIN industries  i ON i.user_id = u.id
+      LEFT JOIN stakeholders s ON s.user_id = u.id
+      ORDER BY u.created_at DESC
+    `);
+    console.log(`[ADMIN] Found ${result.rows.length} users for management`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("[ADMIN] Get all users error:", err.message);
+    console.error("[ADMIN] Error details:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
