@@ -116,22 +116,37 @@ router.get('/payment/verify/:tx_ref', authenticateToken, async (req, res) => {
           const { user_id, plan, amount } = paymentResult.rows[0];
           
           // Calculate subscription end date
-          const duration = plan === 'monthly' ? '1 month' : '1 year';
+          const endDate = new Date();
+          if (plan === 'monthly') {
+            endDate.setMonth(endDate.getMonth() + 1);
+          } else {
+            endDate.setFullYear(endDate.getFullYear() + 1);
+          }
           
-          // Activate subscription
+          // Update users table
+          await pool.query(
+            `UPDATE users 
+             SET is_subscribed = true, 
+                 subscription_expires_at = $1, 
+                 subscription_type = 'premium' 
+             WHERE id = $2`,
+            [endDate, user_id]
+          );
+          
+          // Insert/update subscriptions table
           await pool.query(
             `INSERT INTO subscriptions (user_id, plan, amount, start_date, end_date, status, payment_method, transaction_id)
-             VALUES ($1, $2, $3, NOW(), NOW() + INTERVAL '${duration}', 'active', 'chapa', $4)
+             VALUES ($1, $2, $3, NOW(), $4, 'active', 'chapa', $5)
              ON CONFLICT (user_id) 
              DO UPDATE SET 
                plan = $2, 
                amount = $3, 
                start_date = NOW(), 
-               end_date = NOW() + INTERVAL '${duration}', 
+               end_date = $4, 
                status = 'active',
                payment_method = 'chapa',
-               transaction_id = $4`,
-            [user_id, plan, amount, tx_ref]
+               transaction_id = $5`,
+            [user_id, plan, amount, endDate, tx_ref]
           );
         }
       }
@@ -181,21 +196,39 @@ router.post('/callback', async (req, res) => {
 
       if (paymentResult.rows.length > 0) {
         const { user_id, plan, amount } = paymentResult.rows[0];
-        const duration = plan === 'monthly' ? '1 month' : '1 year';
         
+        // Calculate subscription end date
+        const endDate = new Date();
+        if (plan === 'monthly') {
+          endDate.setMonth(endDate.getMonth() + 1);
+        } else {
+          endDate.setFullYear(endDate.getFullYear() + 1);
+        }
+        
+        // Update users table
+        await pool.query(
+          `UPDATE users 
+           SET is_subscribed = true, 
+               subscription_expires_at = $1, 
+               subscription_type = 'premium' 
+           WHERE id = $2`,
+          [endDate, user_id]
+        );
+        
+        // Insert/update subscriptions table
         await pool.query(
           `INSERT INTO subscriptions (user_id, plan, amount, start_date, end_date, status, payment_method, transaction_id)
-           VALUES ($1, $2, $3, NOW(), NOW() + INTERVAL '${duration}', 'active', 'chapa', $4)
+           VALUES ($1, $2, $3, NOW(), $4, 'active', 'chapa', $5)
            ON CONFLICT (user_id) 
            DO UPDATE SET 
              plan = $2, 
              amount = $3, 
              start_date = NOW(), 
-             end_date = NOW() + INTERVAL '${duration}', 
+             end_date = $4, 
              status = 'active',
              payment_method = 'chapa',
-             transaction_id = $4`,
-          [user_id, plan, amount, tx_ref]
+             transaction_id = $5`,
+          [user_id, plan, amount, endDate, tx_ref]
         );
       }
     }

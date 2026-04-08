@@ -134,3 +134,21 @@
     flex-direction: column;
   }
 }
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.success-badge {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.failed-badge {
+  background: #fee2e2;
+  color: #991b1b;
+}
