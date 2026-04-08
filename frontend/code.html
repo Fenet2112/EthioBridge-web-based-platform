@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PartnerPortal | Business Directory</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Manrope & Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#e1e9ee",
+                    "error-container": "#fe8983",
+                    "on-error-container": "#752121",
+                    "tertiary-dim": "#4b5369",
+                    "primary-fixed": "#d3e4ff",
+                    "error-dim": "#4e0309",
+                    "surface-bright": "#f7f9fb",
+                    "background": "#f7f9fb",
+                    "on-primary-container": "#355379",
+                    "outline": "#717c82",
+                    "error": "#9f403d",
+                    "secondary-container": "#d5e3fc",
+                    "on-primary-fixed-variant": "#3f5d83",
+                    "primary-container": "#d3e4ff",
+                    "surface-dim": "#cfdce3",
+                    "tertiary-fixed-dim": "#ccd4ee",
+                    "on-tertiary": "#f9f8ff",
+                    "surface-container-lowest": "#ffffff",
+                    "primary": "#426086",
+                    "on-surface-variant": "#566166",
+                    "on-secondary-fixed": "#324053",
+                    "inverse-primary": "#b3d1fd",
+                    "on-background": "#2a3439",
+                    "on-secondary-container": "#455367",
+                    "surface-tint": "#426086",
+                    "tertiary": "#575f75",
+                    "outline-variant": "#a9b4b9",
+                    "on-error": "#fff7f6",
+                    "on-primary-fixed": "#214165",
+                    "inverse-on-surface": "#9a9d9f",
+                    "secondary-fixed": "#d5e3fc",
+                    "tertiary-fixed": "#dae2fd",
+                    "on-tertiary-fixed": "#373f54",
+                    "tertiary-container": "#dae2fd",
+                    "inverse-surface": "#0b0f10",
+                    "primary-fixed-dim": "#bbd6ff",
+                    "secondary-dim": "#465468",
+                    "on-primary": "#f6f7ff",
+                    "on-tertiary-fixed-variant": "#535b71",
+                    "on-secondary-fixed-variant": "#4e5c71",
+                    "on-tertiary-container": "#4a5167",
+                    "surface-container-low": "#f0f4f7",
+                    "secondary-fixed-dim": "#c7d5ed",
+                    "surface-variant": "#d9e4ea",
+                    "surface-container": "#e8eff3",
+                    "secondary": "#526074",
+                    "primary-dim": "#365479",
+                    "on-surface": "#2a3439",
+                    "surface-container-highest": "#d9e4ea",
+                    "on-secondary": "#f8f8ff",
+                    "surface": "#f7f9fb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased">
+<!-- TopNavBar (Shared Component) -->
+<nav class="fixed top-0 w-full z-50 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-sm dark:shadow-none">
+<div class="flex justify-between items-center w-full px-8 py-4 max-w-screen-2xl mx-auto">
+<div class="flex items-center gap-12">
+<span class="text-2xl font-bold text-slate-800 dark:text-slate-100 font-headline">PartnerPortal</span>
+<div class="hidden md:flex items-center gap-8 font-manrope tracking-tight font-semibold">
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition-colors" href="#">Discover</a>
+<a class="text-[#426086] dark:text-[#526074] border-b-2 border-[#426086] pb-1" href="#">Partners</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition-colors" href="#">Products</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition-colors" href="#">Industries</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="px-5 py-2 text-sm font-semibold text-[#426086] hover:bg-slate-100/50 transition-all rounded-lg">Sign In</button>
+<button class="px-5 py-2 text-sm font-semibold bg-primary text-on-primary rounded-lg shadow-sm hover:opacity-90 transition-all">List Your Business</button>
+</div>
+</div>
+</nav>
+<!-- Main Content Shell -->
+<main class="pt-24 pb-20">
+<!-- Hero & Search Section -->
+<section class="px-8 py-16 max-w-screen-2xl mx-auto">
+<div class="flex flex-col gap-6 max-w-3xl">
+<h1 class="text-5xl font-extrabold tracking-tight text-on-background leading-tight">
+                    Find the perfect <span class="text-primary">industrial partner</span> for your next venture.
+                </h1>
+<p class="text-lg text-on-surface-variant max-w-xl leading-relaxed">
+                    Access a curated network of verified manufacturers, logistics providers, and industrial consultants across 40+ sectors.
+                </p>
+<!-- Search Component -->
+<div class="mt-8 relative flex flex-col md:flex-row gap-2 bg-surface-container-lowest p-2 rounded-xl shadow-xl shadow-slate-200/50">
+<div class="flex-1 flex items-center px-4 gap-3 border-r-0 md:border-r border-outline-variant/20">
+<span class="material-symbols-outlined text-outline">search</span>
+<input class="w-full border-none focus:ring-0 text-on-surface bg-transparent py-3" placeholder="Search by company name or service..." type="text"/>
+</div>
+<div class="flex-1 flex items-center px-4 gap-3">
+<span class="material-symbols-outlined text-outline">location_on</span>
+<input class="w-full border-none focus:ring-0 text-on-surface bg-transparent py-3" placeholder="Location (City, State)" type="text"/>
+</div>
+<button class="bg-primary text-on-primary px-10 py-3 rounded-lg font-bold hover:bg-primary-dim transition-colors">
+                        Search
+                    </button>
+</div>
+</div>
+</section>
+<!-- Filter Bar -->
+<section class="px-8 py-6 sticky top-[72px] z-40 bg-surface/95 backdrop-blur-sm border-y border-outline-variant/10">
+<div class="max-w-screen-2xl mx-auto flex flex-wrap items-center gap-6">
+<div class="flex items-center gap-2">
+<label class="text-[10px] font-bold uppercase tracking-widest text-outline">Sector</label>
+<select class="bg-surface-container-lowest border-outline-variant/20 rounded-lg text-sm px-4 py-2 focus:ring-primary focus:border-primary">
+<option>All Categories</option>
+<option>Manufacturing</option>
+<option>Logistics</option>
+<option>Energy</option>
+<option>Chemicals</option>
+</select>
+</div>
+<div class="flex items-center gap-2">
+<label class="text-[10px] font-bold uppercase tracking-widest text-outline">Budget Range</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-outline">$</span>
+<input class="w-32 bg-surface-container-lowest border-outline-variant/20 rounded-lg text-sm pl-6 py-2 focus:ring-primary focus:border-primary" placeholder="Min Budget" type="number"/>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<label class="text-[10px] font-bold uppercase tracking-widest text-outline">Certifications</label>
+<select class="bg-surface-container-lowest border-outline-variant/20 rounded-lg text-sm px-4 py-2 focus:ring-primary focus:border-primary">
+<option>ISO 9001</option>
+<option>Green Certified</option>
+<option>ITAR Registered</option>
+</select>
+</div>
+<div class="ml-auto">
+<span class="text-xs font-medium text-on-surface-variant">Showing 248 verified partners</span>
+</div>
+</div>
+</section>
+<!-- Company Cards Grid -->
+<section class="px-8 py-12 max-w-screen-2xl mx-auto">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<!-- Card 1 -->
+<div class="group bg-surface-container-lowest rounded-xl p-6 transition-all hover:bg-surface-bright flex flex-col gap-6 shadow-sm">
+<div class="flex justify-between items-start">
+<div class="w-16 h-16 rounded-lg bg-surface-container-high overflow-hidden">
+<img alt="Apex Manufacturing Logo" class="w-full h-full object-cover" data-alt="minimalist logo of a modern manufacturing plant inside a clean square frame with soft shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPt254XmslP0dRA2cqNfktrXdE3PNTyU5N-5QHQ0FRSL4dmg2FVRCCOV--oiiESZOkokQsbTYZghdl-CgpjZiRMzjGVnx9QA_gG3fGniDDzjDDbo1aGGUgrC_cwU8THEfjGFF1l9CYRdsAyRiGD0Z13lYX231nA0_wFkM0xbVHXy3f4-qKd4Ae7zCvHiZKyWahsaXzIht5vLVuDER0ycAf5o_0RNicrp9b3IAYfFtq_xsFAtw_L2QIKNaqeNVp6cht05Jq4avG3vs"/>
+</div>
+<span class="px-2 py-1 bg-tertiary-container text-on-tertiary-container text-[10px] font-bold uppercase tracking-tighter rounded">Verified</span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-slate-800 mb-1 group-hover:text-primary transition-colors">Apex Advanced Manufacturing</h3>
+<div class="flex items-center gap-2 text-sm text-outline mb-4">
+<span class="material-symbols-outlined text-base">factory</span>
+<span>Precision Engineering</span>
+<span class="text-outline-variant">•</span>
+<span class="material-symbols-outlined text-base">location_on</span>
+<span>Chicago, IL</span>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed line-clamp-2">
+                            Specializing in CNC machining and additive manufacturing for aerospace and medical sectors with 20+ years of expertise.
+                        </p>
+</div>
+<div class="flex items-center gap-3 mt-auto pt-4 border-t border-outline-variant/10">
+<button class="flex-1 py-2.5 text-xs font-bold text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition-all">View Details</button>
+<button class="flex-1 py-2.5 text-xs font-bold bg-primary text-on-primary rounded-lg hover:bg-primary-dim shadow-sm transition-all">Message</button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group bg-surface-container-lowest rounded-xl p-6 transition-all hover:bg-surface-bright flex flex-col gap-6 shadow-sm">
+<div class="flex justify-between items-start">
+<div class="w-16 h-16 rounded-lg bg-surface-container-high overflow-hidden">
+<img alt="Summit Logistics Logo" class="w-full h-full object-cover" data-alt="professional company logo for a global shipping and logistics firm featuring blue tones and geometric shapes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDckNDtctFRVEzrW8bWY9YjeVLtQYEE9PHH28E60xc5lGXCHzoJ_z11a1YJ6BZnT6lLO3urYl5svZYyy71ZIj3kP4a11ux_xZPoasHieWVGtv2eKomaFlAJycYIs-jRxMfyNutdhDpo6OyWLD5kE842TbL-cVx-pm3v6o0b2KDHE3cAphfbMAu0nZo9tUBPX8sKsYRRuweSZIHvaJpZo7nA5n1BrIu0Tm9U_iv-NLQ246hidqygionod7YT4X6H08_bYrZK9hlBnLI"/>
+</div>
+<span class="px-2 py-1 bg-tertiary-container text-on-tertiary-container text-[10px] font-bold uppercase tracking-tighter rounded">Partner</span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-slate-800 mb-1 group-hover:text-primary transition-colors">Summit Global Logistics</h3>
+<div class="flex items-center gap-2 text-sm text-outline mb-4">
+<span class="material-symbols-outlined text-base">local_shipping</span>
+<span>Supply Chain</span>
+<span class="text-outline-variant">•</span>
+<span class="material-symbols-outlined text-base">location_on</span>
+<span>Rotterdam, NL</span>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed line-clamp-2">
+                            Full-service international logistics including warehousing, custom clearance, and cold-chain solutions for pharma.
+                        </p>
+</div>
+<div class="flex items-center gap-3 mt-auto pt-4 border-t border-outline-variant/10">
+<button class="flex-1 py-2.5 text-xs font-bold text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition-all">View Details</button>
+<button class="flex-1 py-2.5 text-xs font-bold bg-primary text-on-primary rounded-lg hover:bg-primary-dim shadow-sm transition-all">Message</button>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="group bg-surface-container-lowest rounded-xl p-6 transition-all hover:bg-surface-bright flex flex-col gap-6 shadow-sm">
+<div class="flex justify-between items-start">
+<div class="w-16 h-16 rounded-lg bg-surface-container-high overflow-hidden">
+<img alt="Veritas Energy Logo" class="w-full h-full object-cover" data-alt="abstract professional emblem for an energy consulting firm with industrial blue and grey color scheme" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0af-ShcQP7jpg7gDnWyNU2lk2I6JCYRoQnMuHcNwQ0ZZw0BUa9AgscDPmTRn84gJ0cZfesH_e50_epqVamMEbqxkKcI6YP4YSNRotayJvp9J4veyzv0icGNcook-qk_F3mekIyaeMbukubpBU_2VW2eKyyoGbRLMU2yZbVHHFp3l96QyP1VYFmeGlt9_bnAYXTvcKw7cPbVoc5vqZ_Lx1mvgFnQiRyQZ99AWsv4KMXJLHqVUfLS_r6nqnt_-Tn5xleq08TA3Mgz4"/>
+</div>
+<span class="px-2 py-1 bg-tertiary-container text-on-tertiary-container text-[10px] font-bold uppercase tracking-tighter rounded">Premium</span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-slate-800 mb-1 group-hover:text-primary transition-colors">Veritas Energy Solutions</h3>
+<div class="flex items-center gap-2 text-sm text-outline mb-4">
+<span class="material-symbols-outlined text-base">bolt</span>
+<span>Energy &amp; Utilities</span>
+<span class="text-outline-variant">•</span>
+<span class="material-symbols-outlined text-base">location_on</span>
+<span>Austin, TX</span>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed line-clamp-2">
+                            Leading industrial energy auditing and sustainable infrastructure transition firm for large-scale production facilities.
+                        </p>
+</div>
+<div class="flex items-center gap-3 mt-auto pt-4 border-t border-outline-variant/10">
+<button class="flex-1 py-2.5 text-xs font-bold text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition-all">View Details</button>
+<button class="flex-1 py-2.5 text-xs font-bold bg-primary text-on-primary rounded-lg hover:bg-primary-dim shadow-sm transition-all">Message</button>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="group bg-surface-container-lowest rounded-xl p-6 transition-all hover:bg-surface-bright flex flex-col gap-6 shadow-sm">
+<div class="flex justify-between items-start">
+<div class="w-16 h-16 rounded-lg bg-surface-container-high overflow-hidden">
+<img alt="Helix Chemicals Logo" class="w-full h-full object-cover" data-alt="industrial corporate logo for a chemical manufacturing plant with clean minimalist design and cool tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKxszOfwu86i6QYB9qmpgbUpjs0HYcJn5ZFCObg6mHsvVhkUTf3UXGg0VoN2-FuIFAsKTl_2HBQFa9GXedD34msDqbpoNKaKYC64jU_FjSZBUEv1sRVB5HDKzCUkQvLyzRDtNUON13gWOJlKbcHLBrvYekxB-N196xsKRAdcX0NSXwjNjToPXIfZ9VjLR8OraTBlC58oAv7_XrnoQ_elsmUQ662bnKIMrSbRteKE5nKioKGKEsq5j7Su6vGyffjrXq_u-LDlL6x2U"/>
+</div>
+<span class="px-2 py-1 bg-tertiary-container text-on-tertiary-container text-[10px] font-bold uppercase tracking-tighter rounded">Verified</span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-slate-800 mb-1 group-hover:text-primary transition-colors">Helix Chemical Group</h3>
+<div class="flex items-center gap-2 text-sm text-outline mb-4">
+<span class="material-symbols-outlined text-base">science</span>
+<span>Industrial Chemicals</span>
+<span class="text-outline-variant">•</span>
+<span class="material-symbols-outlined text-base">location_on</span>
+<span>Frankfurt, DE</span>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed line-clamp-2">
+                            Global supplier of specialty polymers and industrial coatings for the automotive and construction industries.
+                        </p>
+</div>
+<div class="flex items-center gap-3 mt-auto pt-4 border-t border-outline-variant/10">
+<button class="flex-1 py-2.5 text-xs font-bold text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition-all">View Details</button>
+<button class="flex-1 py-2.5 text-xs font-bold bg-primary text-on-primary rounded-lg hover:bg-primary-dim shadow-sm transition-all">Message</button>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="group bg-surface-container-lowest rounded-xl p-6 transition-all hover:bg-surface-bright flex flex-col gap-6 shadow-sm">
+<div class="flex justify-between items-start">
+<div class="w-16 h-16 rounded-lg bg-surface-container-high overflow-hidden">
+<img alt="Ironclad Construction Logo" class="w-full h-full object-cover" data-alt="minimalist architectural logo of a crane and building silhouette in professional slate grey and navy" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJlFBnVtjpt4xtod7fDWxgx8wAOgGbGnluHJOGOkGEfUOV2AvAxYi7kQhX3aOEEfan-lunDw3QkzKSiYUvPU3cDCdbz8R8FlpZcS8caLIhZuzvuEyd6z7xxtJ9dnJ73_Jl5sLhdRFfcQJIXsOwhCNEXuq_MkfJ4HBc2Np7wWHQjv9eFR-tVzJlYznXMGjmUknIqZSuZnkV_blMWdEYFBu9Brm_6xwQhWGazikjqfe2Lg4yLek0o8nfE9saTAg2k9sjeW_3S5cUFVY"/>
+</div>
+<span class="px-2 py-1 bg-tertiary-container text-on-tertiary-container text-[10px] font-bold uppercase tracking-tighter rounded">Verified</span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-slate-800 mb-1 group-hover:text-primary transition-colors">Ironclad Industrial Construction</h3>
+<div class="flex items-center gap-2 text-sm text-outline mb-4">
+<span class="material-symbols-outlined text-base">architecture</span>
+<span>Heavy Construction</span>
+<span class="text-outline-variant">•</span>
+<span class="material-symbols-outlined text-base">location_on</span>
+<span>Toronto, CA</span>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed line-clamp-2">
+                            Experts in warehouse design-build and refinery infrastructure projects across North America.
+                        </p>
+</div>
+<div class="flex items-center gap-3 mt-auto pt-4 border-t border-outline-variant/10">
+<button class="flex-1 py-2.5 text-xs font-bold text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition-all">View Details</button>
+<button class="flex-1 py-2.5 text-xs font-bold bg-primary text-on-primary rounded-lg hover:bg-primary-dim shadow-sm transition-all">Message</button>
+</div>
+</div>
+<!-- Card 6 -->
+<div class="group bg-surface-container-lowest rounded-xl p-6 transition-all hover:bg-surface-bright flex flex-col gap-6 shadow-sm">
+<div class="flex justify-between items-start">
+<div class="w-16 h-16 rounded-lg bg-surface-container-high overflow-hidden">
+<img alt="Titan Consulting Logo" class="w-full h-full object-cover" data-alt="corporate headquarter building reflection in a glass facade used as an abstract business logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqgDDabm_vpu9W5mtn_H7vY6VdVP56V0z3mLnVutJEmgcgmYpZHF8nb6nhGjL7zdyD0_QzQKHHZz7mQKpJO7U60UvIUAl8KdlpME79L2IQNHN5K_uysHMXMGhBNu1reocY72v-OZr4p-gWwLFqtOz76P9uDyBL_BnzET0b7rcNUtgRavo04ZswgC8RrjeRFOeUIIsTngHEe39HfxilhfRd2TtH1BVHozMo9yzSC4dd4rKaGKKf8e0ZvTir4sMz_gDqvy7iIarZ914"/>
+</div>
+<span class="px-2 py-1 bg-tertiary-container text-on-tertiary-container text-[10px] font-bold uppercase tracking-tighter rounded">Expert</span>
+</div>
+<div>
+<h3 class="text-xl font-bold text-slate-800 mb-1 group-hover:text-primary transition-colors">Titan Industrial Consulting</h3>
+<div class="flex items-center gap-2 text-sm text-outline mb-4">
+<span class="material-symbols-outlined text-base">groups</span>
+<span>Operations &amp; Advisory</span>
+<span class="text-outline-variant">•</span>
+<span class="material-symbols-outlined text-base">location_on</span>
+<span>London, UK</span>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed line-clamp-2">
+                            Bespoke advisory for industrial scaling, lean manufacturing implementation, and digital twin technology adoption.
+                        </p>
+</div>
+<div class="flex items-center gap-3 mt-auto pt-4 border-t border-outline-variant/10">
+<button class="flex-1 py-2.5 text-xs font-bold text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition-all">View Details</button>
+<button class="flex-1 py-2.5 text-xs font-bold bg-primary text-on-primary rounded-lg hover:bg-primary-dim shadow-sm transition-all">Message</button>
+</div>
+</div>
+</div>
+<!-- Pagination/Load More -->
+<div class="mt-16 flex justify-center">
+<button class="px-8 py-3 border-2 border-outline-variant/20 text-on-surface font-bold rounded-lg hover:bg-surface-container-low transition-all flex items-center gap-2">
+                    Load More Partners
+                    <span class="material-symbols-outlined text-base">expand_more</span>
+</button>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant/10 py-12 px-8">
+<div class="max-w-screen-2xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+<div class="col-span-1 md:col-span-1">
+<span class="text-xl font-bold text-slate-800 font-headline">PartnerPortal</span>
+<p class="mt-4 text-sm text-on-surface-variant leading-relaxed">
+                    The world's leading B2B industrial directory for verified enterprise partnerships and supply chain optimization.
+                </p>
+</div>
+<div>
+<h4 class="text-xs font-bold uppercase tracking-widest text-outline mb-4">Directory</h4>
+<ul class="flex flex-col gap-3 text-sm text-on-surface-variant">
+<li><a class="hover:text-primary transition-colors" href="#">All Partners</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">By Industry</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">By Location</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">New Listings</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-xs font-bold uppercase tracking-widest text-outline mb-4">Resources</h4>
+<ul class="flex flex-col gap-3 text-sm text-on-surface-variant">
+<li><a class="hover:text-primary transition-colors" href="#">Verification Process</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Industry Reports</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Partnership Guide</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Pricing Plans</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-xs font-bold uppercase tracking-widest text-outline mb-4">Support</h4>
+<ul class="flex flex-col gap-3 text-sm text-on-surface-variant">
+<li><a class="hover:text-primary transition-colors" href="#">Help Center</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Terms of Service</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Privacy Policy</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Contact Us</a></li>
+</ul>
+</div>
+</div>
+<div class="max-w-screen-2xl mx-auto mt-12 pt-8 border-t border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-xs text-outline">© 2024 PartnerPortal Industrial Network. All rights reserved.</p>
+<div class="flex gap-6">
+<a class="text-outline hover:text-primary" href="#"><span class="material-symbols-outlined text-lg">public</span></a>
+<a class="text-outline hover:text-primary" href="#"><span class="material-symbols-outlined text-lg">mail</span></a>
+<a class="text-outline hover:text-primary" href="#"><span class="material-symbols-outlined text-lg">description</span></a>
+</div>
+</div>
+</footer>
+</body></html>
