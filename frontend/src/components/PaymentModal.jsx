@@ -118,23 +118,32 @@ function PaymentModal({ plan, amount, amountLabel, onClose, onSuccess }) {
 
     setStep("processing");
 
-    // Simulate payment processing delay
-    await new Promise(r => setTimeout(r, 2200));
-
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`${API_BASE_URL}/api/subscription/activate`, {
+      // Initialize Chapa payment
+      const res = await fetch(`${API_BASE_URL}/api/chapa/payment/initialize`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { 
+          "Content-Type": "application/json", 
+          Authorization: `Bearer ${token}` 
+        },
         body: JSON.stringify({
           plan,
-          payment_method: "card",
-          card_last4: card.number.replace(/\s/g, "").slice(-4),
+          amount: plan === "monthly" ? amount : amount,
+          phone_number: card.number.replace(/\s/g, ""), // Use card number as phone for now
         }),
       });
+      
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      setStep("success");
+      
+      if (!res.ok) throw new Error(data.message || "Payment initialization failed");
+
+      // Redirect to Chapa checkout
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        throw new Error("No checkout URL received");
+      }
     } catch (err) {
       setErrorMsg(err.message || "Payment failed. Please try again.");
       setStep("error");
