@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
   FaIndustry, FaComments, FaBox, FaStar, FaUser, FaQuestionCircle,
-  FaBridge, FaTimes, FaHome, FaDoorOpen
+  FaLink, FaTimes, FaHome, FaDoorOpen
 } from "react-icons/fa";
 import ProfileDropdown from "./ProfileDropdown";
 import DarkModeToggle from "./DarkModeToggle";
@@ -60,7 +60,7 @@ function StakeholderNav({ unreadCount = 0 }) {
 
         {/* Brand */}
         <div className="sk-nav-brand" onClick={() => go("/stakeholders")}>
-          <span className="sk-nav-logo"><FaBridge /></span>
+          <span className="sk-nav-logo"><FaLink /></span>
           <span className="sk-nav-name">EthioBridge</span>
         </div>
 
@@ -77,7 +77,7 @@ function StakeholderNav({ unreadCount = 0 }) {
       {/* ── Slide-in drawer ── */}
       <aside className={`sk-drawer ${open ? "open" : ""}`} ref={drawerRef}>
         <div className="sk-drawer-header">
-          <span className="sk-drawer-title"><FaBridge /> EthioBridge</span>
+          <span className="sk-drawer-title"><FaLink /> EthioBridge</span>
           <button className="sk-drawer-close" onClick={() => setOpen(false)}><FaTimes /></button>
         </div>
 
