@@ -8,6 +8,37 @@ import AnalyticsView from "../views/AnalyticsView";
 import ActivityLogsView, { logAction } from "../views/ActivityLogsView";
 import NotificationsView from "../views/NotificationsView";
 import Settings from "./Settings";
+import { 
+  FaChartBar, 
+  FaUsers, 
+  FaClipboardList, 
+  FaShieldAlt, 
+  FaIndustry, 
+  FaBox, 
+  FaChartLine, 
+  FaBell, 
+  FaFileAlt, 
+  FaCog, 
+  FaQuestionCircle,
+  FaHome,
+  FaDoorOpen,
+  FaSun,
+  FaMoon,
+  FaEye,
+  FaBan,
+  FaPause,
+  FaUnlock,
+  FaTimes,
+  FaCheck,
+  FaEnvelope,
+  FaCalendar,
+  FaBuilding,
+  FaPhone,
+  FaGlobe,
+  FaIdCard,
+  FaUser,
+  FaExclamationTriangle
+} from "react-icons/fa";
 
 const API = process.env.REACT_APP_API_URL || "https://ethiobridge-web-based-platform.onrender.com";
 
@@ -30,17 +61,17 @@ function StatusBadge({ status }) {
 }
 
 const NAV = [
-  { id: "home",      icon: "📊", label: "Dashboard" },
-  { id: "users",     icon: "👥", label: "Approvals" },
-  { id: "purchases", icon: "📋", label: "Purchase Requests" },
-  { id: "manage",    icon: "🛡️", label: "User Management" },
-  { id: "industries",icon: "🏭", label: "Industries" },
-  { id: "products",  icon: "📦", label: "Products" },
-  { id: "analytics", icon: "📈", label: "Analytics" },
-  { id: "notifs",    icon: "🔔", label: "Notifications" },
-  { id: "logs",      icon: "📝", label: "Activity Logs" },
-  { id: "settings",  icon: "⚙️", label: "Settings" },
-  { id: "help",      icon: "❓", label: "Help", external: true, path: "/help" },
+  { id: "home",      icon: <FaChartBar />, label: "Dashboard" },
+  { id: "users",     icon: <FaUsers />, label: "Approvals" },
+  { id: "purchases", icon: <FaClipboardList />, label: "Purchase Requests" },
+  { id: "manage",    icon: <FaShieldAlt />, label: "User Management" },
+  { id: "industries",icon: <FaIndustry />, label: "Industries" },
+  { id: "products",  icon: <FaBox />, label: "Products" },
+  { id: "analytics", icon: <FaChartLine />, label: "Analytics" },
+  { id: "notifs",    icon: <FaBell />, label: "Notifications" },
+  { id: "logs",      icon: <FaFileAlt />, label: "Activity Logs" },
+  { id: "settings",  icon: <FaCog />, label: "Settings" },
+  { id: "help",      icon: <FaQuestionCircle />, label: "Help", external: true, path: "/help" },
 ];
 
 function Dashboard() {
@@ -277,7 +308,7 @@ function Dashboard() {
           ))}
         </nav>
         <div style={{ marginTop: "auto", padding: "0 12px 24px" }}>
-          <button className="logout-btn" onClick={handleLogout}><span>🚪</span> Logout</button>
+          <button className="logout-btn" onClick={handleLogout}><FaDoorOpen /> Logout</button>
         </div>
       </aside>
 
@@ -285,13 +316,15 @@ function Dashboard() {
       <div className="admin-body">
         {/* Top nav bar */}
         <header className="admin-header">
-          <button className="hamburger" onClick={() => setSidebarOpen(true)}>☰</button>
+          <button className="hamburger" onClick={() => setSidebarOpen(true)}>
+            <span style={{ fontSize: "1.3rem" }}>☰</span>
+          </button>
           <div className="header-title">{NAV.find(n => n.id === view)?.label || "Dashboard"}</div>
           <div className="header-actions">
             <button className="header-icon-btn" onClick={() => setDarkMode(!darkMode)} title="Toggle dark mode">
-              {darkMode ? "☀️" : "🌙"}
+              {darkMode ? <FaSun /> : <FaMoon />}
             </button>
-            <button className="header-icon-btn" onClick={() => navTo("notifs")} title="Notifications">🔔</button>
+            <button className="header-icon-btn" onClick={() => navTo("notifs")} title="Notifications"><FaBell /></button>
             <div className="header-avatar">A</div>
           </div>
         </header>
@@ -471,17 +504,17 @@ function Dashboard() {
                       {filteredUsers.map(u => (
                         <tr key={u.id} className={`um-row um-row-${u.status}`}>
                           <td className="um-id">#{u.id}</td>
-                          <td className="um-name"><span className="um-role-icon">{u.role === "industry" ? "🏭" : "🤝"}</span>{u.display_name || "—"}</td>
+                          <td className="um-name"><span className="um-role-icon">{u.role === "industry" ? <FaIndustry /> : <FaUsers />}</span>{u.display_name || "—"}</td>
                           <td className="um-email">{u.email}</td>
                           <td><span className={`um-role-badge um-role-${u.role}`}>{u.role === "industry" ? "Industry" : "Stakeholder"}</span></td>
                           <td><StatusBadge status={u.status} /></td>
                           <td className="um-date">{new Date(u.created_at).toLocaleDateString()}</td>
                           <td>
                             <div className="um-actions">
-                              <button className="um-btn um-view" onClick={() => fetchUserDetails(u.id)}>👁️ View</button>
-                              {u.status !== "banned" && <button className="um-btn um-ban" onClick={() => { setActionModal({ user: u, action: "ban" }); setActionReason(""); }}>🚫 Ban</button>}
-                              {u.status !== "suspended" && u.status !== "banned" && <button className="um-btn um-suspend" onClick={() => { setActionModal({ user: u, action: "suspend" }); setActionReason(""); }}>⏸ Suspend</button>}
-                              {(u.status === "suspended" || u.status === "banned") && <button className="um-btn um-activate" onClick={() => { setActionModal({ user: u, action: "activate" }); setActionReason(""); }}>🔓 Activate</button>}
+                              <button className="um-btn um-view" onClick={() => fetchUserDetails(u.id)}><FaEye /> View</button>
+                              {u.status !== "banned" && <button className="um-btn um-ban" onClick={() => { setActionModal({ user: u, action: "ban" }); setActionReason(""); }}><FaBan /> Ban</button>}
+                              {u.status !== "suspended" && u.status !== "banned" && <button className="um-btn um-suspend" onClick={() => { setActionModal({ user: u, action: "suspend" }); setActionReason(""); }}><FaPause /> Suspend</button>}
+                              {(u.status === "suspended" || u.status === "banned") && <button className="um-btn um-activate" onClick={() => { setActionModal({ user: u, action: "activate" }); setActionReason(""); }}><FaUnlock /> Activate</button>}
                             </div>
                           </td>
                         </tr>
