@@ -1,10 +1,6 @@
 ﻿import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
-import { 
-  FaFlag, FaCheckCircle, FaShieldAlt, FaBolt, FaChartBar,
-  FaHardHat, FaIndustry, FaHandshake, FaMapMarkerAlt, FaBox, FaSearch
-} from "react-icons/fa";
 import StakeholderNav from "../components/StakeholderNav";
 import SubscriptionModal from "../components/SubscriptionModal";
 import RecommendWidget from "../components/RecommendWidget";
@@ -16,6 +12,7 @@ let socket;
 function Stakeholders() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
   const [industries, setIndustries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -30,13 +27,10 @@ function Stakeholders() {
   const [conversationId, setConversationId] = useState(null);
   const [receiverId, setReceiverId] = useState(null);
   const [showSubModal, setShowSubModal] = useState(false);
-  // eslint-disable-next-line no-unused-vars
   const [subStatus, setSubStatus] = useState(null);
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
-
-  // ─── Emoji Picker Dynamic Load ───
   const [PickerClass, setPickerClass] = useState(null);
 
   useEffect(() => {
@@ -45,12 +39,10 @@ function Stakeholders() {
     });
   }, []);
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Socket.IO setup
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("user") || "{}");
     
@@ -58,13 +50,10 @@ function Stakeholders() {
       socket = io(API_BASE_URL);
       
       socket.on('connect', () => {
-        console.log('Socket connected:', socket.id);
         socket.emit('join', userData.id);
       });
 
       socket.on('receive_message', (data) => {
-        console.log('Message received:', data);
-        // Only add message if it's for the current conversation
         if (data.conversationId === conversationId) {
           const newMsg = {
             id: Date.now(),
@@ -82,7 +71,6 @@ function Stakeholders() {
     }
   }, [conversationId]);
 
-  // Fetch industries from API
   useEffect(() => {
     const fetchIndustries = async () => {
       const token = localStorage.getItem("token");
@@ -94,7 +82,6 @@ function Stakeholders() {
       }
 
       try {
-        // First, refresh user status
         const statusRes = await fetch(`${API_BASE_URL}/api/profile/stakeholder/status`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -107,17 +94,13 @@ function Stakeholders() {
           }
         }
 
-        // Fetch subscription status
         const subRes = await fetch(`${API_BASE_URL}/api/subscription/status`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (subRes.ok) setSubStatus(await subRes.json());
         
-        // Then fetch industries
         const res = await fetch(`${API_BASE_URL}/api/industries`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Failed to fetch industries");
@@ -133,9 +116,9 @@ function Stakeholders() {
   }, [navigate]);
 
   const filteredIndustries = industries.filter((industry) =>
-    industry.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    industry.sector?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    industry.location?.toLowerCase().includes(searchTerm.toLowerCase())
+    (industry.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    industry.sector?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (locationFilter === "" || industry.location?.toLowerCase().includes(locationFilter.toLowerCase()))
   );
 
   const sendMessage = async () => {
@@ -164,7 +147,6 @@ function Stakeholders() {
     setSelectedFile(null);
 
     try {
-      // Save message to database
       const msgRes = await fetch(`${API_BASE_URL}/api/conversations/${conversationId}/messages`, {
         method: "POST",
         headers: {
@@ -175,14 +157,12 @@ function Stakeholders() {
       });
 
       if (msgRes.status === 402) {
-        // Remove optimistic message
         setMessages(prev => prev.filter(m => m.id !== newMsg.id));
         setCurrentMessage(messageText);
         setShowSubModal(true);
         return;
       }
 
-      // Send via Socket.IO for real-time delivery
       if (socket && socket.connected) {
         socket.emit('send_message', {
           conversationId,
@@ -211,7 +191,6 @@ function Stakeholders() {
     const userData = JSON.parse(localStorage.getItem("user") || "{}");
 
     try {
-      // Get or create conversation
       const convRes = await fetch(`${API_BASE_URL}/api/conversations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -222,7 +201,6 @@ function Stakeholders() {
       if (conversation) {
         setConversationId(conversation.id);
         
-        // Load existing messages
         const msgRes = await fetch(`${API_BASE_URL}/api/conversations/${conversation.id}/messages`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -237,11 +215,9 @@ function Stakeholders() {
         
         setMessages(formattedMsgs);
       } else {
-        // No conversation yet - will be created on first message
         setConversationId(null);
       }
       
-      // Set receiver ID (industry user_id)
       setReceiverId(industry.user_id);
       
     } catch (error) {
@@ -254,125 +230,117 @@ function Stakeholders() {
   };
 
   return (
-    <div className="stakeholder-page">
-      <Link to="/" className="home-icon-btn" title="Back to Home">
-        🏠
+    <div className="modern-stakeholder-page">
+      <Link to="/" className="home-icon-link">
+        <span className="material-icon">home</span>
       </Link>
+      
       <StakeholderNav />
 
-      {/* Hero */}
-      <div className="stakeholder-header">
-        {/* Animated background blobs */}
-        <div className="sh-blob sh-blob-1" />
-        <div className="sh-blob sh-blob-2" />
-        <div className="sh-blob sh-blob-3" />
-        {/* Grid overlay */}
-        <div className="sh-grid" />
-
-        <div className="sh-inner">
-          {/* ── Left: copy ── */}
-          <div className="sh-copy">
-            <div className="sh-badge">
-              <span className="sh-badge-pulse" />
-              <FaFlag /> Ethiopia's #1 Construction B2B Platform
-            </div>
-
-            <h1 className="sh-title">
-              Where Ethiopia's<br />
-              Construction Industry<br />
-              <span className="sh-highlight">Comes to Do Business.</span>
+      {/* Hero Section */}
+      <section className="hero-section">
+        <div className="hero-content">
+          <div className="hero-text">
+            <h1 className="hero-title">
+              Find the perfect <span className="text-green">industrial partner</span> for your next venture.
             </h1>
-
-            <p className="sh-subtitle">
-              Connect directly with verified manufacturers, suppliers, and
-              contractors across all 11 regions. Compare products, request
-              quotes, and close deals — faster than ever before.
+            <p className="hero-subtitle">
+              Access a curated network of verified manufacturers, suppliers, and contractors across Ethiopia's 11 regions.
             </p>
 
-            <div className="sh-features">
-              {[
-                { icon: <FaCheckCircle />, text: "Verified & approved industries only" },
-                { icon: <FaShieldAlt />, text: "Secure identity-verified requests"   },
-                { icon: <FaBolt />, text: "Real-time direct messaging"          },
-                { icon: <FaChartBar />, text: "Full analytics & market insights"    },
-              ].map(f => (
-                <div key={f.text} className="sh-feature">
-                  <span className="sh-feat-icon">{f.icon}</span>
-                  {f.text}
-                </div>
-              ))}
+            {/* Search Bar */}
+            <div className="search-container">
+              <div className="search-input-group">
+                <span className="material-icon">search</span>
+                <input
+                  type="text"
+                  placeholder="Search by company name or service..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="search-field"
+                />
+              </div>
+              <div className="search-input-group">
+                <span className="material-icon">location_on</span>
+                <input
+                  type="text"
+                  placeholder="Location (City, Region)"
+                  value={locationFilter}
+                  onChange={(e) => setLocationFilter(e.target.value)}
+                  className="search-field"
+                />
+              </div>
+              <button className="search-btn">Search</button>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* ── Right: floating stat cards ── */}
-          <div className="sh-cards">
-            {[
-              { icon: <FaHardHat />, value: "500+",  label: "Active Projects",    delay: "0s"    },
-              { icon: <FaIndustry />, value: "200+",  label: "Verified Industries", delay: "0.4s"  },
-              { icon: <FaHandshake />, value: "1,200+",label: "Connections Made",    delay: "0.8s"  },
-              { icon: <FaMapMarkerAlt />, value: "11",    label: "Regions Covered",     delay: "1.2s"  },
-            ].map(c => (
-              <div key={c.label} className="sh-card" style={{ animationDelay: c.delay }}>
-                <div className="sh-card-icon">{c.icon}</div>
-                <div className="sh-card-body">
-                  <strong>{c.value}</strong>
-                  <span>{c.label}</span>
-                </div>
-              </div>
-            ))}
+      {/* Filter Bar */}
+      <section className="filter-bar">
+        <div className="filter-content">
+          <div className="filter-group">
+            <label className="filter-label">SECTOR</label>
+            <select className="filter-select">
+              <option>All Categories</option>
+              <option>Manufacturing</option>
+              <option>Construction</option>
+              <option>Logistics</option>
+            </select>
+          </div>
+          <div className="filter-result">
+            <span>Showing {filteredIndustries.length} verified partners</span>
           </div>
         </div>
-      </div>
-
-      {/* Search */}
-      <div className="search-section">
-        <div className="search-wrapper">
-          <input
-            type="text"
-            placeholder="Search by company name, type or location..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
-          <span className="search-icon"><FaSearch /></span>
-        </div>
-      </div>
+      </section>
 
       {/* Recommendation Widget */}
-      <RecommendWidget mode="products" />
+      <div className="widget-container">
+        <RecommendWidget mode="products" />
+      </div>
 
-      {/* Industry Cards */}
-      <section className="recommendation-section">
-        <h2>{searchTerm ? "Search Results" : "Recommended Industries"}</h2>
-
+      {/* Company Cards Grid */}
+      <section className="cards-section">
         {loading ? (
-          <p className="no-results">Loading industries...</p>
+          <div className="loading-state">Loading industries...</div>
         ) : error ? (
-          <p className="no-results">Error: {error}</p>
+          <div className="error-state">Error: {error}</div>
         ) : filteredIndustries.length === 0 ? (
-          <p className="no-results">No industries found.</p>
+          <div className="empty-state">No industries found.</div>
         ) : (
-          <div className="industries-grid">
-            {filteredIndustries.map((industry, index) => (
-              <div key={industry.id || index} className="industry-card">
-                <div className="card-header">
-                  <h3>{industry.company_name}</h3>
-                  <span className="rating">★ {industry.rating || "New"}</span>
+          <div className="cards-grid">
+            {filteredIndustries.map((industry) => (
+              <div key={industry.id} className="company-card">
+                <div className="card-top">
+                  <div className="company-logo">
+                    {industry.company_name?.charAt(0) || "?"}
+                  </div>
+                  <span className="badge-verified">Verified</span>
                 </div>
-                <p className="industry-type">{industry.sector}</p>
-                <p className="location"><FaMapMarkerAlt /> {industry.location}</p>
-                {industry.product_count > 0 && (
-                  <p className="product-count"><FaBox /> {industry.product_count} products</p>
-                )}
+                
+                <div className="card-body">
+                  <h3 className="company-name">{industry.company_name}</h3>
+                  <div className="company-meta">
+                    <span className="material-icon">factory</span>
+                    <span>{industry.sector}</span>
+                    <span className="dot">•</span>
+                    <span className="material-icon">location_on</span>
+                    <span>{industry.location}</span>
+                  </div>
+                  <p className="company-desc">
+                    {industry.description || "Leading industrial partner providing quality products and services."}
+                  </p>
+                </div>
+
                 <div className="card-actions">
                   <button 
-                    className="view-details-btn"
+                    className="btn-outline"
                     onClick={() => handleViewDetails(industry.id)}
                   >
                     View Details
                   </button>
                   <button 
-                    className="contact-btn"
+                    className="btn-primary"
                     onClick={() => openMessageSidebar(industry)}
                   >
                     Message
@@ -384,7 +352,7 @@ function Stakeholders() {
         )}
       </section>
 
-      {/* Modern Chat Sidebar */}
+      {/* Chat Sidebar */}
       <div className={`chat-sidebar ${menuOpen ? "open" : ""}`}>
         <div className="chat-header">
           <div className="chat-avatar">
@@ -394,7 +362,9 @@ function Stakeholders() {
             <h3>{selectedIndustry?.company_name || "Industry"}</h3>
             <p>{selectedIndustry?.sector || "Construction Partner"}</p>
           </div>
-          <button className="close-chat" onClick={() => setMenuOpen(false)}>✕</button>
+          <button className="close-chat" onClick={() => setMenuOpen(false)}>
+            <span className="material-icon">close</span>
+          </button>
         </div>
 
         <div className="chat-messages">
@@ -422,7 +392,7 @@ function Stakeholders() {
 
         <div className="chat-input-area">
           <button
-            className="emoji-btn"
+            className="icon-btn"
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
           >
             😊
@@ -436,14 +406,14 @@ function Stakeholders() {
             accept="image/*,.pdf,.doc,.docx,.txt"
           />
           <button
-            className="attach-btn"
+            className="icon-btn"
             onClick={() => fileInputRef.current.click()}
           >
             📎
           </button>
 
           {selectedFile && (
-            <span className="file-name-preview">
+            <span className="file-preview">
               {selectedFile.name.length > 20
                 ? selectedFile.name.substring(0, 17) + "..."
                 : selectedFile.name}
@@ -467,14 +437,14 @@ function Stakeholders() {
 
           <button 
             onClick={sendMessage}
-            className="send-icon-btn"
+            className="send-btn"
             disabled={!currentMessage.trim() && !selectedFile}
           >
-            ➤
+            <span className="material-icon">send</span>
           </button>
 
           {showEmojiPicker && PickerClass && (
-            <div className="emoji-picker-container">
+            <div className="emoji-picker-wrapper">
               <PickerClass
                 onSelect={(emoji) => {
                   setCurrentMessage((prev) => prev + emoji.native);
@@ -490,7 +460,7 @@ function Stakeholders() {
             </div>
           )}
         </div>
-    </div>
+      </div>
 
       {showSubModal && (
         <SubscriptionModal
