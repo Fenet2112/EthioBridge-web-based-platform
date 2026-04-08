@@ -33,7 +33,15 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Handle preflight requests explicitly
+app.options('*', cors());
+
 app.use(express.json());
+
+// Health check endpoint - MUST be before other routes
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // 4. Make io accessible to routes
 app.set('io', io);
