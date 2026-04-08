@@ -197,10 +197,18 @@ router.post("/profile/industry", async (req, res) => {
       [user_id, company_name, sector, location, description || null, phone || null, website || null, established_year || null]
     );
 
-    // Update user status to pending
-    await pool.query("UPDATE users SET status = 'pending' WHERE id = $1", [user_id]);
+    // Only set status to pending if user is currently incomplete
+    // Don't reset approved users back to pending when they edit their profile
+    const currentStatus = userResult.rows[0].status;
+    if (currentStatus === 'incomplete') {
+      await pool.query("UPDATE users SET status = 'pending' WHERE id = $1", [user_id]);
+    }
 
-    res.json({ message: "Industry profile submitted. Awaiting admin approval." });
+    res.json({ 
+      message: currentStatus === 'incomplete' 
+        ? "Industry profile submitted. Awaiting admin approval." 
+        : "Industry profile updated successfully."
+    });
   } catch (error) {
     console.error("Industry profile error:", error);
     res.status(500).json({ message: "Server error" });
@@ -245,10 +253,18 @@ router.post("/profile/stakeholder", uploadStakeholderID.single("id_document"), a
       [user_id, organization_name, organization_type, location, description || null, phone || null, contact_person || null, idDocUrl, idDocType]
     );
 
-    // Update user status to pending
-    await pool.query("UPDATE users SET status = 'pending' WHERE id = $1", [user_id]);
+    // Only set status to pending if user is currently incomplete
+    // Don't reset approved users back to pending when they edit their profile
+    const currentStatus = userResult.rows[0].status;
+    if (currentStatus === 'incomplete') {
+      await pool.query("UPDATE users SET status = 'pending' WHERE id = $1", [user_id]);
+    }
 
-    res.json({ message: "Stakeholder profile submitted. Awaiting admin approval." });
+    res.json({ 
+      message: currentStatus === 'incomplete' 
+        ? "Stakeholder profile submitted. Awaiting admin approval." 
+        : "Stakeholder profile updated successfully."
+    });
   } catch (error) {
     console.error("Stakeholder profile CRASH:", error.message);
     res.status(500).json({
