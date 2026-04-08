@@ -136,8 +136,8 @@ router.get("/subscription/plans", (req, res) => {
         limits: { requests: 1, messages: 3, full_details: false },
       },
       premium: {
-        price_monthly: 299,
-        price_yearly: 2499,
+        price_monthly: 1,
+        price_yearly: 1,
         features: [
           "Full business details (financials, ROI, contacts)",
           "Unlimited purchase requests",
@@ -162,8 +162,8 @@ router.get("/subscription/plans", (req, res) => {
         limits: { max_products: 5, analytics: "basic", featured: false },
       },
       premium: {
-        price_monthly: 499,
-        price_yearly: 4999,
+        price_monthly: 1,
+        price_yearly: 1,
         features: [
           "Unlimited product listings",
           "Featured listing (top of search)",
