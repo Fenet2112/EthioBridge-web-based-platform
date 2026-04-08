@@ -55,8 +55,8 @@ function Subscription() {
     : null;
 
   const prices = role === "industry"
-    ? { monthly: { label: "499 ETB", amount: 499 }, yearly: { label: "4,999 ETB", amount: 4999 } }
-    : { monthly: { label: "299 ETB", amount: 299 }, yearly: { label: "2,499 ETB", amount: 2499 } };
+    ? { monthly: { label: "1 ETB", amount: 1 }, yearly: { label: "1 ETB", amount: 1 } }
+    : { monthly: { label: "1 ETB", amount: 1 }, yearly: { label: "1 ETB", amount: 1 } };
 
   return (
     <div className="sub-page">

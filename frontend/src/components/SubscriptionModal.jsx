@@ -21,8 +21,8 @@ const FEATURES = {
 };
 
 const PRICES = {
-  stakeholder: { monthly: "299 ETB", yearly: "2,499 ETB" },
-  industry:    { monthly: "499 ETB", yearly: "4,999 ETB" },
+  stakeholder: { monthly: "1 ETB", yearly: "1 ETB" },
+  industry:    { monthly: "1 ETB", yearly: "1 ETB" },
 };
 
 function SubscriptionModal({ onClose, onSuccess, reason }) {
@@ -46,7 +46,7 @@ function SubscriptionModal({ onClose, onSuccess, reason }) {
     return (
       <PaymentModal
         plan={selectedPlan}
-        amount={selectedPlan === "monthly" ? (role === "industry" ? 499 : 299) : (role === "industry" ? 4999 : 2499)}
+        amount={1}
         amountLabel={amountLabel}
         onClose={() => setShowPayment(false)}
         onSuccess={() => { setShowPayment(false); onSuccess && onSuccess(); }}
