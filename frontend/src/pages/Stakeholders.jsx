@@ -1,6 +1,10 @@
 ﻿import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
+import { 
+  FaFlag, FaCheckCircle, FaShieldAlt, FaBolt, FaChartBar,
+  FaHardHat, FaIndustry, FaHandshake, FaMapMarkerAlt, FaBox, FaSearch
+} from "react-icons/fa";
 import StakeholderNav from "../components/StakeholderNav";
 import SubscriptionModal from "../components/SubscriptionModal";
 import RecommendWidget from "../components/RecommendWidget";
@@ -270,7 +274,7 @@ function Stakeholders() {
           <div className="sh-copy">
             <div className="sh-badge">
               <span className="sh-badge-pulse" />
-              🇪🇹 Ethiopia's #1 Construction B2B Platform
+              <FaFlag /> Ethiopia's #1 Construction B2B Platform
             </div>
 
             <h1 className="sh-title">
@@ -287,10 +291,10 @@ function Stakeholders() {
 
             <div className="sh-features">
               {[
-                { icon: "✅", text: "Verified & approved industries only" },
-                { icon: "🔒", text: "Secure identity-verified requests"   },
-                { icon: "⚡", text: "Real-time direct messaging"          },
-                { icon: "📊", text: "Full analytics & market insights"    },
+                { icon: <FaCheckCircle />, text: "Verified & approved industries only" },
+                { icon: <FaShieldAlt />, text: "Secure identity-verified requests"   },
+                { icon: <FaBolt />, text: "Real-time direct messaging"          },
+                { icon: <FaChartBar />, text: "Full analytics & market insights"    },
               ].map(f => (
                 <div key={f.text} className="sh-feature">
                   <span className="sh-feat-icon">{f.icon}</span>
@@ -303,10 +307,10 @@ function Stakeholders() {
           {/* ── Right: floating stat cards ── */}
           <div className="sh-cards">
             {[
-              { icon: "🏗️", value: "500+",  label: "Active Projects",    delay: "0s"    },
-              { icon: "🏭", value: "200+",  label: "Verified Industries", delay: "0.4s"  },
-              { icon: "🤝", value: "1,200+",label: "Connections Made",    delay: "0.8s"  },
-              { icon: "📍", value: "11",    label: "Regions Covered",     delay: "1.2s"  },
+              { icon: <FaHardHat />, value: "500+",  label: "Active Projects",    delay: "0s"    },
+              { icon: <FaIndustry />, value: "200+",  label: "Verified Industries", delay: "0.4s"  },
+              { icon: <FaHandshake />, value: "1,200+",label: "Connections Made",    delay: "0.8s"  },
+              { icon: <FaMapMarkerAlt />, value: "11",    label: "Regions Covered",     delay: "1.2s"  },
             ].map(c => (
               <div key={c.label} className="sh-card" style={{ animationDelay: c.delay }}>
                 <div className="sh-card-icon">{c.icon}</div>
@@ -330,7 +334,7 @@ function Stakeholders() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
           />
-          <span className="search-icon">🔍</span>
+          <span className="search-icon"><FaSearch /></span>
         </div>
       </div>
 
@@ -356,9 +360,9 @@ function Stakeholders() {
                   <span className="rating">★ {industry.rating || "New"}</span>
                 </div>
                 <p className="industry-type">{industry.sector}</p>
-                <p className="location">📍 {industry.location}</p>
+                <p className="location"><FaMapMarkerAlt /> {industry.location}</p>
                 {industry.product_count > 0 && (
-                  <p className="product-count">📦 {industry.product_count} products</p>
+                  <p className="product-count"><FaBox /> {industry.product_count} products</p>
                 )}
                 <div className="card-actions">
                   <button 

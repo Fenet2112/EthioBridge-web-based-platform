@@ -1,5 +1,11 @@
 import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { 
+  FaFlag, FaHardHat, FaIndustry, FaHandshake, FaFileAlt, FaSearch, 
+  FaRocket, FaCheckCircle, FaComments, FaChartBar, FaShieldAlt, 
+  FaMobileAlt, FaEnvelope, FaPhone, FaMapMarkerAlt, FaClock,
+  FaBox, FaClipboardList, FaUsers, FaStar, FaCheck
+} from "react-icons/fa";
 import Logo from "../components/Logo";
 import DarkModeToggle from "../components/DarkModeToggle";
 import "./Home.css";
@@ -67,7 +73,7 @@ function Home() {
 
         <div className="hero-content">
           <div className="hero-badge animate-fade-in">
-            🇪🇹 Ethiopia's #1 Construction B2B Platform
+            <FaFlag /> Ethiopia's #1 Construction B2B Platform
           </div>
           <h1 className="hero-title animate-fade-in delay-1">
             Connect. Build.<br />
@@ -90,21 +96,21 @@ function Home() {
 
         <div className="hero-visual animate-fade-in delay-2">
           <div className="hero-card card-1">
-            <div className="card-icon">🏗️</div>
+            <div className="card-icon"><FaHardHat /></div>
             <div className="card-text">
               <strong>500+</strong>
               <span>Active Projects</span>
             </div>
           </div>
           <div className="hero-card card-2">
-            <div className="card-icon">🏭</div>
+            <div className="card-icon"><FaIndustry /></div>
             <div className="card-text">
               <strong>200+</strong>
               <span>Verified Industries</span>
             </div>
           </div>
           <div className="hero-card card-3">
-            <div className="card-icon">🤝</div>
+            <div className="card-icon"><FaHandshake /></div>
             <div className="card-text">
               <strong>1,200+</strong>
               <span>Connections Made</span>
@@ -150,9 +156,9 @@ function Home() {
         </div>
         <div className="steps-grid">
           {[
-            { num: "01", icon: "📝", title: "Create Your Profile", desc: "Sign up as an industry supplier or a construction stakeholder in minutes." },
-            { num: "02", icon: "🔍", title: "Discover & Connect", desc: "Search verified listings, filter by region and category, and reach out directly." },
-            { num: "03", icon: "🚀", title: "Grow Your Business", desc: "Close deals, track performance, and scale your construction business." },
+            { num: "01", icon: <FaFileAlt />, title: "Create Your Profile", desc: "Sign up as an industry supplier or a construction stakeholder in minutes." },
+            { num: "02", icon: <FaSearch />, title: "Discover & Connect", desc: "Search verified listings, filter by region and category, and reach out directly." },
+            { num: "03", icon: <FaRocket />, title: "Grow Your Business", desc: "Close deals, track performance, and scale your construction business." },
           ].map((step, i) => (
             <div className={`step-card animate-on-scroll`} key={i} style={{ animationDelay: `${i * 0.15}s` }}>
               <div className="step-number">{step.num}</div>
@@ -173,12 +179,12 @@ function Home() {
         </div>
         <div className="features-grid">
           {[
-            { icon: "✅", title: "Verified Listings", desc: "Every industry and supplier is verified for authenticity and quality." },
-            { icon: "🔍", title: "Advanced Search", desc: "Filter by product type, region, price range, and certification." },
-            { icon: "💬", title: "Direct Messaging", desc: "Communicate directly with suppliers and stakeholders in real time." },
-            { icon: "📊", title: "Analytics Dashboard", desc: "Track your profile views, inquiries, and business performance." },
-            { icon: "🛡️", title: "Secure Platform", desc: "Enterprise-grade security to protect your business data." },
-            { icon: "📱", title: "Mobile Friendly", desc: "Access EthioBridge from any device, anywhere in Ethiopia." },
+            { icon: <FaCheckCircle />, title: "Verified Listings", desc: "Every industry and supplier is verified for authenticity and quality." },
+            { icon: <FaSearch />, title: "Advanced Search", desc: "Filter by product type, region, price range, and certification." },
+            { icon: <FaComments />, title: "Direct Messaging", desc: "Communicate directly with suppliers and stakeholders in real time." },
+            { icon: <FaChartBar />, title: "Analytics Dashboard", desc: "Track your profile views, inquiries, and business performance." },
+            { icon: <FaShieldAlt />, title: "Secure Platform", desc: "Enterprise-grade security to protect your business data." },
+            { icon: <FaMobileAlt />, title: "Mobile Friendly", desc: "Access EthioBridge from any device, anywhere in Ethiopia." },
           ].map((f, i) => (
             <div className="feature-card animate-on-scroll" key={i} style={{ animationDelay: `${i * 0.1}s` }}>
               <div className="feature-icon">{f.icon}</div>
@@ -229,7 +235,7 @@ function Home() {
         <div className="services-grid">
           {[
             {
-              icon: "🏭",
+              icon: <FaIndustry />,
               color: "#0a5c2f",
               bg: "#e8f5e9",
               title: "Industry Listings",
@@ -237,7 +243,7 @@ function Home() {
               points: ["Verified company badge", "Product catalog management", "Analytics & visibility insights"],
             },
             {
-              icon: "🤝",
+              icon: <FaHandshake />,
               color: "#667eea",
               bg: "#f0f0ff",
               title: "Stakeholder Matching",
@@ -245,7 +251,7 @@ function Home() {
               points: ["Smart search & filtering", "Direct purchase requests", "Identity-verified connections"],
             },
             {
-              icon: "💬",
+              icon: <FaComments />,
               color: "#0891b2",
               bg: "#e0f7fa",
               title: "Real-Time Messaging",
@@ -253,7 +259,7 @@ function Home() {
               points: ["Instant notifications", "File & document sharing", "Conversation history"],
             },
             {
-              icon: "📊",
+              icon: <FaChartBar />,
               color: "#7c3aed",
               bg: "#f3e8ff",
               title: "Business Analytics",
@@ -261,7 +267,7 @@ function Home() {
               points: ["Profile view tracking", "Request conversion rates", "Market trend reports"],
             },
             {
-              icon: "🛡️",
+              icon: <FaShieldAlt />,
               color: "#dc2626",
               bg: "#fff5f5",
               title: "Trust & Verification",
@@ -269,7 +275,7 @@ function Home() {
               points: ["ID document verification", "Admin-reviewed approvals", "Fraud prevention system"],
             },
             {
-              icon: "⭐",
+              icon: <FaStar />,
               color: "#d97706",
               bg: "#fffbeb",
               title: "Premium Subscriptions",
@@ -286,7 +292,7 @@ function Home() {
               <ul className="service-points">
                 {s.points.map(pt => (
                   <li key={pt}>
-                    <span className="service-check" style={{ color: s.color }}>✓</span>
+                    <span className="service-check" style={{ color: s.color }}><FaCheck /></span>
                     {pt}
                   </li>
                 ))}
@@ -322,10 +328,10 @@ function Home() {
 
             <div className="contact-details">
               {[
-                { icon: "📧", label: "Email Us",    value: "info@ethiobridge.et",   href: "mailto:info@ethiobridge.et" },
-                { icon: "📞", label: "Call Us",     value: "+251 911 123 456",       href: "tel:+251911123456" },
-                { icon: "📍", label: "Visit Us",    value: "Bole, Addis Ababa, Ethiopia", href: null },
-                { icon: "🕐", label: "Working Hours", value: "Mon – Fri, 8:00 AM – 6:00 PM EAT", href: null },
+                { icon: <FaEnvelope />, label: "Email Us",    value: "info@ethiobridge.et",   href: "mailto:info@ethiobridge.et" },
+                { icon: <FaPhone />, label: "Call Us",     value: "+251 911 123 456",       href: "tel:+251911123456" },
+                { icon: <FaMapMarkerAlt />, label: "Visit Us",    value: "Bole, Addis Ababa, Ethiopia", href: null },
+                { icon: <FaClock />, label: "Working Hours", value: "Mon – Fri, 8:00 AM – 6:00 PM EAT", href: null },
               ].map(d => (
                 <div className="contact-detail" key={d.label}>
                   <div className="contact-detail-icon">{d.icon}</div>
@@ -451,9 +457,9 @@ function Home() {
 
           <div className="footer-col">
             <h4>Contact</h4>
-            <p>📧 info@ethiobridge.et</p>
-            <p>📞 +251 911 123 456</p>
-            <p>📍 Addis Ababa, Ethiopia</p>
+            <p><FaEnvelope /> info@ethiobridge.et</p>
+            <p><FaPhone /> +251 911 123 456</p>
+            <p><FaMapMarkerAlt /> Addis Ababa, Ethiopia</p>
           </div>
         </div>
 

@@ -1,17 +1,21 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { 
+  FaIndustry, FaComments, FaBox, FaStar, FaUser, FaQuestionCircle,
+  FaBridge, FaTimes, FaHome, FaDoorOpen
+} from "react-icons/fa";
 import ProfileDropdown from "./ProfileDropdown";
 import DarkModeToggle from "./DarkModeToggle";
 import "./StakeholderNav.css";
 
 const NAV_ITEMS = [
-  { path: "/stakeholders",    icon: "🏭", label: "Industries"   },
-  { path: "/messages",        icon: "💬", label: "Messages"     },
-  { path: "/products",        icon: "📦", label: "Products"     },
-  { path: "/recommendations", icon: "✨", label: "For You"      },
-  { path: "/profile",         icon: "👤", label: "Profile"      },
-  { path: "/subscription",    icon: "⭐", label: "Subscription" },
-  { path: "/help",            icon: "❓", label: "Help"         },
+  { path: "/stakeholders",    icon: <FaIndustry />, label: "Industries"   },
+  { path: "/messages",        icon: <FaComments />, label: "Messages"     },
+  { path: "/products",        icon: <FaBox />, label: "Products"     },
+  { path: "/recommendations", icon: <FaStar />, label: "For You"      },
+  { path: "/profile",         icon: <FaUser />, label: "Profile"      },
+  { path: "/subscription",    icon: <FaStar />, label: "Subscription" },
+  { path: "/help",            icon: <FaQuestionCircle />, label: "Help"         },
 ];
 
 function StakeholderNav({ unreadCount = 0 }) {
@@ -56,7 +60,7 @@ function StakeholderNav({ unreadCount = 0 }) {
 
         {/* Brand */}
         <div className="sk-nav-brand" onClick={() => go("/stakeholders")}>
-          <span className="sk-nav-logo">🌉</span>
+          <span className="sk-nav-logo"><FaBridge /></span>
           <span className="sk-nav-name">EthioBridge</span>
         </div>
 
@@ -73,8 +77,8 @@ function StakeholderNav({ unreadCount = 0 }) {
       {/* ── Slide-in drawer ── */}
       <aside className={`sk-drawer ${open ? "open" : ""}`} ref={drawerRef}>
         <div className="sk-drawer-header">
-          <span className="sk-drawer-title">🌉 EthioBridge</span>
-          <button className="sk-drawer-close" onClick={() => setOpen(false)}>✕</button>
+          <span className="sk-drawer-title"><FaBridge /> EthioBridge</span>
+          <button className="sk-drawer-close" onClick={() => setOpen(false)}><FaTimes /></button>
         </div>
 
         <nav className="sk-drawer-nav">
@@ -96,10 +100,10 @@ function StakeholderNav({ unreadCount = 0 }) {
 
         <div className="sk-drawer-footer">
           <button className="sk-drawer-home" onClick={() => go("/")}>
-            <span>🏠</span> Back to Home
+            <span><FaHome /></span> Back to Home
           </button>
           <button className="sk-drawer-logout" onClick={handleLogout}>
-            <span>🚪</span> Logout
+            <span><FaDoorOpen /></span> Logout
           </button>
         </div>
       </aside>

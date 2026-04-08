@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
+import { 
+  FaHome, FaUser, FaBox, FaClipboardList, FaComments, FaChartBar,
+  FaIndustry, FaQuestionCircle, FaTimes, FaLock, FaClock, FaCheckCircle,
+  FaHandshake, FaShieldAlt, FaCheck, FaTimes as FaTimesCircle, FaPlus,
+  FaStar, FaExclamationTriangle, FaInfoCircle, FaPhone, FaMapMarkerAlt,
+  FaEnvelope, FaBuilding, FaCalendar
+} from "react-icons/fa";
 import SubscriptionModal from "../components/SubscriptionModal";
 import "./Industry.css";
 import "./IndustryMessages.css";
@@ -53,12 +60,12 @@ function Industry() {
   const fileInputRef = useRef(null);
 
   const menuItems = [
-    { id: "dashboard", label: "Dashboard",                   icon: "🏠" },
-    { id: "profile",   label: "Manage Profile",              icon: "👤" },
-    { id: "products",  label: "Manage Product Listings",     icon: "📦" },
-    { id: "requests",  label: "Purchase Requests",           icon: "📋" },
-    { id: "messages",  label: "Communicate with Stakeholders", icon: "💬" },
-    { id: "analytics", label: "Analytics",                   icon: "📊" },
+    { id: "dashboard", label: "Dashboard",                   icon: <FaHome /> },
+    { id: "profile",   label: "Manage Profile",              icon: <FaUser /> },
+    { id: "products",  label: "Manage Product Listings",     icon: <FaBox /> },
+    { id: "requests",  label: "Purchase Requests",           icon: <FaClipboardList /> },
+    { id: "messages",  label: "Communicate with Stakeholders", icon: <FaComments /> },
+    { id: "analytics", label: "Analytics",                   icon: <FaChartBar /> },
   ];
 
   const [profile, setProfile] = useState({
@@ -665,7 +672,7 @@ function Industry() {
   return (
     <div className="industry-dashboard">
       <Link to="/" className="home-icon-btn" title="Back to Home">
-        🏠
+        <FaHome />
       </Link>
       {/* Navbar */}
       <nav className="dashboard-navbar">
@@ -683,10 +690,10 @@ function Industry() {
         </div>
         <div className="nav-right">
           <Link to="/help" className="help-link" title="Help Center">
-            ❓ Help
+            <FaQuestionCircle /> Help
           </Link>
           <span className="welcome-text">Welcome back</span>
-          <div className="user-avatar">🏭</div>
+          <div className="user-avatar"><FaIndustry /></div>
         </div>
       </nav>
 
@@ -710,7 +717,7 @@ function Industry() {
 
         <div className="sidebar-header">
           <h3>Menu</h3>
-          <button className="close-btn" onClick={() => setIsMenuOpen(false)}>✕</button>
+          <button className="close-btn" onClick={() => setIsMenuOpen(false)}><FaTimes /></button>
         </div>
 
         <ul className="menu-list">
@@ -727,7 +734,7 @@ function Industry() {
               <span className="menu-icon">{item.icon}</span>
               <span>{item.label}</span>
               {!canAccessOtherSections && item.id !== "profile" && item.id !== "dashboard" && (
-                <span className="menu-lock">🔒</span>
+                <span className="menu-lock"><FaLock /></span>
               )}
             </li>
           ))}
@@ -769,7 +776,7 @@ function Industry() {
 
             {!canAccessOtherSections ? (
               <div className="dash-pending-notice">
-                <span>⏳</span>
+                <span><FaClock /></span>
                 <div>
                   <strong>Profile under review</strong>
                   <p>Analytics and requests will appear here once your account is approved.</p>
@@ -788,11 +795,11 @@ function Industry() {
                 {/* Stats row */}
                 <div className="dash-stats">
                   {[
-                    { icon: "📦", label: "Products",          value: dashSummary?.total_products     ?? 0, color: "#667eea" },
-                    { icon: "📋", label: "Total Requests",    value: dashSummary?.total_requests     ?? 0, color: "#0a5c2f" },
-                    { icon: "⏳", label: "Pending",           value: dashSummary?.pending_requests   ?? 0, color: "#f59e0b" },
-                    { icon: "✅", label: "Approved",          value: dashSummary?.approved_requests  ?? 0, color: "#10b981" },
-                    { icon: "🤝", label: "Stakeholders",      value: dashSummary?.total_stakeholders ?? 0, color: "#764ba2" },
+                    { icon: <FaBox />, label: "Products",          value: dashSummary?.total_products     ?? 0, color: "#667eea" },
+                    { icon: <FaClipboardList />, label: "Total Requests",    value: dashSummary?.total_requests     ?? 0, color: "#0a5c2f" },
+                    { icon: <FaClock />, label: "Pending",           value: dashSummary?.pending_requests   ?? 0, color: "#f59e0b" },
+                    { icon: <FaCheckCircle />, label: "Approved",          value: dashSummary?.approved_requests  ?? 0, color: "#10b981" },
+                    { icon: <FaHandshake />, label: "Stakeholders",      value: dashSummary?.total_stakeholders ?? 0, color: "#764ba2" },
                   ].map(s => (
                     <div key={s.label} className="dash-stat-card" style={{ "--stat-color": s.color }}>
                       <div className="dash-stat-icon">{s.icon}</div>
@@ -874,12 +881,12 @@ function Industry() {
                   <h3>⚡ Quick Actions</h3>
                   <div className="dash-qa-grid">
                     {[
-                      { icon: "➕", label: "Add Product",     action: () => { setActiveSection("products"); setShowProductForm(true); setEditingProduct(null); setProductNameError(""); setProductForm({ name: "", description: "", price: "", unit: "unit", category: "" }); } },
-                      { icon: "📋", label: "View Requests",   action: () => setActiveSection("requests") },
-                      { icon: "💬", label: "Messages",        action: () => setActiveSection("messages") },
-                      { icon: "👤", label: "Manage Profile",  action: () => setActiveSection("profile") },
-                      { icon: "📊", label: "Analytics",       action: () => setActiveSection("analytics") },
-                      ...(!subStatus?.is_subscribed ? [{ icon: "⭐", label: "Upgrade Premium", action: () => setShowSubModal(true) }] : []),
+                      { icon: <FaPlus />, label: "Add Product",     action: () => { setActiveSection("products"); setShowProductForm(true); setEditingProduct(null); setProductNameError(""); setProductForm({ name: "", description: "", price: "", unit: "unit", category: "" }); } },
+                      { icon: <FaClipboardList />, label: "View Requests",   action: () => setActiveSection("requests") },
+                      { icon: <FaComments />, label: "Messages",        action: () => setActiveSection("messages") },
+                      { icon: <FaUser />, label: "Manage Profile",  action: () => setActiveSection("profile") },
+                      { icon: <FaChartBar />, label: "Analytics",       action: () => setActiveSection("analytics") },
+                      ...(!subStatus?.is_subscribed ? [{ icon: <FaStar />, label: "Upgrade Premium", action: () => setShowSubModal(true) }] : []),
                     ].map(qa => (
                       <button key={qa.label} className="dash-qa-btn" onClick={qa.action}>
                         <span className="dash-qa-icon">{qa.icon}</span>
@@ -896,7 +903,7 @@ function Industry() {
         {/* Pending Approval Banner */}
         {activeSection === "profile" && showPendingBanner && (
           <div className="pending-banner">
-            <div className="banner-icon">⏳</div>
+            <div className="banner-icon"><FaClock /></div>
             <div className="banner-content">
               <h3>Profile Under Review</h3>
               <p>
@@ -1117,13 +1124,13 @@ function Industry() {
                     {products.length}/{FREE_PRODUCT_LIMIT} products used on free plan
                     {products.length >= FREE_PRODUCT_LIMIT && (
                       <button className="inline-upgrade-btn" onClick={() => setShowSubModal(true)}>
-                        ⭐ Upgrade for unlimited
+                        <FaStar /> Upgrade for unlimited
                       </button>
                     )}
                   </p>
                 )}
                 {subStatus?.is_subscribed && (
-                  <p className="product-limit-info premium-info">⭐ Premium — unlimited listings</p>
+                  <p className="product-limit-info premium-info"><FaStar /> Premium — unlimited listings</p>
                 )}
               </div>
               <button 
@@ -1139,7 +1146,7 @@ function Industry() {
                   setProductForm({ name: "", description: "", price: "", unit: "unit", category: "" });
                 }}
               >
-                {!subStatus?.is_subscribed && products.length >= FREE_PRODUCT_LIMIT ? "🔒 Upgrade to Add More" : "+ Add Product"}
+                {!subStatus?.is_subscribed && products.length >= FREE_PRODUCT_LIMIT ? <><FaLock /> Upgrade to Add More</> : "+ Add Product"}
               </button>
             </div>
 
