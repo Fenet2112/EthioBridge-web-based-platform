@@ -88,7 +88,7 @@ router.get("/subscription/status", authenticateToken, async (req, res) => {
 // ── POST /api/subscription/activate ──
 router.post("/subscription/activate", authenticateToken, async (req, res) => {
   const { plan = "monthly", payment_method = "telebirr" } = req.body;
-  const amount = plan === "yearly" ? 2499.0 : 299.0;
+  const amount = plan === "yearly" ? 1.0 : 1.0;
   const expiresAt = new Date();
   if (plan === "yearly") expiresAt.setFullYear(expiresAt.getFullYear() + 1);
   else expiresAt.setMonth(expiresAt.getMonth() + 1);
