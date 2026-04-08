@@ -116,11 +116,8 @@ function ProfileDropdown() {
 
       if (!res.ok) throw new Error('Failed to update profile');
 
-      await fetchProfile();
-      setIsEditing(false);
-      setSelectedFile(null);
-      setPreviewUrl(null);
-      alert('Profile updated successfully!');
+      // Refresh page to show updated profile
+      window.location.reload();
     } catch (err) {
       alert('Error: ' + err.message);
     }

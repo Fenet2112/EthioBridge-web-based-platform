@@ -150,7 +150,10 @@ function Industry() {
               const error = await r.json();
               console.error('Dashboard summary 403:', error);
               if (error.hint && error.hint.includes('logging out')) {
-                alert('Your account status has changed. Please log out and log back in to refresh your session.');
+                // Auto logout and redirect to login
+                localStorage.clear();
+                window.location.href = '/login';
+                return;
               }
               throw new Error(error.message || 'Access denied');
             }
@@ -162,7 +165,10 @@ function Industry() {
               const error = await r.json();
               console.error('Recent requests 403:', error);
               if (error.hint && error.hint.includes('logging out')) {
-                alert('Your account status has changed. Please log out and log back in to refresh your session.');
+                // Auto logout and redirect to login
+                localStorage.clear();
+                window.location.href = '/login';
+                return;
               }
               throw new Error(error.message || 'Access denied');
             }
@@ -174,7 +180,10 @@ function Industry() {
               const error = await r.json();
               console.error('Products summary 403:', error);
               if (error.hint && error.hint.includes('logging out')) {
-                alert('Your account status has changed. Please log out and log back in to refresh your session.');
+                // Auto logout and redirect to login
+                localStorage.clear();
+                window.location.href = '/login';
+                return;
               }
               throw new Error(error.message || 'Access denied');
             }
@@ -524,10 +533,11 @@ function Industry() {
         userData.status = "pending";
         localStorage.setItem("user", JSON.stringify(userData));
         
-        alert("Profile submitted for admin approval!");
-        setProfileStatus("pending");
+        // Refresh page to show updated status
+        window.location.reload();
       } else {
-        alert("Profile updated successfully!");
+        // Refresh page to show updated profile
+        window.location.reload();
       }
       
       setIsEditing(false);
@@ -617,7 +627,9 @@ function Industry() {
       }
       
       if (res.status === 403) {
-        alert("Your account needs to be approved by admin before you can add products. Please log out and log back in after admin approval to refresh your session.");
+        // Auto logout and redirect to login
+        localStorage.clear();
+        window.location.href = '/login';
         return;
       }
       

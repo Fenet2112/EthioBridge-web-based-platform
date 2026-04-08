@@ -128,20 +128,11 @@ function StakeholderProfile() {
       if (profileStatus === "incomplete") {
         userData.status = "pending";
         localStorage.setItem("user", JSON.stringify(userData));
-        alert("Profile submitted! Awaiting admin approval.");
-        navigate("/pending");
+        // Refresh page to show updated status
+        window.location.reload();
       } else {
-        alert("Profile updated successfully!");
-        setIsEditing(false);
-        const sr = await fetch(`${API_BASE_URL}/api/profile/stakeholder/status`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (sr.ok) {
-          const sd = await sr.json();
-          setProfileStatus(sd.status || "incomplete");
-          userData.status = sd.status;
-          localStorage.setItem("user", JSON.stringify(userData));
-        }
+        // Refresh page to show updated profile
+        window.location.reload();
       }
     } catch (err) {
       setError(err.message || "An unexpected error occurred.");

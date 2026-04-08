@@ -44,8 +44,8 @@ function IndustryProfile() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Submission failed");
 
-      alert("Profile submitted! Your application is now pending admin approval.");
-      navigate("/pending");
+      // Refresh page to show updated status
+      window.location.reload();
     } catch (err) {
       setError(err.message);
     } finally {
