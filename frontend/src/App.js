@@ -21,6 +21,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/admin/Dashboard";
 import AdminLogin from "./pages/admin/Login";
 import Help from "./pages/Help";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 function App() {
   return (
@@ -49,6 +50,9 @@ function App() {
 
         {/* Subscription Page */}
         <Route path="/subscription" element={<Subscription />} />
+
+        {/* Payment Success Page */}
+        <Route path="/payment/success" element={<PaymentSuccess />} />
 
         {/* Help Page */}
         <Route path="/help" element={<Help />} />
