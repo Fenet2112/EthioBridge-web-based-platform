@@ -102,8 +102,10 @@ function Industry() {
     })
     .then(res => res.json())
     .then(data => {
+      console.log('Industry profile status response:', data);
       if (data.status) {
         setProfileStatus(data.status);
+        console.log('Setting profileStatus to:', data.status);
         
         // Update localStorage if status changed
         if (userData.status !== data.status) {
@@ -901,7 +903,7 @@ function Industry() {
         )}
 
         {/* Pending Approval Banner */}
-        {activeSection === "profile" && showPendingBanner && (
+        {activeSection === "profile" && profileStatus === "pending" && (
           <div className="pending-banner">
             <div className="banner-icon"><FaClock /></div>
             <div className="banner-content">
