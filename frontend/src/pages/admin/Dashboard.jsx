@@ -9,7 +9,7 @@ import ActivityLogsView, { logAction } from "../views/ActivityLogsView";
 import NotificationsView from "../views/NotificationsView";
 import Settings from "./Settings";
 
-const API = "http://localhost:5000";
+const API = process.env.REACT_APP_API_URL || "https://ethiobridge-web-based-platform.onrender.com";
 
 function StatusBadge({ status }) {
   const map = {
