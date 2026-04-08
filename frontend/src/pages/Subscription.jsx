@@ -74,14 +74,14 @@ function Subscription() {
         <button className="sub-back-btn" onClick={() => navigate(-1)}>← Back</button>
         <div className="sub-page-title">
           <h1>EthioBridge Premium</h1>
-          <p>Unlock the full power of Ethiopia's #1 construction B2B platform</p>
+          <p>Unlock the full power of Ethiopia's leading construction B2B platform</p>
         </div>
       </div>
 
       {/* Current Status Banner */}
       {isPremium ? (
         <div className="sub-status-banner premium">
-          <span className="status-icon">⭐</span>
+          <span className="status-icon">★</span>
           <div>
             <strong>You're on Premium</strong>
             <p>Expires {expiresAt || "never"} · All features unlocked</p>
@@ -89,7 +89,7 @@ function Subscription() {
         </div>
       ) : (
         <div className="sub-status-banner free">
-          <span className="status-icon">🔓</span>
+          <span className="status-icon">○</span>
           <div>
             <strong>Free Plan</strong>
             <p>
@@ -124,7 +124,7 @@ function Subscription() {
 
         <div className="sub-plan-card premium-card">
           <div className="plan-card-header">
-            <span className="plan-badge premium-badge">⭐ Premium</span>
+            <span className="plan-badge premium-badge">★ Premium</span>
             <div className="plan-card-price">
               {selectedPlan === "monthly" ? prices.monthly.label : prices.yearly.label}
               <span>/{selectedPlan === "monthly" ? "month" : "year"}</span>
@@ -136,7 +136,7 @@ function Subscription() {
           <ul className="plan-features-list">
             {(rolePlans.premium?.features || []).map((f, i) => (
               <li key={i} className="feature-item included premium-feat">
-                <span className="feat-icon">⭐</span>{f}
+                <span className="feat-icon">★</span>{f}
               </li>
             ))}
           </ul>
@@ -173,10 +173,10 @@ function Subscription() {
             <h3>Payment Method</h3>
             <div className="payment-methods">
               {[
-                { id: "card", label: "Credit / Debit Card", icon: "💳" },
-                { id: "telebirr", label: "Telebirr", icon: "📱" },
-                { id: "cbe_birr", label: "CBE Birr", icon: "🏦" },
-                { id: "amole", label: "Amole", icon: "🏛️" },
+                { id: "card", label: "Credit / Debit Card", icon: "◉" },
+                { id: "telebirr", label: "Telebirr", icon: "◉" },
+                { id: "cbe_birr", label: "CBE Birr", icon: "◉" },
+                { id: "amole", label: "Amole", icon: "◉" },
               ].map((pm) => (
                 <div
                   key={pm.id}

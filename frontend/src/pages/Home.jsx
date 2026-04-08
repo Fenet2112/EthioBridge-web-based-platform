@@ -73,7 +73,7 @@ function Home() {
 
         <div className="hero-content">
           <div className="hero-badge animate-fade-in">
-            <FaFlag /> Ethiopia's #1 Construction B2B Platform
+            <FaFlag /> Ethiopia's Leading Construction B2B Platform
           </div>
           <h1 className="hero-title animate-fade-in delay-1">
             Connect. Build.<br />
@@ -348,10 +348,10 @@ function Home() {
 
             <div className="contact-socials">
               {[
-                { icon: "𝕏", label: "Twitter",  href: "#" },
+                { icon: "X", label: "Twitter",  href: "#" },
                 { icon: "in", label: "LinkedIn", href: "#" },
                 { icon: "f",  label: "Facebook", href: "#" },
-                { icon: "▶",  label: "YouTube",  href: "#" },
+                { icon: "YT",  label: "YouTube",  href: "#" },
               ].map(s => (
                 <a key={s.label} href={s.href} className="social-btn" aria-label={s.label}>{s.icon}</a>
               ))}

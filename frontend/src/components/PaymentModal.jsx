@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaPhone, FaLock, FaShieldAlt } from "react-icons/fa";
+import { FaPhone, FaLock, FaShieldAlt, FaTimes } from "react-icons/fa";
 import "./PaymentModal.css";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -152,7 +152,7 @@ function PaymentModal({ plan, amount, amountLabel, onClose, onSuccess }) {
             </button>
 
             <div className="pay-security-row">
-              <span>🛡️ Secured by Chapa</span>
+              <span><FaShieldAlt /> Secured by Chapa</span>
               <span>·</span>
               <span>Ethiopian Payment Gateway</span>
             </div>
@@ -164,7 +164,7 @@ function PaymentModal({ plan, amount, amountLabel, onClose, onSuccess }) {
           <div className="pay-processing">
             <div className="processing-ring">
               <div className="processing-spinner"></div>
-              <div className="processing-icon">💳</div>
+              <div className="processing-icon"><FaLock /></div>
             </div>
             <h2>Redirecting to Chapa...</h2>
             <p>Please wait while we redirect you to the secure payment page</p>
@@ -174,7 +174,7 @@ function PaymentModal({ plan, amount, amountLabel, onClose, onSuccess }) {
         {/* ── ERROR STEP ── */}
         {step === "error" && (
           <div className="pay-error-state">
-            <div className="error-icon">❌</div>
+            <div className="error-icon"><FaTimes style={{ color: '#dc2626' }} /></div>
             <h2>Payment Failed</h2>
             <p>{errorMsg}</p>
             <button className="pay-btn" onClick={() => setStep("phone")}>

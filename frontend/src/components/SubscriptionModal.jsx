@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaStar, FaCheck } from "react-icons/fa";
 import "./SubscriptionModal.css";
 import PaymentModal from "./PaymentModal";
 
@@ -60,7 +61,7 @@ function SubscriptionModal({ onClose, onSuccess, reason }) {
         <button className="sub-close" onClick={onClose}>✕</button>
 
         <div className="sub-header">
-          <div className="sub-icon">⭐</div>
+          <div className="sub-icon"><FaStar /></div>
           <h2>Upgrade to Premium</h2>
           <p>{reasonText}</p>
         </div>
@@ -68,7 +69,7 @@ function SubscriptionModal({ onClose, onSuccess, reason }) {
         <div className="sub-features">
           {features.map((f) => (
             <div key={f} className="sub-feature">
-              <span className="sub-check">✓</span>
+              <span className="sub-check"><FaCheck /></span>
               <span>{f}</span>
             </div>
           ))}
