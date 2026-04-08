@@ -56,23 +56,43 @@ function requireRole(...roles) {
 /**
  * Middleware – only allows approved users through.
  * Must be used after authenticateToken.
+ * Fetches fresh status from database instead of relying on JWT token.
  */
-function requireApproved(req, res, next) {
+async function requireApproved(req, res, next) {
   if (!req.user) {
     return res.status(401).json({ message: "Not authenticated." });
   }
-  if (req.user.status !== "approved") {
-    return res.status(403).json({
-      message: "Your account must be approved by admin before accessing this feature.",
-      current_status: req.user.status,
-      required_status: "approved",
-      action_required: req.user.status === "pending" 
-        ? "Please wait for admin approval. You will be notified via email once approved."
-        : "Please complete your profile and submit for approval.",
-      hint: "If you were recently approved, try logging out and logging back in to refresh your session."
-    });
+  
+  try {
+    // Fetch fresh status from database instead of using JWT token status
+    const pool = require("../config/db");
+    const result = await pool.query("SELECT status FROM users WHERE id = $1", [req.user.id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    
+    const currentStatus = result.rows[0].status;
+    
+    // Update req.user with fresh status from database
+    req.user.status = currentStatus;
+    
+    if (currentStatus !== "approved") {
+      return res.status(403).json({
+        message: "Your account must be approved by admin before accessing this feature.",
+        current_status: currentStatus,
+        required_status: "approved",
+        action_required: currentStatus === "pending" 
+          ? "Please wait for admin approval. You will be notified via email once approved."
+          : "Please complete your profile and submit for approval."
+      });
+    }
+    
+    next();
+  } catch (error) {
+    console.error("requireApproved middleware error:", error);
+    return res.status(500).json({ message: "Server error checking user status." });
   }
-  next();
 }
 
 module.exports = { authenticateToken, requireRole, requireApproved, getJwtSecret };
