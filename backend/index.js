@@ -12,6 +12,7 @@ const server = http.createServer(app);
 // 2. Setup Socket.IO with CORS
 const allowedOrigins = [
   'http://localhost:3000',
+  'https://etbd.vercel.app', // Production Vercel deployment
   process.env.APP_URL,
   /\.vercel\.app$/ // Allow all Vercel preview deployments
 ].filter(Boolean);
