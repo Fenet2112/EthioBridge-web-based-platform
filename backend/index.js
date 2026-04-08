@@ -135,7 +135,22 @@ app.get('/', (req, res) => {
 
 // 8. Start the server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Backend server running on port ${PORT}`);
   console.log(`Socket.IO server ready`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Test database connection after server starts
+  const pool = require('./src/config/db');
+  pool.query('SELECT NOW()', (err, res) => {
+    if (err) {
+      console.error('❌ Database connection failed:', err.message);
+      console.error('Server will continue running but database operations will fail');
+    } else {
+      console.log('✅ Database connected successfully');
+    }
+  });
+}).on('error', (err) => {
+  console.error('❌ Server failed to start:', err);
+  process.exit(1);
 });
