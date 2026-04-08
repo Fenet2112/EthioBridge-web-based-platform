@@ -46,7 +46,7 @@ router.post('/payment/initialize', authenticateToken, async (req, res) => {
       callback_url: `${process.env.BACKEND_URL}/api/chapa/callback`,
       return_url: `${process.env.APP_URL}/payment/success`,
       customization: {
-        title: 'EthioBridge Premium Subscription',
+        title: 'EthioBridge Sub',
         description: `${plan} subscription payment`
       }
     };
