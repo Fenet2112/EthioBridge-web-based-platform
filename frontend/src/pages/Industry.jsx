@@ -149,12 +149,8 @@ function Industry() {
             if (r.status === 403) {
               const error = await r.json();
               console.error('Dashboard summary 403:', error);
-              if (error.hint && error.hint.includes('logging out')) {
-                // Auto logout and redirect to login
-                localStorage.clear();
-                window.location.href = '/login';
-                return;
-              }
+              // Don't auto-logout - let user manually refresh
+              // Auto-logout will be enabled once backend is deployed with JWT fix
               throw new Error(error.message || 'Access denied');
             }
             return r.json();
@@ -164,12 +160,7 @@ function Industry() {
             if (r.status === 403) {
               const error = await r.json();
               console.error('Recent requests 403:', error);
-              if (error.hint && error.hint.includes('logging out')) {
-                // Auto logout and redirect to login
-                localStorage.clear();
-                window.location.href = '/login';
-                return;
-              }
+              // Don't auto-logout - let user manually refresh
               throw new Error(error.message || 'Access denied');
             }
             return r.json();
@@ -179,12 +170,7 @@ function Industry() {
             if (r.status === 403) {
               const error = await r.json();
               console.error('Products summary 403:', error);
-              if (error.hint && error.hint.includes('logging out')) {
-                // Auto logout and redirect to login
-                localStorage.clear();
-                window.location.href = '/login';
-                return;
-              }
+              // Don't auto-logout - let user manually refresh
               throw new Error(error.message || 'Access denied');
             }
             return r.json();
@@ -627,9 +613,8 @@ function Industry() {
       }
       
       if (res.status === 403) {
-        // Auto logout and redirect to login
-        localStorage.clear();
-        window.location.href = '/login';
+        // Don't auto-logout - show error message instead
+        alert("Your account needs to be approved by admin. If you were recently approved, please refresh the page.");
         return;
       }
       
