@@ -28,48 +28,136 @@ function Help() {
   const [activeCategory, setActiveCategory] = useState(null);
   const [expandedFaq, setExpandedFaq] = useState(null);
 
+  const scrollToCategory = (categoryId) => {
+    setActiveCategory(categoryId);
+    const detailsSection = document.getElementById('category-details');
+    if (detailsSection) {
+      detailsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const categories = [
     {
       id: 'getting-started',
       icon: <FaRocket />,
       title: 'Getting Started',
       description: 'Learn the basics of using EthioBridge platform',
-      articles: 5
+      articles: 5,
+      content: [
+        {
+          title: 'How to Sign Up',
+          text: 'Click "Sign Up" on the home page, choose your role (Stakeholder or Industry), enter your email and create a password (minimum 8 characters), then check your email for a verification link.'
+        },
+        {
+          title: 'How to Log In',
+          text: 'Click "Log In" on the home page, enter your registered email and password, then click "Log In". You\'ll be redirected to your dashboard based on your role.'
+        },
+        {
+          title: 'Email Verification',
+          text: 'After signing up, check your inbox (and spam folder) for a verification email. Click the verification link to activate your account. If you didn\'t receive it, click "Resend verification email" on the login page.'
+        }
+      ]
     },
     {
       id: 'account',
       icon: <FaUserCircle />,
       title: 'Account Management',
       description: 'Manage your profile, settings, and preferences',
-      articles: 4
+      articles: 4,
+      content: [
+        {
+          title: 'Update Your Profile',
+          text: 'Log in to your account, navigate to your profile section, update your information (name, contact details, company info), and save changes.'
+        },
+        {
+          title: 'Change Password',
+          text: 'Go to account settings, click "Change Password", enter your current password and new password, then confirm the change.'
+        },
+        {
+          title: 'Reset Password',
+          text: 'Click "Forgot password?" on the login page, enter your email, check your inbox for the reset link (valid for 1 hour), and set a new password.'
+        }
+      ]
     },
     {
       id: 'stakeholder',
       icon: <FaHandshake />,
       title: 'For Stakeholders',
       description: 'Browse products, send requests, and connect with industries',
-      articles: 6
+      articles: 6,
+      content: [
+        {
+          title: 'Browse Products',
+          text: 'Log in to your stakeholder account, browse the main page to see featured industries, click on any industry card to view their products, and use filters to narrow down your search.'
+        },
+        {
+          title: 'Send Purchase Requests',
+          text: 'Add products to your cart, review items, click "Submit Purchase Request", fill in required details, upload ID document (first request only), and submit. Free accounts: 1 request/month, Premium: unlimited.'
+        },
+        {
+          title: 'Message Industries',
+          text: 'Navigate to an industry\'s detail page, click "Message", type your message, attach files if needed, and click "Send". View all conversations in the Messages section.'
+        }
+      ]
     },
     {
       id: 'industry',
       icon: <FaIndustry />,
       title: 'For Industries',
       description: 'Manage products, handle requests, and grow your business',
-      articles: 5
+      articles: 5,
+      content: [
+        {
+          title: 'Complete Your Profile',
+          text: 'After signing up, log in and complete your profile with company name, sector, location, description, contact details, and established year. Submit for admin approval (24-48 hours).'
+        },
+        {
+          title: 'Add Products',
+          text: 'Once approved, go to "Manage Products", click "Add New Product", fill in details (name, description, price, category), upload image (optional), and click "Add Product". Free: 5 products, Premium: unlimited.'
+        },
+        {
+          title: 'Handle Purchase Requests',
+          text: 'Go to "Purchase Requests" section, review request details, verify stakeholder\'s ID document, approve or reject with reason, then contact stakeholder via messaging.'
+        }
+      ]
     },
     {
       id: 'recommendations',
       icon: <FaBullseye />,
       title: 'Recommendations',
       description: 'How our smart recommendation system works',
-      articles: 3
+      articles: 3,
+      content: [
+        {
+          title: 'How It Works',
+          text: 'Our system uses collaborative filtering (similar users), content-based filtering (your interests), popularity-based suggestions (trending items), and personalization (your activity) to recommend relevant products and industries.'
+        },
+        {
+          title: 'Improve Recommendations',
+          text: 'Browse products regularly, add items to cart, send purchase requests, and interact with industries. The more you use the platform, the better your recommendations become.'
+        }
+      ]
     },
     {
       id: 'admin',
       icon: <FaCog />,
       title: 'Admin Tools',
       description: 'Platform management and user approval workflows',
-      articles: 4
+      articles: 4,
+      content: [
+        {
+          title: 'Approve/Reject Users',
+          text: 'Log in to admin dashboard, go to "Approvals" section, click "Pending" tab, review user information, and click "Approve" or "Reject" with reason. Users receive email notifications.'
+        },
+        {
+          title: 'Manage Users',
+          text: 'Go to "User Management", view all users, filter by role/status, and take actions: Ban (permanent), Suspend (temporary), or Activate (restore access).'
+        },
+        {
+          title: 'Analytics Dashboard',
+          text: 'View key metrics including user growth, total products, purchase request statistics, and sector distribution. Use charts to track platform growth and make data-driven decisions.'
+        }
+      ]
     }
   ];
 
@@ -162,7 +250,10 @@ function Help() {
                 <p>{category.description}</p>
                 <div className="category-footer">
                   <span className="category-articles">{category.articles} articles</span>
-                  <button className="category-link">
+                  <button 
+                    className="category-link"
+                    onClick={() => scrollToCategory(category.id)}
+                  >
                     Learn more <FaChevronRight />
                   </button>
                 </div>
@@ -193,6 +284,42 @@ function Help() {
           </div>
         </div>
       </section>
+
+      {/* Category Details */}
+      {activeCategory && (
+        <section className="help-category-details" id="category-details">
+          <div className="help-container">
+            {categories.filter(cat => cat.id === activeCategory).map(category => (
+              <div key={category.id} className="category-details-content">
+                <div className="category-details-header">
+                  <div className="category-details-icon">{category.icon}</div>
+                  <div>
+                    <h2>{category.title}</h2>
+                    <p>{category.description}</p>
+                  </div>
+                </div>
+                <div className="category-articles-list">
+                  {category.content.map((article, index) => (
+                    <div key={index} className="category-article-item">
+                      <div className="category-article-number">{index + 1}</div>
+                      <div className="category-article-content">
+                        <h3>{article.title}</h3>
+                        <p>{article.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button 
+                  className="back-to-categories-btn"
+                  onClick={() => setActiveCategory(null)}
+                >
+                  ← Back to Categories
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* FAQ Section */}
       <section className="help-faq" id="faq">
