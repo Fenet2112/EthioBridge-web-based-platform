@@ -431,7 +431,7 @@
 .section-header h2 {
   font-size: clamp(1.8rem, 3vw, 2.6rem);
   font-weight: 800;
-  color: #0d1b2a;
+  color: var(--text);
   letter-spacing: -0.5px;
   margin-bottom: 14px;
 }
