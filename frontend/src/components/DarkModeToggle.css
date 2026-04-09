@@ -22,7 +22,7 @@
   transition: background 0.3s;
   display: block;
 }
-.dm-on .dm-track { background: #667eea; }
+.dm-on .dm-track { background: #0a5c2f; }
 
 .dm-thumb {
   position: absolute;
