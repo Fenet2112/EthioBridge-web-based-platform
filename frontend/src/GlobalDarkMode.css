@@ -1,0 +1,513 @@
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL DARK MODE ENHANCEMENTS
+   Additional dark mode styles for components across the system
+   ═══════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] {
+  /* ═══════════════════════════════════════════════════════════════
+     PRODUCTS PAGE
+     ═══════════════════════════════════════════════════════════════ */
+  
+  .products-page {
+    background: var(--bg-secondary);
+  }
+  
+  .products-header {
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .products-header h1 {
+    color: var(--text-primary);
+  }
+  
+  .product-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+  }
+  
+  .product-card:hover {
+    border-color: #0a5c2f;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .product-name {
+    color: var(--text-primary);
+  }
+  
+  .product-price {
+    color: #4ade80;
+  }
+  
+  .product-description {
+    color: var(--text-secondary);
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════
+     SUBSCRIPTION PAGE
+     ═══════════════════════════════════════════════════════════════ */
+  
+  .subscription-page {
+    background: var(--bg-secondary);
+  }
+  
+  .subscription-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+  }
+  
+  .subscription-card:hover {
+    border-color: #0a5c2f;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .subscription-title {
+    color: var(--text-primary);
+  }
+  
+  .subscription-price {
+    color: #4ade80;
+  }
+  
+  .subscription-feature {
+    color: var(--text-secondary);
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════
+     PROFILE PAGE
+     ═══════════════════════════════════════════════════════════════ */
+  
+  .profile-page {
+    background: var(--bg-secondary);
+  }
+  
+  .profile-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+  }
+  
+  .profile-section-title {
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .profile-field-label {
+    color: var(--text-secondary);
+  }
+  
+  .profile-field-value {
+    color: var(--text-primary);
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════
+     MESSAGES PAGE
+     ═══════════════════════════════════════════════════════════════ */
+  
+  .messages-page {
+    background: var(--bg-secondary);
+  }
+  
+  .messages-sidebar {
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+  }
+  
+  .conversation-item {
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .conversation-item:hover {
+    background: var(--bg-hover);
+  }
+  
+  .conversation-item.active {
+    background: var(--bg-hover);
+    border-left: 3px solid #0a5c2f;
+  }
+  
+  .conversation-name {
+    color: var(--text-primary);
+  }
+  
+  .conversation-preview {
+    color: var(--text-secondary);
+  }
+  
+  .messages-container {
+    background: var(--bg-primary);
+  }
+  
+  .message-header {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .message-header-title {
+    color: var(--text-primary);
+  }
+  
+  .messages-list {
+    background: var(--bg-secondary);
+  }
+  
+  .message-item.sent {
+    background: #0a5c2f;
+    color: white;
+  }
+  
+  .message-item.received {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+  }
+  
+  .message-input-container {
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+  }
+  
+  .message-input {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+  }
+  
+  .message-input:focus {
+    border-color: #0a5c2f;
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════
+     INDUSTRY DETAIL PAGE
+     ═══════════════════════════════════════════════════════════════ */
+  
+  .industry-detail-page {
+    background: var(--bg-secondary);
+  }
+  
+  .industry-detail-header {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .industry-detail-title {
+    color: var(--text-primary);
+  }
+  
+  .industry-detail-subtitle {
+    color: var(--text-secondary);
+  }
+  
+  .industry-detail-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+  }
+  
+  .industry-detail-section-title {
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════
+     HOME PAGE
+     ═══════════════════════════════════════════════════════════════ */
+  
+  .home-page {
+    background: var(--bg-secondary);
+  }
+  
+  .hero-section {
+    background: linear-gradient(135deg, #0a5c2f 0%, #1a8a4a 60%, #064020 100%);
+  }
+  
+  .feature-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+  }
+  
+  .feature-card:hover {
+    border-color: #0a5c2f;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .feature-title {
+    color: var(--text-primary);
+  }
+  
+  .feature-description {
+    color: var(--text-secondary);
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════
+     LOGIN/SIGNUP PAGES
+     ═══════════════════════════════════════════════════════════════ */
+  
+  .auth-page {
+    background: var(--bg-secondary);
+  }
+  
+  .auth-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-xl);
+  }
+  
+  .auth-title {
+    color: var(--text-primary);
+  }
+  
+  .auth-subtitle {
+    color: var(--text-secondary);
+  }
+  
+  .auth-link {
+    color: #4ade80;
+  }
+  
+  .auth-link:hover {
+    color: #1a8a4a;
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════
+     HELP PAGE
+     ═══════════════════════════════════════════════════════════════ */
+  
+  .help-page {
+    background: var(--bg-secondary);
+  }
+  
+  .help-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+  }
+  
+  .help-section-title {
+    color: var(--text-primary);
+  }
+  
+  .help-section-content {
+    color: var(--text-secondary);
+  }
+  
+  .faq-item {
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .faq-question {
+    color: var(--text-primary);
+  }
+  
+  .faq-answer {
+    color: var(--text-secondary);
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════
+     MODALS
+     ═══════════════════════════════════════════════════════════════ */
+  
+  .modal-overlay {
+    background: rgba(0, 0, 0, 0.7);
+  }
+  
+  .modal-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-xl);
+  }
+  
+  .modal-header {
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .modal-title {
+    color: var(--text-primary);
+  }
+  
+  .modal-close {
+    color: var(--text-secondary);
+  }
+  
+  .modal-close:hover {
+    color: var(--text-primary);
+  }
+  
+  .modal-body {
+    color: var(--text-secondary);
+  }
+  
+  .modal-footer {
+    border-top: 1px solid var(--border);
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════
+     TABLES
+     ═══════════════════════════════════════════════════════════════ */
+  
+  table {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+  }
+  
+  thead {
+    background: var(--bg-hover);
+    border-bottom: 2px solid var(--border);
+  }
+  
+  th {
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+  }
+  
+  td {
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+  }
+  
+  tr:hover {
+    background: var(--bg-hover);
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════
+     BADGES
+     ═══════════════════════════════════════════════════════════════ */
+  
+  .badge {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+  }
+  
+  .badge-success {
+    background: rgba(47, 133, 90, 0.2);
+    color: #4ade80;
+    border: 1px solid rgba(47, 133, 90, 0.3);
+  }
+  
+  .badge-warning {
+    background: rgba(214, 158, 46, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(214, 158, 46, 0.3);
+  }
+  
+  .badge-error {
+    background: rgba(197, 48, 48, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(197, 48, 48, 0.3);
+  }
+  
+  .badge-info {
+    background: rgba(44, 98, 130, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(44, 98, 130, 0.3);
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════
+     ALERTS
+     ═══════════════════════════════════════════════════════════════ */
+  
+  .alert {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+  }
+  
+  .alert-success {
+    background: rgba(47, 133, 90, 0.1);
+    border: 1px solid rgba(47, 133, 90, 0.3);
+    color: #4ade80;
+  }
+  
+  .alert-warning {
+    background: rgba(214, 158, 46, 0.1);
+    border: 1px solid rgba(214, 158, 46, 0.3);
+    color: #fbbf24;
+  }
+  
+  .alert-error {
+    background: rgba(197, 48, 48, 0.1);
+    border: 1px solid rgba(197, 48, 48, 0.3);
+    color: #f87171;
+  }
+  
+  .alert-info {
+    background: rgba(44, 98, 130, 0.1);
+    border: 1px solid rgba(44, 98, 130, 0.3);
+    color: #60a5fa;
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════
+     TOOLTIPS
+     ═══════════════════════════════════════════════════════════════ */
+  
+  .tooltip {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════
+     DROPDOWNS
+     ═══════════════════════════════════════════════════════════════ */
+  
+  .dropdown-menu {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .dropdown-item {
+    color: var(--text-primary);
+  }
+  
+  .dropdown-item:hover {
+    background: var(--bg-hover);
+  }
+  
+  .dropdown-divider {
+    border-top: 1px solid var(--border);
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════
+     PAGINATION
+     ═══════════════════════════════════════════════════════════════ */
+  
+  .pagination {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+  }
+  
+  .pagination-item {
+    color: var(--text-primary);
+    border-right: 1px solid var(--border);
+  }
+  
+  .pagination-item:hover {
+    background: var(--bg-hover);
+  }
+  
+  .pagination-item.active {
+    background: #0a5c2f;
+    color: white;
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════
+     BREADCRUMBS
+     ═══════════════════════════════════════════════════════════════ */
+  
+  .breadcrumb {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+  }
+  
+  .breadcrumb-item {
+    color: var(--text-secondary);
+  }
+  
+  .breadcrumb-item.active {
+    color: var(--text-primary);
+  }
+  
+  .breadcrumb-separator {
+    color: var(--text-light);
+  }
+}

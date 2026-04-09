@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa";
 import SubscriptionModal from "../components/SubscriptionModal";
 import "./Industry.css";
+import "./IndustryDarkMode.css";
 import "./IndustryMessages.css";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";

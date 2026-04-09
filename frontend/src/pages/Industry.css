@@ -167,12 +167,20 @@
   font-size: 1.5rem;
 }
 
+[data-theme="dark"] .sidebar-header h3 {
+  color: #4ade80;
+}
+
 .close-btn {
   background: none;
   border: none;
   font-size: 28px;
-  color: #777;
+  color: var(--text-muted);
   cursor: pointer;
+}
+
+.close-btn:hover {
+  color: var(--text-primary);
 }
 
 .menu-list {
@@ -199,6 +207,11 @@
   font-weight: 600;
 }
 
+[data-theme="dark"] .menu-item:hover,
+[data-theme="dark"] .menu-item.active {
+  color: #4ade80;
+}
+
 .menu-icon {
   font-size: 1.5rem;
   min-width: 28px;
@@ -206,7 +219,7 @@
 
 .sidebar-footer {
   padding: 24px 28px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border);
   margin-top: 40px;
 }
 /* Fix overlap with navbar */
@@ -221,9 +234,13 @@
   align-items: center;
   gap: 14px;
   padding: 20px 24px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border);
   background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e9 100%);
   overflow: hidden;
+}
+
+[data-theme="dark"] .sidebar-profile {
+  background: linear-gradient(135deg, rgba(10, 92, 47, 0.15) 0%, rgba(10, 92, 47, 0.1) 100%);
 }
 
 .sidebar-avatar,

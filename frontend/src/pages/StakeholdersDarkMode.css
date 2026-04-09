@@ -1,0 +1,240 @@
+/* ═══════════════════════════════════════════════════════════════
+   STAKEHOLDERS PAGE - DARK MODE ENHANCEMENTS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Import this file in Stakeholders.jsx after Stakeholders.css */
+
+[data-theme="dark"] {
+  /* Modern stakeholder page */
+  .modern-stakeholder-page {
+    background-color: var(--bg-secondary);
+  }
+  
+  /* Home icon link */
+  .home-icon-link {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-sm);
+    color: var(--text-secondary);
+  }
+  
+  .home-icon-link:hover {
+    border-color: #0a5c2f;
+    color: #4ade80;
+    box-shadow: var(--shadow-md);
+  }
+  
+  /* Hero section */
+  .hero-section {
+    background: linear-gradient(135deg, #0a5c2f 0%, #1a8a4a 60%, #064020 100%);
+    border-bottom: 1px solid var(--border-light);
+  }
+  
+  /* Search container */
+  .search-container {
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border-light);
+  }
+  
+  .search-input-group {
+    border-right: 1px solid var(--border-light);
+  }
+  
+  .search-input-group .material-icon {
+    color: var(--text-tertiary);
+  }
+  
+  .search-field {
+    color: var(--text-primary);
+    background: transparent;
+  }
+  
+  .search-field::placeholder {
+    color: var(--text-light);
+  }
+  
+  /* Filter bar */
+  .filter-bar {
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border-light);
+  }
+  
+  .filter-label {
+    color: var(--text-tertiary);
+  }
+  
+  .filter-select {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-medium);
+    color: var(--text-primary);
+  }
+  
+  .filter-result {
+    color: var(--text-secondary);
+  }
+  
+  /* Company cards */
+  .company-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+  }
+  
+  .company-card:hover {
+    border-color: #0a5c2f;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .company-name {
+    color: var(--text-primary);
+  }
+  
+  .company-card:hover .company-name {
+    color: #4ade80;
+  }
+  
+  .company-meta {
+    color: var(--text-secondary);
+  }
+  
+  .dot {
+    color: var(--border-dark);
+  }
+  
+  .company-desc {
+    color: var(--text-secondary);
+  }
+  
+  .card-actions {
+    border-top: 1px solid var(--border-light);
+  }
+  
+  .btn-outline {
+    background: transparent;
+    color: #4ade80;
+    border-color: #4ade80;
+  }
+  
+  .btn-outline:hover {
+    background: #0a5c2f;
+    color: var(--text-inverse);
+  }
+  
+  /* Loading/error/empty states */
+  .loading-state,
+  .error-state,
+  .empty-state {
+    color: var(--text-secondary);
+  }
+  
+  /* Chat sidebar */
+  .chat-sidebar {
+    background: var(--bg-primary);
+    border-left: 1px solid var(--border-light);
+    box-shadow: var(--shadow-xl);
+  }
+  
+  .chat-header {
+    background: #0a5c2f;
+    color: var(--text-inverse);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .chat-avatar {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .close-chat {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-inverse);
+  }
+  
+  .close-chat:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Chat messages */
+  .chat-messages {
+    background: var(--bg-secondary);
+  }
+  
+  .message-bubble.sent {
+    background: #0a5c2f;
+    color: var(--text-inverse);
+  }
+  
+  .message-bubble.received {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
+  }
+  
+  .file-attachment {
+    background: rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Chat input area */
+  .chat-input-area {
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-light);
+  }
+  
+  .icon-btn {
+    border: 1px solid var(--border-medium);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+  }
+  
+  .icon-btn:hover {
+    border-color: #0a5c2f;
+    color: #4ade80;
+  }
+  
+  .chat-input {
+    border: 1px solid var(--border-medium);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+  
+  .chat-input:focus {
+    border-color: #0a5c2f;
+  }
+  
+  .send-btn {
+    background: #0a5c2f;
+    color: var(--text-inverse);
+  }
+  
+  .send-btn:hover:not(:disabled) {
+    background: #1a8a4a;
+  }
+  
+  .file-preview {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+  }
+  
+  .file-preview button {
+    color: var(--text-secondary);
+  }
+  
+  /* Emoji picker wrapper */
+  .emoji-picker-wrapper {
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border-light);
+  }
+}
+
+/* Responsive adjustments for dark mode */
+@media (max-width: 768px) {
+  [data-theme="dark"] {
+    .search-input-group {
+      border-right: none;
+      border-bottom: 1px solid var(--border-light);
+    }
+    
+    .search-input-group:last-of-type {
+      border-bottom: none;
+    }
+  }
+}

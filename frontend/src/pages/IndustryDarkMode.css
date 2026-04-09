@@ -1,0 +1,332 @@
+/* ═══════════════════════════════════════════════════════════════
+   INDUSTRY DASHBOARD - DARK MODE ENHANCEMENTS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Import this file in Industry.jsx after Industry.css */
+
+[data-theme="dark"] {
+  /* Sidebar Profile */
+  .sidebar-profile-info h4 {
+    color: #4ade80;
+  }
+  
+  .sidebar-profile-info p {
+    color: var(--text-secondary);
+  }
+  
+  /* Dashboard Logo */
+  .dashboard-logo {
+    color: #4ade80;
+  }
+  
+  /* Hamburger bars */
+  .bar {
+    background: var(--text-primary);
+  }
+  
+  /* Hamburger hover */
+  .hamburger-btn:hover {
+    background: var(--bg-hover);
+  }
+  
+  /* Profile card */
+  .profile-card {
+    background: var(--bg-card);
+    box-shadow: 0 8px 32px var(--shadow);
+  }
+  
+  /* Profile header */
+  .profile-header {
+    background: linear-gradient(135deg, rgba(10, 92, 47, 0.15) 0%, rgba(10, 92, 47, 0.1) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .profile-title h2 {
+    color: #4ade80;
+  }
+  
+  .industry-type {
+    color: var(--text-secondary);
+  }
+  
+  /* Edit button */
+  .edit-btn {
+    background: #0a5c2f;
+    color: white;
+  }
+  
+  .edit-btn:hover {
+    background: #1a8a4a;
+  }
+  
+  /* Detail items */
+  .detail-item strong {
+    color: #4ade80;
+  }
+  
+  /* Content card */
+  .content-card {
+    background: var(--bg-card);
+    box-shadow: 0 8px 32px var(--shadow);
+  }
+  
+  /* Content header */
+  .content-header h1 {
+    color: #4ade80;
+  }
+  
+  /* Locked section */
+  .locked-section {
+    background: var(--bg-card);
+    box-shadow: 0 8px 32px var(--shadow);
+    color: var(--text-secondary);
+  }
+  
+  .locked-section h2 {
+    color: #e53e3e;
+  }
+  
+  /* Pending banner */
+  .pending-banner {
+    background: rgba(255, 243, 205, 0.1);
+    border: 1px solid rgba(255, 238, 186, 0.2);
+    color: #ffd54f;
+  }
+  
+  .pending-banner h3 {
+    color: #ffd54f;
+  }
+  
+  /* Product form card */
+  .product-form-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+  }
+  
+  /* Product item card */
+  .product-item-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+  }
+  
+  .product-item-card:hover {
+    border-color: #0a5c2f;
+    box-shadow: 0 6px 16px var(--shadow);
+  }
+  
+  /* Product category */
+  .product-category {
+    color: var(--text-muted);
+  }
+  
+  /* Product description */
+  .product-desc {
+    color: var(--text-secondary);
+  }
+  
+  /* Product price */
+  .product-price {
+    color: #4ade80;
+  }
+  
+  /* Dashboard hero */
+  .dash-hero {
+    background: linear-gradient(135deg, #0a5c2f 0%, #1a8a4a 60%, #064020 100%);
+  }
+  
+  /* Dashboard stat card */
+  .dash-stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+  
+  /* Dashboard card */
+  .dash-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+  
+  .dash-card-header {
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .dash-card-header h3 {
+    color: var(--text-primary);
+  }
+  
+  .dash-card-link {
+    color: #4ade80;
+  }
+  
+  /* Dashboard request row */
+  .dash-req-row {
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .dash-req-row:hover {
+    background: var(--bg-hover);
+  }
+  
+  .dash-req-name {
+    color: var(--text-primary);
+  }
+  
+  .dash-req-product {
+    color: var(--text-muted);
+  }
+  
+  .dash-req-notes {
+    color: var(--text-light);
+  }
+  
+  /* Dashboard product row */
+  .dash-prod-row {
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .dash-prod-row:hover {
+    background: var(--bg-hover);
+  }
+  
+  .dash-prod-name {
+    color: var(--text-primary);
+  }
+  
+  .dash-prod-cat {
+    color: var(--text-muted);
+  }
+  
+  .dash-prod-price {
+    color: #4ade80;
+  }
+  
+  /* Quick actions */
+  .dash-qa-btn {
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    color: var(--text-primary);
+  }
+  
+  .dash-qa-btn:hover {
+    border-color: #0a5c2f;
+    background: var(--bg-hover);
+    box-shadow: 0 6px 16px var(--shadow);
+  }
+  
+  /* Purchase request card */
+  .purchase-request-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+  
+  .purchase-request-card:hover {
+    box-shadow: 0 6px 20px var(--shadow-md);
+  }
+  
+  .pr-card-header {
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .pr-product-name {
+    color: var(--text-primary);
+  }
+  
+  .pr-qty-box {
+    background: var(--bg-input);
+  }
+  
+  .pr-qty-num {
+    color: var(--text-primary);
+  }
+  
+  .pr-qty-unit {
+    color: var(--text-light);
+  }
+  
+  .pr-detail-label {
+    color: var(--text-light);
+  }
+  
+  .pr-detail-value {
+    color: var(--text-primary);
+  }
+  
+  .pr-notes {
+    background: var(--bg-input);
+  }
+  
+  .pr-msg-btn {
+    background: linear-gradient(135deg, #0a5c2f, #1a8a4a);
+    box-shadow: 0 4px 12px rgba(10,92,47,0.3);
+  }
+  
+  .pr-call-btn {
+    background: var(--bg-card);
+    color: #4ade80;
+    border: 2px solid #4ade80 !important;
+  }
+  
+  .pr-call-btn:hover {
+    background: #0a5c2f;
+    color: white;
+  }
+  
+  /* Product name error */
+  .product-name-error {
+    color: #e53e3e;
+  }
+  
+  .edit-existing-btn {
+    border: 1px solid #e53e3e;
+    color: #e53e3e;
+  }
+  
+  .edit-existing-btn:hover {
+    background: #e53e3e;
+    color: white;
+  }
+  
+  /* Help link */
+  .help-link {
+    background: rgba(10, 92, 47, 0.15);
+    color: #4ade80;
+  }
+  
+  .help-link:hover {
+    background: rgba(10, 92, 47, 0.25);
+  }
+  
+  /* Home icon button */
+  .home-icon-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 12px var(--shadow);
+    color: var(--text-primary);
+  }
+  
+  .home-icon-btn:hover {
+    box-shadow: 0 6px 20px var(--shadow-md);
+    background: var(--bg-hover);
+  }
+  
+  /* Navbar */
+  .dashboard-navbar {
+    background: var(--nav-bg);
+    box-shadow: 0 2px 12px var(--shadow);
+    border-bottom: 1px solid var(--nav-border);
+  }
+  
+  /* Welcome text */
+  .welcome-text {
+    color: var(--text-secondary);
+  }
+  
+  /* User avatar */
+  .user-avatar {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+}

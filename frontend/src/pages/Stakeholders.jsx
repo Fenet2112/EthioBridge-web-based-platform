@@ -5,6 +5,7 @@ import StakeholderNav from "../components/StakeholderNav";
 import SubscriptionModal from "../components/SubscriptionModal";
 import RecommendWidget from "../components/RecommendWidget";
 import "./Stakeholders.css";
+import "./StakeholdersDarkMode.css";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 let socket;
