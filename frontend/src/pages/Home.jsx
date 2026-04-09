@@ -294,70 +294,43 @@ function Home() {
           <h2>What Our Users Say</h2>
           <p>Real experiences from construction professionals across Ethiopia</p>
         </div>
-        <div className="testimonials-grid">
+        <div className="testimonials-container">
           {[
             {
               name: "Abebe Tadesse",
               role: "Construction Stakeholder",
               company: "Addis Construction Group",
-              image: "https://ui-avatars.com/api/?name=Abebe+Tadesse&background=0a5c2f&color=fff&size=200",
-              rating: 5,
-              text: "EthioBridge transformed how we source construction materials. Finding verified suppliers is now effortless, and the direct messaging feature saves us countless hours."
+              image: "https://ui-avatars.com/api/?name=Abebe+Tadesse&background=0a5c2f&color=fff&size=600",
+              text: "EthioBridge transformed how we source construction materials. Finding verified suppliers is now effortless, and the direct messaging feature saves us countless hours. The platform's verification system gives us confidence in every connection we make."
             },
             {
               name: "Meron Bekele",
               role: "Industry Supplier",
               company: "Ethiopian Steel Industries",
-              image: "https://ui-avatars.com/api/?name=Meron+Bekele&background=0a5c2f&color=fff&size=200",
-              rating: 5,
-              text: "Managing our product catalog and tracking purchase requests has never been easier. The analytics dashboard helps us understand our market position and grow strategically."
+              image: "https://ui-avatars.com/api/?name=Meron+Bekele&background=0a5c2f&color=fff&size=600",
+              text: "Managing our product catalog and tracking purchase requests has never been easier. The analytics dashboard helps us understand our market position and grow strategically. Since joining EthioBridge, our business visibility has increased significantly."
             },
             {
               name: "Daniel Haile",
               role: "Investor",
               company: "Horizon Investment Partners",
-              image: "https://ui-avatars.com/api/?name=Daniel+Haile&background=0a5c2f&color=fff&size=200",
-              rating: 5,
-              text: "The platform's verification system gives us confidence in every connection. We've successfully partnered with multiple industries through EthioBridge."
-            },
-            {
-              name: "Sara Alemayehu",
-              role: "Construction Manager",
-              company: "Bole Infrastructure Projects",
-              image: "https://ui-avatars.com/api/?name=Sara+Alemayehu&background=0a5c2f&color=fff&size=200",
-              rating: 5,
-              text: "The smart recommendation system is incredibly helpful. It suggests exactly what we need based on our project requirements. A game-changer for our procurement process."
-            },
-            {
-              name: "Yohannes Tesfaye",
-              role: "Industry Owner",
-              company: "Addis Cement Factory",
-              image: "https://ui-avatars.com/api/?name=Yohannes+Tesfaye&background=0a5c2f&color=fff&size=200",
-              rating: 5,
-              text: "Since joining EthioBridge, our business visibility has increased significantly. We receive quality inquiries daily and have expanded to three new regions."
-            },
-            {
-              name: "Hanna Girma",
-              role: "Procurement Officer",
-              company: "National Housing Corporation",
-              image: "https://ui-avatars.com/api/?name=Hanna+Girma&background=0a5c2f&color=fff&size=200",
-              rating: 5,
-              text: "The platform's security and verification process ensure we only work with legitimate businesses. It has streamlined our entire procurement workflow."
+              image: "https://ui-avatars.com/api/?name=Daniel+Haile&background=0a5c2f&color=fff&size=600",
+              text: "The platform's verification system gives us confidence in every connection. We've successfully partnered with multiple industries through EthioBridge. The smart recommendation system is incredibly helpful and suggests exactly what we need based on our requirements."
             }
           ].map((testimonial, i) => (
-            <div className="testimonial-card animate-on-scroll" key={i} style={{ animationDelay: `${i * 0.1}s` }}>
-              <div className="testimonial-rating">
-                {[...Array(testimonial.rating)].map((_, idx) => (
-                  <FaStar key={idx} />
-                ))}
+            <div className={`testimonial-showcase animate-on-scroll ${i % 2 === 1 ? 'reverse' : ''}`} key={i} style={{ animationDelay: `${i * 0.2}s` }}>
+              <div className="testimonial-image-wrap">
+                <div className="testimonial-shape shape-1"></div>
+                <div className="testimonial-shape shape-2"></div>
+                <img src={testimonial.image} alt={testimonial.name} className="testimonial-main-image" />
               </div>
-              <p className="testimonial-text">"{testimonial.text}"</p>
-              <div className="testimonial-author">
-                <img src={testimonial.image} alt={testimonial.name} className="testimonial-avatar" />
-                <div className="testimonial-info">
-                  <h4>{testimonial.name}</h4>
-                  <p className="testimonial-role">{testimonial.role}</p>
-                  <p className="testimonial-company">{testimonial.company}</p>
+              <div className="testimonial-content-wrap">
+                <div className="testimonial-quote-icon">"</div>
+                <p className="testimonial-main-text">{testimonial.text}</p>
+                <div className="testimonial-author-info">
+                  <h3 className="testimonial-author-name">{testimonial.name}</h3>
+                  <p className="testimonial-author-role">{testimonial.role}</p>
+                  <p className="testimonial-author-company">{testimonial.company}</p>
                 </div>
               </div>
             </div>
