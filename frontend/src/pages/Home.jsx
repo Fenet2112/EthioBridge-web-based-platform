@@ -156,9 +156,9 @@ function Home() {
         </div>
         <div className="steps-grid">
           {[
-            { num: "01", icon: <FaFileAlt />, title: "Create Your Profile", desc: "Sign up as an industry supplier or a construction stakeholder in minutes." },
-            { num: "02", icon: <FaSearch />, title: "Discover & Connect", desc: "Search verified listings, filter by region and category, and reach out directly." },
-            { num: "03", icon: <FaRocket />, title: "Grow Your Business", desc: "Close deals, track performance, and scale your construction business." },
+            { num: "01", icon: <FaFileAlt />, title: "Create Your Profile", desc: "Sign up as an industry supplier or a construction stakeholder in minutes. Complete verification and get approved." },
+            { num: "02", icon: <FaSearch />, title: "Discover & Connect", desc: "Search verified listings, filter by region and category, and reach out directly through our secure platform." },
+            { num: "03", icon: <FaRocket />, title: "Grow Your Business", desc: "Close deals, track performance, and scale your construction business with real-time analytics and insights." },
           ].map((step, i) => (
             <div className={`step-card animate-on-scroll`} key={i} style={{ animationDelay: `${i * 0.15}s` }}>
               <div className="step-number">{step.num}</div>
@@ -179,12 +179,12 @@ function Home() {
         </div>
         <div className="features-grid">
           {[
-            { icon: <FaCheckCircle />, title: "Verified Listings", desc: "Every industry and supplier is verified for authenticity and quality." },
-            { icon: <FaSearch />, title: "Advanced Search", desc: "Filter by product type, region, price range, and certification." },
-            { icon: <FaComments />, title: "Direct Messaging", desc: "Communicate directly with suppliers and stakeholders in real time." },
-            { icon: <FaChartBar />, title: "Analytics Dashboard", desc: "Track your profile views, inquiries, and business performance." },
-            { icon: <FaShieldAlt />, title: "Secure Platform", desc: "Enterprise-grade security to protect your business data." },
-            { icon: <FaMobileAlt />, title: "Mobile Friendly", desc: "Access EthioBridge from any device, anywhere in Ethiopia." },
+            { icon: <FaCheckCircle />, title: "Verified Listings", desc: "Every industry and supplier is verified for authenticity and quality through our rigorous approval process." },
+            { icon: <FaSearch />, title: "Advanced Search", desc: "Filter by product type, region, price range, and certification to find exactly what you need." },
+            { icon: <FaComments />, title: "Direct Messaging", desc: "Communicate directly with suppliers and stakeholders in real time through our secure platform." },
+            { icon: <FaChartBar />, title: "Analytics Dashboard", desc: "Track your profile views, inquiries, and business performance with comprehensive analytics." },
+            { icon: <FaShieldAlt />, title: "Secure Platform", desc: "Enterprise-grade security to protect your business data and ensure safe transactions." },
+            { icon: <FaMobileAlt />, title: "Mobile Friendly", desc: "Access EthioBridge from any device, anywhere in Ethiopia with our responsive design." },
           ].map((f, i) => (
             <div className="feature-card animate-on-scroll" key={i} style={{ animationDelay: `${i * 0.1}s` }}>
               <div className="feature-icon">{f.icon}</div>
@@ -195,32 +195,95 @@ function Home() {
         </div>
       </section>
 
-      {/* ── PROJECTS GALLERY ── */}
-      <section className="gallery-section">
+      {/* ── BENEFITS ── */}
+      <section className="benefits-section">
         <div className="section-header animate-on-scroll">
-          <span className="section-tag">Showcase</span>
-          <h2>Featured Projects</h2>
-          <p>Real construction projects powered by EthioBridge connections</p>
+          <span className="section-tag">Why Choose Us</span>
+          <h2>Benefits of Using EthioBridge</h2>
+          <p>Transform your construction business with our comprehensive platform</p>
         </div>
-        <div className="gallery-grid">
-          {[
-            { img: "https://www.2merkato.com/images/stories/cbe-hq.jpg", title: "Commercial Bank HQ", tag: "Commercial" },
-            { img: "https://th.bing.com/th/id/R.d491682795f6c529b479fbe33d4a5515?rik=w1o%2fs7b4wPCYOw&pid=ImgRaw&r=0", title: "Skyscraper Foundation", tag: "Infrastructure" },
-            { img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Addis_Ababa_skyline.jpg/1280px-Addis_Ababa_skyline.jpg", title: "Addis Ababa Skyline", tag: "Urban Development" },
-          ].map((p, i) => (
-            <div className="gallery-card animate-on-scroll" key={i} style={{ animationDelay: `${i * 0.15}s` }}>
-              <div className="gallery-img-wrap">
-                <img src={p.img} alt={p.title} />
-                <div className="gallery-overlay">
-                  <span className="gallery-tag">{p.tag}</span>
-                </div>
-              </div>
-              <div className="gallery-info">
-                <h4>{p.title}</h4>
-                <span className="gallery-link">View Details →</span>
-              </div>
+        <div className="benefits-grid">
+          <div className="benefit-card animate-on-scroll">
+            <div className="benefit-icon-wrap">
+              <FaRocket />
             </div>
-          ))}
+            <h3>Accelerate Growth</h3>
+            <p>Connect with thousands of verified businesses and expand your market reach across all regions of Ethiopia.</p>
+          </div>
+          <div className="benefit-card animate-on-scroll" style={{ animationDelay: '0.1s' }}>
+            <div className="benefit-icon-wrap">
+              <FaClock />
+            </div>
+            <h3>Save Time</h3>
+            <p>Find the right partners quickly with our advanced search and filtering system. No more endless phone calls.</p>
+          </div>
+          <div className="benefit-card animate-on-scroll" style={{ animationDelay: '0.2s' }}>
+            <div className="benefit-icon-wrap">
+              <FaShieldAlt />
+            </div>
+            <h3>Build Trust</h3>
+            <p>Work with verified businesses only. Our approval process ensures every user is legitimate and trustworthy.</p>
+          </div>
+          <div className="benefit-card animate-on-scroll" style={{ animationDelay: '0.3s' }}>
+            <div className="benefit-icon-wrap">
+              <FaChartBar />
+            </div>
+            <h3>Data-Driven Decisions</h3>
+            <p>Make informed business decisions with real-time analytics and market insights at your fingertips.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── USER ROLES ── */}
+      <section className="roles-section">
+        <div className="section-header animate-on-scroll">
+          <span className="section-tag">Who We Serve</span>
+          <h2>Built for Every Construction Professional</h2>
+          <p>Tailored solutions for industries, stakeholders, and administrators</p>
+        </div>
+        <div className="roles-grid">
+          <div className="role-card animate-on-scroll">
+            <div className="role-icon-wrap">
+              <FaIndustry />
+            </div>
+            <h3>Industries & Suppliers</h3>
+            <p>Showcase your products and services to thousands of potential buyers. Manage your catalog, track inquiries, and grow your business.</p>
+            <ul className="role-features">
+              <li><FaCheck /> Product catalog management</li>
+              <li><FaCheck /> Purchase request tracking</li>
+              <li><FaCheck /> Real-time messaging</li>
+              <li><FaCheck /> Performance analytics</li>
+            </ul>
+            <Link to="/signup" className="role-cta">Get Started as Industry →</Link>
+          </div>
+          <div className="role-card animate-on-scroll" style={{ animationDelay: '0.15s' }}>
+            <div className="role-icon-wrap">
+              <FaHandshake />
+            </div>
+            <h3>Stakeholders & Investors</h3>
+            <p>Find verified suppliers and construction materials for your projects. Connect directly with industries and make informed decisions.</p>
+            <ul className="role-features">
+              <li><FaCheck /> Advanced search & filters</li>
+              <li><FaCheck /> Direct purchase requests</li>
+              <li><FaCheck /> Secure communication</li>
+              <li><FaCheck /> Smart recommendations</li>
+            </ul>
+            <Link to="/signup" className="role-cta">Get Started as Stakeholder →</Link>
+          </div>
+          <div className="role-card animate-on-scroll" style={{ animationDelay: '0.3s' }}>
+            <div className="role-icon-wrap">
+              <FaUsers />
+            </div>
+            <h3>Platform Administrators</h3>
+            <p>Manage the entire ecosystem with powerful admin tools. Approve users, monitor activity, and ensure platform quality.</p>
+            <ul className="role-features">
+              <li><FaCheck /> User verification & approval</li>
+              <li><FaCheck /> Platform monitoring</li>
+              <li><FaCheck /> Analytics & reporting</li>
+              <li><FaCheck /> System management</li>
+            </ul>
+            <Link to="/login" className="role-cta">Admin Login →</Link>
+          </div>
         </div>
       </section>
 
@@ -228,89 +291,49 @@ function Home() {
       <section className="services-section" id="services">
         <div className="section-header animate-on-scroll">
           <span className="section-tag">What We Offer</span>
-          <h2>End-to-End Services for Ethiopia's Construction Sector</h2>
+          <h2>Comprehensive Services for Construction Success</h2>
           <p>From discovery to deal closure — EthioBridge powers every step of your business journey</p>
         </div>
 
         <div className="services-grid">
           {[
             {
+              icon: <FaBox />,
+              title: "Smart Recommendations",
+              desc: "Get AI-powered product and supplier recommendations based on your business needs and past interactions.",
+            },
+            {
               icon: <FaIndustry />,
-              color: "#0a5c2f",
-              bg: "#e8f5e9",
-              title: "Industry Listings",
-              desc: "Get your construction business in front of thousands of verified stakeholders. Showcase products, certifications, and capabilities with a professional profile.",
-              points: ["Verified company badge", "Product catalog management", "Analytics & visibility insights"],
+              title: "Industry Connections",
+              desc: "Connect with verified construction industries and suppliers across all regions of Ethiopia.",
             },
             {
               icon: <FaHandshake />,
-              color: "#667eea",
-              bg: "#f0f0ff",
-              title: "Stakeholder Matching",
-              desc: "Investors, contractors, and buyers find exactly what they need. Advanced filters by region, sector, price, and certification make discovery effortless.",
-              points: ["Smart search & filtering", "Direct purchase requests", "Identity-verified connections"],
-            },
-            {
-              icon: <FaComments />,
-              color: "#0891b2",
-              bg: "#e0f7fa",
-              title: "Real-Time Messaging",
-              desc: "Negotiate, clarify, and close deals through our secure in-platform messaging system. No third-party apps needed — everything stays in one place.",
-              points: ["Instant notifications", "File & document sharing", "Conversation history"],
-            },
-            {
-              icon: <FaChartBar />,
-              color: "#7c3aed",
-              bg: "#f3e8ff",
-              title: "Business Analytics",
-              desc: "Understand your market position with detailed analytics. Track profile views, request trends, and stakeholder engagement to make data-driven decisions.",
-              points: ["Profile view tracking", "Request conversion rates", "Market trend reports"],
+              title: "Investment Opportunities",
+              desc: "Discover investment opportunities and connect with stakeholders looking for construction partnerships.",
             },
             {
               icon: <FaShieldAlt />,
-              color: "#dc2626",
-              bg: "#fff5f5",
-              title: "Trust & Verification",
-              desc: "Every industry and stakeholder on EthioBridge goes through a rigorous verification process. Identity documents, business licenses, and admin approval ensure a safe ecosystem.",
-              points: ["ID document verification", "Admin-reviewed approvals", "Fraud prevention system"],
+              title: "Secure Transactions",
+              desc: "Conduct business safely with our verified user system and secure communication platform.",
+            },
+            {
+              icon: <FaClipboardList />,
+              title: "Request Management",
+              desc: "Manage purchase requests, track inquiries, and streamline your business operations efficiently.",
             },
             {
               icon: <FaStar />,
-              color: "#d97706",
-              bg: "#fffbeb",
-              title: "Premium Subscriptions",
-              desc: "Unlock unlimited listings, featured placement, advanced analytics, and priority support. Designed for businesses serious about growth.",
-              points: ["Unlimited product listings", "Featured search placement", "Priority customer support"],
+              title: "Premium Features",
+              desc: "Unlock unlimited listings, featured placement, and priority support with premium subscriptions.",
             },
           ].map((s, i) => (
-            <div className="service-card animate-on-scroll" key={i} style={{ animationDelay: `${i * 0.08}s` }}>
-              <div className="service-icon-wrap" style={{ background: s.bg }}>
-                <span className="service-icon" style={{ color: s.color }}>{s.icon}</span>
-              </div>
-              <h3 className="service-title">{s.title}</h3>
-              <p className="service-desc">{s.desc}</p>
-              <ul className="service-points">
-                {s.points.map(pt => (
-                  <li key={pt}>
-                    <span className="service-check" style={{ color: s.color }}><FaCheck /></span>
-                    {pt}
-                  </li>
-                ))}
-              </ul>
+            <div className="service-card-modern animate-on-scroll" key={i} style={{ animationDelay: `${i * 0.08}s` }}>
+              <div className="service-icon-modern">{s.icon}</div>
+              <h3>{s.title}</h3>
+              <p>{s.desc}</p>
             </div>
           ))}
-        </div>
-
-        {/* Service CTA strip */}
-        <div className="services-cta animate-on-scroll">
-          <div className="services-cta-text">
-            <h3>Not sure which plan fits your business?</h3>
-            <p>Talk to our team — we'll help you find the right solution.</p>
-          </div>
-          <div className="services-cta-actions">
-            <Link to="/signup" className="btn-primary">Start Free Today →</Link>
-            <a href="#contact" className="services-cta-link">Talk to Sales</a>
-          </div>
         </div>
       </section>
 
@@ -409,21 +432,31 @@ function Home() {
       </section>
 
       {/* ── CTA BANNER ── */}
-      <section className="cta-banner animate-on-scroll">
-        <div className="cta-content">
+      <section className="cta-banner-main animate-on-scroll">
+        <div className="cta-content-main">
           <h2>Ready to Transform Your Construction Business?</h2>
-          <p>Join thousands of Ethiopian construction professionals on EthioBridge today.</p>
-          <div className="cta-actions">
+          <p>Join thousands of Ethiopian construction professionals on EthioBridge today. Start connecting, growing, and succeeding.</p>
+          <div className="cta-actions-main">
             <Link to="/signup" className="btn-primary btn-large">
-              Create Free Account
+              Get Started Free
               <span className="btn-arrow">→</span>
             </Link>
-            <Link to="/contact" className="btn-outline-white">Contact Sales</Link>
+            <Link to="/login" className="btn-outline-white">Sign In</Link>
           </div>
-        </div>
-        <div className="cta-decoration">
-          <div className="cta-circle c1"></div>
-          <div className="cta-circle c2"></div>
+          <div className="cta-trust-badges">
+            <div className="trust-badge">
+              <FaCheckCircle />
+              <span>Verified Users</span>
+            </div>
+            <div className="trust-badge">
+              <FaShieldAlt />
+              <span>Secure Platform</span>
+            </div>
+            <div className="trust-badge">
+              <FaStar />
+              <span>Trusted by 1000+</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -432,39 +465,70 @@ function Home() {
         <div className="footer-inner">
           <div className="footer-brand">
             <div className="footer-logo">
-              <Logo size={36} color="#667eea" />
+              <Logo size={36} color="#4ade80" />
               <span className="logo-text">EthioBridge</span>
             </div>
-            <p>Ethiopia's leading B2B platform connecting construction industries, suppliers, and stakeholders.</p>
+            <p>Ethiopia's leading B2B platform connecting construction industries, suppliers, and stakeholders. Building the future of Ethiopian construction, one connection at a time.</p>
+            <div className="footer-socials">
+              {[
+                { icon: "X", label: "Twitter",  href: "#" },
+                { icon: "in", label: "LinkedIn", href: "#" },
+                { icon: "f",  label: "Facebook", href: "#" },
+                { icon: "YT",  label: "YouTube",  href: "#" },
+              ].map(s => (
+                <a key={s.label} href={s.href} className="footer-social-btn" aria-label={s.label}>{s.icon}</a>
+              ))}
+            </div>
           </div>
 
           <div className="footer-col">
             <h4>Platform</h4>
             <ul>
-              <li><Link to="/services">Services</Link></li>
-              <li><Link to="/stakeholders">Stakeholders</Link></li>
-              <li><Link to="/industry">Industry</Link></li>
+              <li><Link to="/stakeholders">For Stakeholders</Link></li>
+              <li><Link to="/industry">For Industries</Link></li>
+              <li><Link to="/products">Browse Products</Link></li>
+              <li><Link to="/signup">Get Started</Link></li>
             </ul>
           </div>
 
           <div className="footer-col">
             <h4>Company</h4>
             <ul>
-              <li><Link to="/about">About Us</Link></li>
-              <li><Link to="/contact">Contact</Link></li>
+              <li><a href="#about">About Us</a></li>
+              <li><a href="#services">Services</a></li>
+              <li><Link to="/help">Help Center</Link></li>
+              <li><a href="#contact">Contact Us</a></li>
             </ul>
           </div>
 
           <div className="footer-col">
             <h4>Contact</h4>
-            <p><FaEnvelope /> info@ethiobridge.et</p>
-            <p><FaPhone /> +251 911 123 456</p>
-            <p><FaMapMarkerAlt /> Addis Ababa, Ethiopia</p>
+            <div className="footer-contact-item">
+              <FaEnvelope />
+              <a href="mailto:info@ethiobridge.et">info@ethiobridge.et</a>
+            </div>
+            <div className="footer-contact-item">
+              <FaPhone />
+              <a href="tel:+251911123456">+251 911 123 456</a>
+            </div>
+            <div className="footer-contact-item">
+              <FaMapMarkerAlt />
+              <span>Bole, Addis Ababa, Ethiopia</span>
+            </div>
+            <div className="footer-contact-item">
+              <FaClock />
+              <span>Mon – Fri, 8AM – 6PM EAT</span>
+            </div>
           </div>
         </div>
 
         <div className="footer-bottom">
-          <p>© 2025 EthioBridge. All rights reserved.</p>
+          <p>© 2025 EthioBridge. All rights reserved. Building Ethiopia's construction future.</p>
+          <div className="footer-bottom-links">
+            <a href="#privacy">Privacy Policy</a>
+            <span>•</span>
+            <a href="#terms">Terms of Service</a>
+          </div>
         </div>
       </footer>
 
