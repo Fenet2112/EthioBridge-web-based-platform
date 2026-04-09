@@ -33,8 +33,8 @@
 }
 
 .home-icon-link:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  border-color: #0a5c2f;
+  color: #0a5c2f;
   box-shadow: var(--shadow-md);
 }
 
@@ -43,7 +43,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 .hero-section {
-  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+  background: linear-gradient(135deg, #0a5c2f 0%, #1a8a4a 60%, #064020 100%);
   padding: var(--space-3xl) var(--space-xl);
   border-bottom: 1px solid var(--border-light);
 }
@@ -128,7 +128,7 @@
 }
 
 .search-btn {
-  background: var(--color-primary);
+  background: #0a5c2f;
   color: var(--text-inverse);
   border: none;
   padding: var(--space-md) var(--space-2xl);
@@ -142,7 +142,7 @@
 }
 
 .search-btn:hover {
-  background: var(--color-primary-light);
+  background: #1a8a4a;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -196,7 +196,7 @@
 }
 
 .filter-select:focus {
-  border-color: var(--color-primary);
+  border-color: #0a5c2f;
 }
 
 .filter-result {
@@ -243,7 +243,7 @@
 }
 
 .company-card:hover {
-  border-color: var(--color-primary);
+  border-color: #0a5c2f;
   box-shadow: var(--shadow-lg);
   transform: translateY(-2px);
 }
@@ -258,7 +258,7 @@
   width: 56px;
   height: 56px;
   border-radius: var(--radius-md);
-  background: var(--color-primary);
+  background: #0a5c2f;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -293,7 +293,7 @@
 }
 
 .company-card:hover .company-name {
-  color: var(--color-primary);
+  color: #0a5c2f;
 }
 
 .company-meta {
@@ -348,24 +348,24 @@
 
 .btn-outline {
   background: transparent;
-  color: var(--color-primary);
-  border-color: var(--color-primary);
+  color: #0a5c2f;
+  border-color: #0a5c2f;
 }
 
 .btn-outline:hover {
-  background: var(--color-primary);
+  background: #0a5c2f;
   color: var(--text-inverse);
 }
 
 .btn-primary {
-  background: var(--color-primary);
+  background: #0a5c2f;
   color: var(--text-inverse);
-  border-color: var(--color-primary);
+  border-color: #0a5c2f;
 }
 
 .btn-primary:hover {
-  background: var(--color-primary-light);
-  border-color: var(--color-primary-light);
+  background: #1a8a4a;
+  border-color: #1a8a4a;
 }
 
 .loading-state,
@@ -402,7 +402,7 @@
 
 .chat-header {
   padding: var(--space-xl);
-  background: var(--color-primary);
+  background: #0a5c2f;
   color: var(--text-inverse);
   display: flex;
   align-items: center;
@@ -479,7 +479,7 @@
 }
 
 .message-bubble.sent {
-  background: var(--color-primary);
+  background: #0a5c2f;
   color: var(--text-inverse);
   margin-left: auto;
   border-bottom-right-radius: var(--radius-sm);
@@ -543,8 +543,8 @@
 }
 
 .icon-btn:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  border-color: #0a5c2f;
+  color: #0a5c2f;
 }
 
 .chat-input {
@@ -561,7 +561,7 @@
 }
 
 .chat-input:focus {
-  border-color: var(--color-primary);
+  border-color: #0a5c2f;
 }
 
 .send-btn {
@@ -569,7 +569,7 @@
   height: 40px;
   border-radius: var(--radius-md);
   border: none;
-  background: var(--color-primary);
+  background: #0a5c2f;
   color: var(--text-inverse);
   cursor: pointer;
   transition: all var(--transition-base);
@@ -580,7 +580,7 @@
 }
 
 .send-btn:hover:not(:disabled) {
-  background: var(--color-primary-light);
+  background: #1a8a4a;
 }
 
 .send-btn:disabled {
