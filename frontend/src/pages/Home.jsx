@@ -287,6 +287,84 @@ function Home() {
         </div>
       </section>
 
+      {/* ── TESTIMONIALS ── */}
+      <section className="testimonials-section">
+        <div className="section-header animate-on-scroll">
+          <span className="section-tag">Success Stories</span>
+          <h2>What Our Users Say</h2>
+          <p>Real experiences from construction professionals across Ethiopia</p>
+        </div>
+        <div className="testimonials-grid">
+          {[
+            {
+              name: "Abebe Tadesse",
+              role: "Construction Stakeholder",
+              company: "Addis Construction Group",
+              image: "https://ui-avatars.com/api/?name=Abebe+Tadesse&background=0a5c2f&color=fff&size=200",
+              rating: 5,
+              text: "EthioBridge transformed how we source construction materials. Finding verified suppliers is now effortless, and the direct messaging feature saves us countless hours."
+            },
+            {
+              name: "Meron Bekele",
+              role: "Industry Supplier",
+              company: "Ethiopian Steel Industries",
+              image: "https://ui-avatars.com/api/?name=Meron+Bekele&background=0a5c2f&color=fff&size=200",
+              rating: 5,
+              text: "Managing our product catalog and tracking purchase requests has never been easier. The analytics dashboard helps us understand our market position and grow strategically."
+            },
+            {
+              name: "Daniel Haile",
+              role: "Investor",
+              company: "Horizon Investment Partners",
+              image: "https://ui-avatars.com/api/?name=Daniel+Haile&background=0a5c2f&color=fff&size=200",
+              rating: 5,
+              text: "The platform's verification system gives us confidence in every connection. We've successfully partnered with multiple industries through EthioBridge."
+            },
+            {
+              name: "Sara Alemayehu",
+              role: "Construction Manager",
+              company: "Bole Infrastructure Projects",
+              image: "https://ui-avatars.com/api/?name=Sara+Alemayehu&background=0a5c2f&color=fff&size=200",
+              rating: 5,
+              text: "The smart recommendation system is incredibly helpful. It suggests exactly what we need based on our project requirements. A game-changer for our procurement process."
+            },
+            {
+              name: "Yohannes Tesfaye",
+              role: "Industry Owner",
+              company: "Addis Cement Factory",
+              image: "https://ui-avatars.com/api/?name=Yohannes+Tesfaye&background=0a5c2f&color=fff&size=200",
+              rating: 5,
+              text: "Since joining EthioBridge, our business visibility has increased significantly. We receive quality inquiries daily and have expanded to three new regions."
+            },
+            {
+              name: "Hanna Girma",
+              role: "Procurement Officer",
+              company: "National Housing Corporation",
+              image: "https://ui-avatars.com/api/?name=Hanna+Girma&background=0a5c2f&color=fff&size=200",
+              rating: 5,
+              text: "The platform's security and verification process ensure we only work with legitimate businesses. It has streamlined our entire procurement workflow."
+            }
+          ].map((testimonial, i) => (
+            <div className="testimonial-card animate-on-scroll" key={i} style={{ animationDelay: `${i * 0.1}s` }}>
+              <div className="testimonial-rating">
+                {[...Array(testimonial.rating)].map((_, idx) => (
+                  <FaStar key={idx} />
+                ))}
+              </div>
+              <p className="testimonial-text">"{testimonial.text}"</p>
+              <div className="testimonial-author">
+                <img src={testimonial.image} alt={testimonial.name} className="testimonial-avatar" />
+                <div className="testimonial-info">
+                  <h4>{testimonial.name}</h4>
+                  <p className="testimonial-role">{testimonial.role}</p>
+                  <p className="testimonial-company">{testimonial.company}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ── SERVICES ── */}
       <section className="services-section" id="services">
         <div className="section-header animate-on-scroll">
