@@ -74,6 +74,33 @@
   flex-shrink: 0;
 }
 
+.sk-nav-home {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all var(--transition-base);
+  font-size: 18px;
+}
+
+.sk-nav-home:hover {
+  background: rgba(10, 92, 47, 0.1);
+  border-color: #0a5c2f;
+  color: #0a5c2f;
+}
+
+[data-theme="dark"] .sk-nav-home:hover {
+  background: rgba(74, 222, 128, 0.1);
+  border-color: #4ade80;
+  color: #4ade80;
+}
+
 /* ── Backdrop ── */
 .sk-backdrop {
   position: fixed;

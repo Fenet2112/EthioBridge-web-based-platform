@@ -1152,44 +1152,40 @@
 .menu-item-locked { opacity: 0.45; cursor: not-allowed !important; }
 .menu-lock { margin-left: auto; font-size: 0.8rem; }
 
-/* Home icon button */
-.home-icon-btn {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  width: 50px;
-  height: 50px;
-  background: var(--bg-card);
-  border-radius: 50%;
+/* Nav right section */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Home button in nav */
+.nav-home-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(10, 92, 47, 0.1);
+  color: #0a5c2f;
   text-decoration: none;
-  box-shadow: 0 4px 12px var(--shadow);
   transition: all 0.3s ease;
-  z-index: 10000;
-  cursor: pointer;
+  font-size: 18px;
 }
 
-.home-icon-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 20px var(--shadow-md);
-  background: var(--bg-hover);
+.nav-home-btn:hover {
+  background: rgba(10, 92, 47, 0.2);
+  transform: translateY(-2px);
 }
 
-.home-icon-btn:active {
-  transform: scale(0.95);
+[data-theme="dark"] .nav-home-btn {
+  background: rgba(74, 222, 128, 0.1);
+  color: #4ade80;
 }
 
-@media (max-width: 768px) {
-  .home-icon-btn {
-    width: 45px;
-    height: 45px;
-    font-size: 1.3rem;
-    top: 15px;
-    left: 15px;
-  }
+[data-theme="dark"] .nav-home-btn:hover {
+  background: rgba(74, 222, 128, 0.2);
 }
 
 /* Help link in navbar */

@@ -10,20 +10,6 @@
     background-color: var(--bg-secondary);
   }
   
-  /* Home icon link */
-  .home-icon-link {
-    background: var(--bg-primary);
-    border: 1px solid var(--border-light);
-    box-shadow: var(--shadow-sm);
-    color: var(--text-secondary);
-  }
-  
-  .home-icon-link:hover {
-    border-color: #0a5c2f;
-    color: #4ade80;
-    box-shadow: var(--shadow-md);
-  }
-  
   /* Hero section */
   .hero-section {
     background: linear-gradient(135deg, #0a5c2f 0%, #1a8a4a 60%, #064020 100%);

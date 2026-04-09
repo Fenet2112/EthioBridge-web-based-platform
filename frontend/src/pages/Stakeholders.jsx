@@ -232,10 +232,6 @@ function Stakeholders() {
 
   return (
     <div className="modern-stakeholder-page">
-      <Link to="/" className="home-icon-link">
-        <span className="material-icon">home</span>
-      </Link>
-      
       <StakeholderNav />
 
       {/* Hero Section */}

@@ -299,19 +299,6 @@
     background: rgba(10, 92, 47, 0.25);
   }
   
-  /* Home icon button */
-  .home-icon-btn {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    box-shadow: 0 4px 12px var(--shadow);
-    color: var(--text-primary);
-  }
-  
-  .home-icon-btn:hover {
-    box-shadow: 0 6px 20px var(--shadow-md);
-    background: var(--bg-hover);
-  }
-  
   /* Navbar */
   .dashboard-navbar {
     background: var(--nav-bg);

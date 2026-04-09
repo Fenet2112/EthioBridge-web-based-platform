@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { 
   FaIndustry, FaComments, FaBox, FaStar, FaUser, FaQuestionCircle,
   FaLink, FaTimes, FaHome, FaDoorOpen
@@ -66,6 +66,9 @@ function StakeholderNav({ unreadCount = 0 }) {
 
         {/* Right side — always visible */}
         <div className="sk-nav-right">
+          <Link to="/" className="sk-nav-home" title="Back to Home">
+            <span className="material-icon">home</span>
+          </Link>
           <DarkModeToggle />
           <ProfileDropdown />
         </div>

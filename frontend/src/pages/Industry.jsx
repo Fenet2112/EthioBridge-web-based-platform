@@ -669,9 +669,6 @@ function Industry() {
 
   return (
     <div className="industry-dashboard">
-      <Link to="/" className="home-icon-btn" title="Back to Home">
-        <FaHome />
-      </Link>
       {/* Navbar */}
       <nav className="dashboard-navbar">
         <div className="nav-left">
@@ -687,6 +684,9 @@ function Industry() {
           <h2 className="dashboard-logo">EthioBridge Industry</h2>
         </div>
         <div className="nav-right">
+          <Link to="/" className="nav-home-btn" title="Back to Home">
+            <FaHome />
+          </Link>
           <Link to="/help" className="help-link" title="Help Center">
             <FaQuestionCircle /> Help
           </Link>

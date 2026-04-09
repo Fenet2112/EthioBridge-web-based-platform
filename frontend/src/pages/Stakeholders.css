@@ -9,36 +9,6 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   HOME ICON
-   ═══════════════════════════════════════════════════════════════ */
-
-.home-icon-link {
-  position: fixed;
-  top: var(--space-lg);
-  right: var(--space-lg);
-  z-index: var(--z-fixed);
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: var(--bg-primary);
-  border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  color: var(--text-secondary);
-  transition: all var(--transition-base);
-  font-size: 18px;
-}
-
-.home-icon-link:hover {
-  border-color: #0a5c2f;
-  color: #0a5c2f;
-  box-shadow: var(--shadow-md);
-}
-
-/* ═══════════════════════════════════════════════════════════════
    HERO SECTION
    ═══════════════════════════════════════════════════════════════ */
 
