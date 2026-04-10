@@ -56,7 +56,7 @@ function Explore() {
   const fetchIndustries = async () => {
     try {
       setError(null);
-      const response = await fetch(`${API_BASE_URL}/api/profile/industries`);
+      const response = await fetch(`${API_BASE_URL}/api/industries/explore`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch industries');

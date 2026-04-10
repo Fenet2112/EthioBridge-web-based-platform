@@ -3,6 +3,29 @@ const router = express.Router();
 const pool = require("../config/db");
 const { authenticateToken } = require("../middleware/auth");
 
+// ── GET INDUSTRIES FOR EXPLORE MAP (Public - No Auth Required) ──
+router.get("/industries/explore", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        i.id,
+        i.company_name,
+        i.sector,
+        i.location,
+        i.description,
+        i.created_at
+      FROM industries i
+      JOIN users u ON u.id = i.user_id
+      WHERE u.status = 'approved'
+      ORDER BY i.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Get industries for explore error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // ── GET ALL APPROVED INDUSTRIES (for Stakeholders page) ──
 // Public endpoint – approved industries are visible to all logged-in users
 router.get("/industries", authenticateToken, async (req, res) => {
