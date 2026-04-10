@@ -64,13 +64,12 @@ function Explore() {
       
       const data = await response.json();
       
-      // Add mock coordinates for industries (in production, these should come from database)
+      // Use real coordinates if available, otherwise generate mock coordinates
       const industriesWithCoords = data.map((industry, index) => ({
         ...industry,
-        // Mock coordinates around Ethiopia (Addis Ababa area)
-        // In production, store actual coordinates in database
-        latitude: 9.0 + (Math.random() * 2),
-        longitude: 38.7 + (Math.random() * 2)
+        // Use real coordinates if available, otherwise mock around Ethiopia
+        latitude: industry.latitude || (9.0 + (Math.random() * 2)),
+        longitude: industry.longitude || (38.7 + (Math.random() * 2))
       }));
       
       setIndustries(industriesWithCoords);

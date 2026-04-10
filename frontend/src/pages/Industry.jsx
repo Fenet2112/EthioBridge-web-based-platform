@@ -79,6 +79,8 @@ function Industry() {
     description: "",
     licenseNumber: "",
     logoPreview: null,
+    latitude: "",
+    longitude: "",
   });
 
   const [isEditing, setIsEditing] = useState(true);
@@ -505,7 +507,9 @@ function Industry() {
           description: profile.description,
           phone: profile.phone,
           website: profile.website,
-          established_year: null // Add this field to the form if needed
+          established_year: null, // Add this field to the form if needed
+          latitude: profile.latitude || null,
+          longitude: profile.longitude || null
         })
       });
       
@@ -984,6 +988,43 @@ function Industry() {
                       onChange={handleProfileChange}
                       required
                     />
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="latitude">Latitude (for map)</label>
+                      <input
+                        type="number"
+                        id="latitude"
+                        name="latitude"
+                        value={profile.latitude}
+                        onChange={handleProfileChange}
+                        placeholder="e.g. 9.0320"
+                        step="0.000001"
+                        min="-90"
+                        max="90"
+                      />
+                      <small style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>
+                        Optional: Your location's latitude
+                      </small>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="longitude">Longitude (for map)</label>
+                      <input
+                        type="number"
+                        id="longitude"
+                        name="longitude"
+                        value={profile.longitude}
+                        onChange={handleProfileChange}
+                        placeholder="e.g. 38.7469"
+                        step="0.000001"
+                        min="-180"
+                        max="180"
+                      />
+                      <small style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>
+                        Optional: Your location's longitude
+                      </small>
+                    </div>
                   </div>
 
                   <div className="form-row">

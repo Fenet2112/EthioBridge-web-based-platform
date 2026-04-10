@@ -14,6 +14,8 @@ router.get("/explore", async (req, res) => {
         i.sector,
         i.location,
         i.description,
+        i.latitude,
+        i.longitude,
         i.created_at
       FROM industries i
       JOIN users u ON u.id = i.user_id

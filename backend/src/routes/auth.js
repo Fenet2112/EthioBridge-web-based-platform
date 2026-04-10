@@ -167,7 +167,7 @@ router.post("/login", async (req, res) => {
 // ── SUBMIT INDUSTRY PROFILE ──
 router.post("/profile/industry", async (req, res) => {
   try {
-    const { user_id, company_name, sector, location, description, phone, website, established_year } = req.body;
+    const { user_id, company_name, sector, location, description, phone, website, established_year, latitude, longitude } = req.body;
 
     if (!user_id || !company_name || !sector || !location) {
       return res.status(400).json({ message: "user_id, company_name, sector, and location are required" });
@@ -184,8 +184,8 @@ router.post("/profile/industry", async (req, res) => {
 
     // Upsert industry profile
     await pool.query(
-      `INSERT INTO industries (user_id, company_name, sector, location, description, phone, website, established_year)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO industries (user_id, company_name, sector, location, description, phone, website, established_year, latitude, longitude)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        ON CONFLICT (user_id) DO UPDATE SET
          company_name = EXCLUDED.company_name,
          sector = EXCLUDED.sector,
@@ -193,8 +193,10 @@ router.post("/profile/industry", async (req, res) => {
          description = EXCLUDED.description,
          phone = EXCLUDED.phone,
          website = EXCLUDED.website,
-         established_year = EXCLUDED.established_year`,
-      [user_id, company_name, sector, location, description || null, phone || null, website || null, established_year || null]
+         established_year = EXCLUDED.established_year,
+         latitude = EXCLUDED.latitude,
+         longitude = EXCLUDED.longitude`,
+      [user_id, company_name, sector, location, description || null, phone || null, website || null, established_year || null, latitude || null, longitude || null]
     );
 
     // Only set status to pending if user is currently incomplete

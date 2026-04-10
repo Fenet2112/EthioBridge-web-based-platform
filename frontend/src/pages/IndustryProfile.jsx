@@ -14,6 +14,8 @@ function IndustryProfile() {
     phone: "",
     website: "",
     established_year: "",
+    latitude: "",
+    longitude: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -115,6 +117,41 @@ function IndustryProfile() {
                 onChange={handleChange}
                 placeholder="+251 911 000 000"
               />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Latitude (for map display)</label>
+              <input
+                type="number"
+                name="latitude"
+                value={formData.latitude}
+                onChange={handleChange}
+                placeholder="e.g. 9.0320 (Addis Ababa)"
+                step="0.000001"
+                min="-90"
+                max="90"
+              />
+              <small style={{color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px', display: 'block'}}>
+                Optional: Your location's latitude coordinate
+              </small>
+            </div>
+            <div className="form-group">
+              <label>Longitude (for map display)</label>
+              <input
+                type="number"
+                name="longitude"
+                value={formData.longitude}
+                onChange={handleChange}
+                placeholder="e.g. 38.7469 (Addis Ababa)"
+                step="0.000001"
+                min="-180"
+                max="180"
+              />
+              <small style={{color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px', display: 'block'}}>
+                Optional: Your location's longitude coordinate
+              </small>
             </div>
           </div>
 
