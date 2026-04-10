@@ -41,6 +41,7 @@ function Home() {
         <ul className="nav-links">
           <li><Link to="/">Home</Link></li>
           <li><Link to="/products">Products</Link></li>
+          <li><Link to="/explore">Explore Map</Link></li>
           <li><a href="#services">Services</a></li>
           <li><a href="#about">About</a></li>
           <li><Link to="/help">Help</Link></li>

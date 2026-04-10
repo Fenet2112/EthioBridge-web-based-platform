@@ -22,6 +22,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import AdminLogin from "./pages/admin/Login";
 import Help from "./pages/Help";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import Explore from "./pages/Explore";
 
 function App() {
   return (
@@ -56,6 +57,9 @@ function App() {
 
         {/* Help Page */}
         <Route path="/help" element={<Help />} />
+
+        {/* Explore Page - Interactive Map */}
+        <Route path="/explore" element={<Explore />} />
 
         {/* Google OAuth callback */}
         <Route path="/auth/google/success" element={<GoogleAuthSuccess />} />
