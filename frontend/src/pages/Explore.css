@@ -248,6 +248,14 @@
   flex: 1;
   position: relative;
   min-height: 600px;
+  height: calc(100vh - 400px); /* Adjust based on header + nav + info panel height */
+}
+
+/* Ensure Leaflet map fills container */
+.explore-map-container .leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
 }
 
 .map-loading {
