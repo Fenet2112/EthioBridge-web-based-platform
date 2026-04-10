@@ -29,7 +29,7 @@ router.get("/explore", async (req, res) => {
 
 // ── GET ALL APPROVED INDUSTRIES (for Stakeholders page) ──
 // Public endpoint – approved industries are visible to all logged-in users
-router.get("/industries", authenticateToken, async (req, res) => {
+router.get("/", authenticateToken, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
@@ -60,7 +60,7 @@ router.get("/industries", authenticateToken, async (req, res) => {
 });
 
 // ── GET SINGLE INDUSTRY DETAIL + PRODUCTS ──
-router.get("/industries/:id", authenticateToken, async (req, res) => {
+router.get("/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
   try {
     // Get industry profile
