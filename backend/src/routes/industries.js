@@ -4,7 +4,8 @@ const pool = require("../config/db");
 const { authenticateToken } = require("../middleware/auth");
 
 // ── GET INDUSTRIES FOR EXPLORE MAP (Public - No Auth Required) ──
-router.get("/industries/explore", async (req, res) => {
+// MUST be before /industries/:id to avoid route collision
+router.get("/explore", async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT

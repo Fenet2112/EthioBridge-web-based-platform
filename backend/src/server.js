@@ -33,7 +33,7 @@ const profileRoutes = require("./routes/profile.js");
 
 app.use("/api", authRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api", industryRoutes);
+app.use("/api/industries", industryRoutes);
 app.use("/api", productRoutes);
 app.use("/api", purchaseRoutes);
 app.use("/api", messageRoutes);
