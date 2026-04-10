@@ -54,7 +54,7 @@ const authRoutes = require('./src/routes/auth');
 app.use('/api', authRoutes);
 
 const industriesRoutes = require('./src/routes/industries');
-app.use('/api', industriesRoutes);
+app.use('/api/industries', industriesRoutes);
 
 const productsRoutes = require('./src/routes/products');
 app.use('/api', productsRoutes);
