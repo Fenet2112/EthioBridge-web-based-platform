@@ -216,8 +216,14 @@ function Explore() {
           <MapContainer
             center={ethiopiaCenter}
             zoom={7}
-            style={{ height: '100%', width: '100%' }}
             scrollWheelZoom={true}
+            style={{ height: '100%', width: '100%', minHeight: '600px' }}
+            whenCreated={(map) => {
+              console.log('Map created:', map);
+              setTimeout(() => {
+                map.invalidateSize();
+              }, 100);
+            }}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
