@@ -38,6 +38,7 @@ function Explore() {
   const [industries, setIndustries] = useState([]);
   const [filteredIndustries, setFilteredIndustries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedSector, setSelectedSector] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -54,7 +55,13 @@ function Explore() {
 
   const fetchIndustries = async () => {
     try {
+      setError(null);
       const response = await fetch(`${API_BASE_URL}/api/profile/industries`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch industries');
+      }
+      
       const data = await response.json();
       
       // Add mock coordinates for industries (in production, these should come from database)
@@ -71,6 +78,10 @@ function Explore() {
       setLoading(false);
     } catch (error) {
       console.error('Error fetching industries:', error);
+      setError('Failed to load industries. Please try again later.');
+      // Set empty array on error to prevent crashes
+      setIndustries([]);
+      setFilteredIndustries([]);
       setLoading(false);
     }
   };
@@ -179,6 +190,27 @@ function Explore() {
           <div className="map-loading">
             <div className="loading-spinner"></div>
             <p>Loading map...</p>
+          </div>
+        ) : error ? (
+          <div className="map-error">
+            <div className="error-icon">⚠️</div>
+            <h3>Unable to Load Map</h3>
+            <p>{error}</p>
+            <button className="retry-btn" onClick={fetchIndustries}>
+              Try Again
+            </button>
+          </div>
+        ) : filteredIndustries.length === 0 ? (
+          <div className="map-empty">
+            <div className="empty-icon">🔍</div>
+            <h3>No Industries Found</h3>
+            <p>Try adjusting your search or filters</p>
+            <button className="clear-filters-btn" onClick={() => {
+              setSearchQuery('');
+              setSelectedSector('all');
+            }}>
+              Clear Filters
+            </button>
           </div>
         ) : (
           <MapContainer

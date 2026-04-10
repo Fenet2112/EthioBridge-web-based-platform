@@ -278,6 +278,61 @@
   font-weight: 500;
 }
 
+.map-error,
+.map-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  padding: 40px;
+  text-align: center;
+}
+
+.error-icon,
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 8px;
+}
+
+.map-error h3,
+.map-empty h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.map-error p,
+.map-empty p {
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 400px;
+}
+
+.retry-btn,
+.clear-filters-btn {
+  margin-top: 16px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #0a5c2f, #1a8a4a);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.retry-btn:hover,
+.clear-filters-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(10, 92, 47, 0.3);
+}
+
 /* ── MAP POPUP ── */
 .map-popup {
   min-width: 250px;
