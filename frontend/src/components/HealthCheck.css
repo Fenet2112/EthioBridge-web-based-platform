@@ -1,0 +1,138 @@
+.health-check {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px 16px;
+  z-index: 9999;
+  min-width: 250px;
+  transition: all 0.3s ease;
+}
+
+.health-check.unhealthy {
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+}
+
+.health-check-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.health-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.health-icon {
+  font-size: 1.2rem;
+}
+
+.health-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.health-retry-btn,
+.health-details-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.health-retry-btn {
+  background: #0a5c2f;
+  color: white;
+}
+
+.health-retry-btn:hover:not(:disabled) {
+  background: #064020;
+}
+
+.health-retry-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.health-details-btn {
+  background: transparent;
+  color: #666;
+  padding: 4px 8px;
+}
+
+.health-details-btn:hover {
+  background: #f0f0f0;
+}
+
+.health-details {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.health-detail-item {
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  color: #666;
+}
+
+.health-detail-item strong {
+  color: #333;
+  margin-right: 6px;
+}
+
+.health-detail-item.error {
+  color: #d32f2f;
+}
+
+[data-theme="dark"] .health-check {
+  background: #1e1e1e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .health-check.unhealthy {
+  background: #3e2723;
+  border-color: #ff9800;
+}
+
+[data-theme="dark"] .health-text {
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .health-details-btn {
+  color: #b0b0b0;
+}
+
+[data-theme="dark"] .health-details-btn:hover {
+  background: #2e2e2e;
+}
+
+[data-theme="dark"] .health-detail-item {
+  color: #b0b0b0;
+}
+
+[data-theme="dark"] .health-detail-item strong {
+  color: #e0e0e0;
+}
+
+@media (max-width: 768px) {
+  .health-check {
+    bottom: 10px;
+    right: 10px;
+    min-width: 200px;
+    padding: 10px 12px;
+  }
+  
+  .health-text {
+    font-size: 0.85rem;
+  }
+}

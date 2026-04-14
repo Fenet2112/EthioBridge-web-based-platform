@@ -9,7 +9,34 @@ const pool = require("./config/db");
 const app = express();
 const server = http.createServer(app);
 
-// ── Socket.io setup ──
+// ══════════════════════════════════════
+// GLOBAL ERROR HANDLERS
+// ══════════════════════════════════════
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ UNCAUGHT EXCEPTION:', error);
+  console.error('Stack:', error.stack);
+  // Log but don't exit - let PM2 or process manager handle restart if needed
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ UNHANDLED REJECTION at:', promise);
+  console.error('Reason:', reason);
+  // Log but don't exit
+});
+
+// Handle warnings
+process.on('warning', (warning) => {
+  console.warn('⚠️  WARNING:', warning.name);
+  console.warn('Message:', warning.message);
+  console.warn('Stack:', warning.stack);
+});
+
+// ══════════════════════════════════════
+// SOCKET.IO SETUP
+// ══════════════════════════════════════
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:3000",
@@ -20,6 +47,23 @@ const io = new Server(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  
+  // Log incoming request
+  console.log(`[${new Date().toISOString()}] [${requestId}] ${req.method} ${req.url}`);
+  
+  // Log response when finished
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`[${new Date().toISOString()}] [${requestId}] ${req.method} ${req.url} - ${res.statusCode} (${duration}ms)`);
+  });
+  
+  next();
+});
 
 // ── Routes ──
 const authRoutes = require("./routes/auth.js");
@@ -44,8 +88,52 @@ app.use("/api", profileRoutes);
 app.get("/", (req, res) => {
   res.json({ message: "EthioBridge Backend API is running" });
 });
+
 app.get("/api/test", (req, res) => {
   res.json({ message: "Backend is alive! 🚀" });
+});
+
+// Health check endpoint
+app.get("/api/health", async (req, res) => {
+  try {
+    // Check database connection
+    const dbHealth = await pool.healthCheck();
+    
+    // Check memory usage
+    const memUsage = process.memoryUsage();
+    const memoryMB = {
+      rss: Math.round(memUsage.rss / 1024 / 1024),
+      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+      external: Math.round(memUsage.external / 1024 / 1024)
+    };
+    
+    // Check uptime
+    const uptimeSeconds = process.uptime();
+    const uptimeFormatted = `${Math.floor(uptimeSeconds / 3600)}h ${Math.floor((uptimeSeconds % 3600) / 60)}m ${Math.floor(uptimeSeconds % 60)}s`;
+    
+    const health = {
+      status: dbHealth.healthy ? 'healthy' : 'unhealthy',
+      timestamp: new Date().toISOString(),
+      uptime: uptimeFormatted,
+      uptimeSeconds: Math.floor(uptimeSeconds),
+      database: dbHealth,
+      memory: memoryMB,
+      environment: process.env.NODE_ENV || 'development',
+      nodeVersion: process.version,
+      pid: process.pid
+    };
+    
+    const statusCode = dbHealth.healthy ? 200 : 503;
+    res.status(statusCode).json(health);
+  } catch (error) {
+    console.error('Health check error:', error);
+    res.status(503).json({
+      status: 'unhealthy',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // ── Socket.io: Real-time Messaging ──
@@ -150,17 +238,85 @@ io.on("connection", (socket) => {
 
 // 404 handler
 app.use((req, res) => {
+  console.log(`[404] ${req.method} ${req.url} - Route not found`);
   res.status(404).json({ message: "Endpoint not found" });
 });
 
-// Error handler
+// Global error handler
 app.use((err, req, res, next) => {
-  console.error("Server error:", err);
-  res.status(500).json({ message: "Internal server error" });
+  console.error('❌ Server error:', err);
+  console.error('Error stack:', err.stack);
+  console.error('Request:', {
+    method: req.method,
+    url: req.url,
+    body: req.body,
+    headers: req.headers
+  });
+  
+  // Don't leak error details in production
+  const errorMessage = process.env.NODE_ENV === 'production' 
+    ? 'Internal server error' 
+    : err.message;
+  
+  res.status(err.status || 500).json({ 
+    message: errorMessage,
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+  });
 });
 
 // Start server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Socket.IO server ready`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Test database connection after server starts
+  pool.query('SELECT NOW()', (err, res) => {
+    if (err) {
+      console.error('❌ Database connection failed:', err.message);
+      console.error('Server will continue running but database operations will fail');
+    } else {
+      console.log('✅ Database connected successfully');
+    }
+  });
 });
+
+// Set keep-alive timeout (important for cloud deployments)
+server.keepAliveTimeout = 65000; // 65 seconds
+server.headersTimeout = 66000; // Must be greater than keepAliveTimeout
+
+// Graceful shutdown
+const gracefulShutdown = async (signal) => {
+  console.log(`\n${signal} received, starting graceful shutdown...`);
+  
+  // Stop accepting new connections
+  server.close(async () => {
+    console.log('HTTP server closed');
+    
+    // Close database pool
+    try {
+      await pool.end();
+      console.log('Database pool closed');
+    } catch (err) {
+      console.error('Error closing database pool:', err);
+    }
+    
+    // Close Socket.IO
+    io.close(() => {
+      console.log('Socket.IO closed');
+    });
+    
+    console.log('Graceful shutdown complete');
+    process.exit(0);
+  });
+  
+  // Force shutdown after 30 seconds
+  setTimeout(() => {
+    console.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 30000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
