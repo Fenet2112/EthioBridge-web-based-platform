@@ -54,17 +54,24 @@ router.post('/submit', authenticateToken, async (req, res) => {
 
     // Get user's name from database
     console.log('[Testimonials] Fetching user details...');
-    const userResult = await pool.query(
-      'SELECT full_name, email FROM users WHERE id = $1',
-      [userId]
-    );
+    
+    // Try to get name from industries or stakeholders table, fallback to email
+    const userResult = await pool.query(`
+      SELECT 
+        u.email,
+        COALESCE(i.company_name, s.organization_name, s.full_name, SPLIT_PART(u.email, '@', 1)) as display_name
+      FROM users u
+      LEFT JOIN industries i ON i.user_id = u.id
+      LEFT JOIN stakeholders s ON s.user_id = u.id
+      WHERE u.id = $1
+    `, [userId]);
 
     if (userResult.rows.length === 0) {
       console.log('[Testimonials] User not found:', userId);
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const userName = userResult.rows[0].full_name || userResult.rows[0].email.split('@')[0];
+    const userName = userResult.rows[0].display_name;
     console.log('[Testimonials] User name:', userName);
 
     // Insert testimonial
