@@ -8,6 +8,7 @@ import AnalyticsView from "../views/AnalyticsView";
 import ActivityLogsView, { logAction } from "../views/ActivityLogsView";
 import NotificationsView from "../views/NotificationsView";
 import Settings from "./Settings";
+import Testimonials from "./Testimonials";
 import { 
   FaChartBar, 
   FaUsers, 
@@ -37,7 +38,8 @@ import {
   FaGlobe,
   FaIdCard,
   FaUser,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaComments
 } from "react-icons/fa";
 
 const API = process.env.REACT_APP_API_URL || "https://ethiobridge-web-based-platform.onrender.com";
@@ -67,6 +69,7 @@ const NAV = [
   { id: "manage",    icon: <FaShieldAlt />, label: "User Management" },
   { id: "industries",icon: <FaIndustry />, label: "Industries" },
   { id: "products",  icon: <FaBox />, label: "Products" },
+  { id: "testimonials", icon: <FaComments />, label: "Testimonials" },
   { id: "analytics", icon: <FaChartLine />, label: "Analytics" },
   { id: "notifs",    icon: <FaBell />, label: "Notifications" },
   { id: "logs",      icon: <FaFileAlt />, label: "Activity Logs" },
@@ -333,6 +336,7 @@ function Dashboard() {
           {view === "home"       && <DashboardHome tok={tok} />}
           {view === "industries" && <IndustriesView tok={tok} />}
           {view === "products"   && <ProductsView tok={tok} />}
+          {view === "testimonials" && <Testimonials />}
           {view === "analytics"  && <AnalyticsView tok={tok} />}
           {view === "logs"       && <ActivityLogsView />}
           {view === "notifs"     && <NotificationsView tok={tok} />}
