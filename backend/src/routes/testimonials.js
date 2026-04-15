@@ -183,7 +183,7 @@ router.patch('/admin/:id/status', authenticateAdmin, async (req, res) => {
         approved_at = CASE WHEN $1 = 'approved' THEN CURRENT_TIMESTAMP ELSE NULL END
       WHERE id = $3
       RETURNING id, name, role, message, rating, status, approved_at
-    `, [status, adminId, id]);
+    `, [status, adminId === 0 ? null : adminId, id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Testimonial not found' });
@@ -197,7 +197,12 @@ router.patch('/admin/:id/status', authenticateAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('[Testimonials] Error updating testimonial status:', error);
-    res.status(500).json({ message: 'Failed to update testimonial status' });
+    console.error('[Testimonials] Error details:', error.message);
+    console.error('[Testimonials] Error stack:', error.stack);
+    res.status(500).json({ 
+      message: 'Failed to update testimonial status',
+      error: error.message 
+    });
   }
 });
 
