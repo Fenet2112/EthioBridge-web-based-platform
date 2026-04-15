@@ -280,7 +280,7 @@ function Home() {
               <li><FaCheck /> Analytics & reporting</li>
               <li><FaCheck /> System management</li>
             </ul>
-            <Link to="/login" className="role-cta">Admin Login →</Link>
+           
           </div>
         </div>
       </section>
