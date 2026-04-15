@@ -39,12 +39,14 @@ export default function Recommendations() {
   const [results,  setResults]  = useState(null);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState("");
+  const [recommendationType, setRecommendationType] = useState(null);
 
   const handleSearch = async (e) => {
     e?.preventDefault();
     setLoading(true);
     setError("");
     setResults(null);
+    setRecommendationType(null);
 
     const token  = localStorage.getItem("token");
     const params = new URLSearchParams({
@@ -60,6 +62,7 @@ export default function Recommendations() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed");
       setResults(data.recommendations || []);
+      setRecommendationType(data.recommendation_type);
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     } catch (err) {
       console.error("Recommendation fetch error:", err);
@@ -73,6 +76,7 @@ export default function Recommendations() {
     setTab(t);
     setResults(null);
     setError("");
+    setRecommendationType(null);
   };
 
   return (
@@ -236,7 +240,21 @@ export default function Recommendations() {
             <>
               <div className="rp-results-header">
                 <h2>{results.length} recommendation{results.length !== 1 ? "s" : ""}</h2>
-                <span className="rp-ai-badge">✨ AI Scored</span>
+                {recommendationType === "popular" && (
+                  <span className="rp-ai-badge">🔥 Trending</span>
+                )}
+                {recommendationType === "collaborative" && (
+                  <span className="rp-ai-badge">✨ Based on Similar Users</span>
+                )}
+                {recommendationType === "content_based" && (
+                  <span className="rp-ai-badge">🎯 Based on Your Preferences</span>
+                )}
+                {recommendationType === "personalized" && (
+                  <span className="rp-ai-badge">✨ AI Scored</span>
+                )}
+                {!recommendationType && (
+                  <span className="rp-ai-badge">✨ AI Scored</span>
+                )}
               </div>
 
               <div className="rp-grid">

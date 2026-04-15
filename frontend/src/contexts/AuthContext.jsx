@@ -1,5 +1,4 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext(null);
 
@@ -8,42 +7,32 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-  const [refreshToken, setRefreshToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const navigate = useNavigate();
 
-  // Initialize auth state from localStorage
+  // Initialize auth state from localStorage on mount
   useEffect(() => {
     initializeAuth();
   }, []);
 
-  // Set up token refresh interval
-  useEffect(() => {
-    if (token && refreshToken) {
-      // Refresh token every 6 days (before 7-day expiry)
-      const refreshInterval = setInterval(() => {
-        refreshAccessToken();
-      }, 6 * 24 * 60 * 60 * 1000); // 6 days
-
-      return () => clearInterval(refreshInterval);
-    }
-  }, [token, refreshToken]);
-
   const initializeAuth = () => {
     try {
       const storedToken = localStorage.getItem('token');
-      const storedRefreshToken = localStorage.getItem('refreshToken');
       const storedUser = localStorage.getItem('user');
 
+      console.log('[Auth] Initializing authentication...');
+      console.log('[Auth] Token exists:', !!storedToken);
+      console.log('[Auth] User data exists:', !!storedUser);
+
       if (storedToken && storedUser) {
+        const parsedUser = JSON.parse(storedUser);
         setToken(storedToken);
-        setRefreshToken(storedRefreshToken);
-        setUser(JSON.parse(storedUser));
+        setUser(parsedUser);
         setIsAuthenticated(true);
-        console.log('[Auth] Session restored from localStorage');
+        console.log('[Auth] ✓ Session restored:', parsedUser.email, '| Role:', parsedUser.role);
       } else {
         console.log('[Auth] No stored session found');
+        setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('[Auth] Error initializing auth:', error);
@@ -53,33 +42,21 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const login = async (email, password) => {
+  const login = (userData, authToken) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      console.log('[Auth] Logging in user:', userData.email);
+      
+      // Store in localStorage
+      localStorage.setItem('token', authToken);
+      localStorage.setItem('user', JSON.stringify(userData));
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
-      // Store tokens and user data
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      setToken(data.token);
-      setRefreshToken(data.refreshToken);
-      setUser(data.user);
+      // Update state
+      setToken(authToken);
+      setUser(userData);
       setIsAuthenticated(true);
 
-      console.log('[Auth] Login successful:', data.user.email);
-
-      return { success: true, user: data.user };
+      console.log('[Auth] ✓ Login successful');
+      return { success: true };
     } catch (error) {
       console.error('[Auth] Login error:', error);
       return { success: false, error: error.message };
@@ -87,91 +64,41 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    console.log('[Auth] Logging out');
+    console.log('[Auth] Logging out user:', user?.email);
     clearAuth();
-    navigate('/login');
   };
 
   const clearAuth = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     setToken(null);
-    setRefreshToken(null);
     setUser(null);
     setIsAuthenticated(false);
-  };
-
-  const refreshAccessToken = async () => {
-    if (!refreshToken) {
-      console.log('[Auth] No refresh token available');
-      return false;
-    }
-
-    try {
-      console.log('[Auth] Refreshing access token...');
-      
-      const response = await fetch(`${API_BASE_URL}/api/refresh-token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // If refresh token is expired or invalid, logout
-        if (data.code === 'REFRESH_TOKEN_EXPIRED' || data.code === 'INVALID_REFRESH_TOKEN') {
-          console.log('[Auth] Refresh token expired, logging out');
-          logout();
-          return false;
-        }
-        throw new Error(data.message || 'Token refresh failed');
-      }
-
-      // Update tokens
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      setToken(data.token);
-      setRefreshToken(data.refreshToken);
-      setUser(data.user);
-
-      console.log('[Auth] Token refreshed successfully');
-      return true;
-    } catch (error) {
-      console.error('[Auth] Token refresh error:', error);
-      logout();
-      return false;
-    }
+    console.log('[Auth] ✓ Auth cleared');
   };
 
   const updateUser = (userData) => {
     const updatedUser = { ...user, ...userData };
     setUser(updatedUser);
     localStorage.setItem('user', JSON.stringify(updatedUser));
+    console.log('[Auth] User data updated');
   };
 
-  const handleAuthError = (error) => {
-    // Handle 401 Unauthorized - token expired
-    if (error.code === 'TOKEN_EXPIRED' || error.code === 'NO_TOKEN' || error.code === 'INVALID_TOKEN') {
-      console.log('[Auth] Authentication error, attempting token refresh');
-      refreshAccessToken();
-    }
+  // Helper to get auth headers for API calls
+  const getAuthHeaders = () => {
+    const currentToken = token || localStorage.getItem('token');
+    return currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {};
   };
 
   const value = {
     user,
     token,
-    refreshToken,
     loading,
     isAuthenticated,
     login,
     logout,
-    refreshAccessToken,
     updateUser,
-    handleAuthError,
+    getAuthHeaders,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

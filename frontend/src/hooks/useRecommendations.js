@@ -6,6 +6,7 @@ export function useRecommendations({ type = "products", category = "", budget = 
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [source, setSource] = useState(null); // "ml" | "fallback"
+  const [recommendationType, setRecommendationType] = useState(null); // "popular" | "personalized" | "collaborative" | "content_based"
 
   const fetch_ = useCallback(async () => {
     const token = localStorage.getItem("token");
@@ -22,6 +23,7 @@ export function useRecommendations({ type = "products", category = "", budget = 
       const data = await res.json();
       setRecommendations(data.recommendations || []);
       setSource(data.source);
+      setRecommendationType(data.recommendation_type);
     } catch (e) {
       console.error("Recommendations error:", e);
       setRecommendations([]);
@@ -32,5 +34,5 @@ export function useRecommendations({ type = "products", category = "", budget = 
 
   useEffect(() => { fetch_(); }, [fetch_]);
 
-  return { recommendations, loading, source, refetch: fetch_ };
+  return { recommendations, loading, source, recommendationType, refetch: fetch_ };
 }

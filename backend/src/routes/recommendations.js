@@ -80,12 +80,20 @@ router.get("/recommendations/products", authenticateToken, async (req, res) => {
 
     if (!mlRes.ok) throw new Error(`ML service returned ${mlRes.status}`);
     const data = await mlRes.json();
-    return res.json({ source: "ml", ...data });
+    return res.json({ 
+      source: "ml", 
+      recommendation_type: data.recommendation_type || "personalized",
+      ...data 
+    });
   } catch (err) {
     console.warn("ML service unavailable, using fallback:", err.message);
     try {
       const recs = await fallbackProducts(category, parseInt(top_n) || 10);
-      return res.json({ source: "fallback", recommendations: recs });
+      return res.json({ 
+        source: "fallback", 
+        recommendation_type: "popular",
+        recommendations: recs 
+      });
     } catch (dbErr) {
       return res.status(500).json({ message: "Recommendation service error" });
     }
@@ -111,12 +119,20 @@ router.get("/recommendations/industries", authenticateToken, async (req, res) =>
 
     if (!mlRes.ok) throw new Error(`ML service returned ${mlRes.status}`);
     const data = await mlRes.json();
-    return res.json({ source: "ml", ...data });
+    return res.json({ 
+      source: "ml", 
+      recommendation_type: data.recommendation_type || "personalized",
+      ...data 
+    });
   } catch (err) {
     console.warn("ML service unavailable, using fallback:", err.message);
     try {
       const recs = await fallbackIndustries(category, parseInt(top_n) || 10);
-      return res.json({ source: "fallback", recommendations: recs });
+      return res.json({ 
+        source: "fallback", 
+        recommendation_type: "popular",
+        recommendations: recs 
+      });
     } catch (dbErr) {
       return res.status(500).json({ message: "Recommendation service error" });
     }

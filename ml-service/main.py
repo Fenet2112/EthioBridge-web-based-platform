@@ -166,6 +166,16 @@ def recommend_products(
 ):
     model = get_model()
 
+    # Check if user has any meaningful input or interaction history
+    has_category = category and category.strip()
+    has_budget = budget > 0
+    already_seen = user_product_interactions(user_id)
+    has_history = len(already_seen) > 0
+
+    # Log when generating recommendations without input
+    if not has_category and not has_budget and not has_history:
+        print(f"[WARN] User {user_id} requesting recommendations with no input or history. Returning popular products.")
+
     # Use cached product list from model if available, else query live
     if model and model.get("product_lookup"):
         products = list(model["product_lookup"].values())
@@ -185,7 +195,35 @@ def recommend_products(
         product_pop = {r["product_id"]: r["cnt"] / max_cnt for r in pop_rows}
 
     if not products:
-        return {"recommendations": [], "model_version": None}
+        return {"recommendations": [], "model_version": None, "recommendation_type": "none"}
+
+    # If no meaningful input, return popular products explicitly
+    if not has_category and not has_budget and not has_history:
+        popular = [
+            {
+                "product_id":    p["id"],
+                "name":          p.get("name"),
+                "category":      p.get("category"),
+                "price":         float(p["price"]) if p.get("price") else None,
+                "unit":          p.get("unit"),
+                "image_url":     p.get("image_url"),
+                "company_name":  p.get("company_name"),
+                "industry_id":   p.get("industry_id"),
+                "location":      p.get("location"),
+                "score":         product_pop.get(p["id"], 0.0),
+                "similarity":    0.0,
+                "popularity":    product_pop.get(p["id"], 0.0),
+                "over_budget":   False,
+            }
+            for p in products
+            if p["id"] not in already_seen
+        ]
+        popular.sort(key=lambda x: x["popularity"], reverse=True)
+        return {
+            "recommendations": popular[:top_n],
+            "model_version": model.get("version") if model else None,
+            "recommendation_type": "popular"
+        }
 
     # Soft filter — budget is a scoring signal, NOT a hard cutoff
     # All products matching the category are included; over-budget ones get penalised
@@ -196,10 +234,9 @@ def recommend_products(
         or category.lower() in (p.get("name") or "").lower()
     ]
     if not filtered:
-        return {"recommendations": [], "model_version": None}
+        return {"recommendations": [], "model_version": None, "recommendation_type": "none"}
 
     user_vec     = user_query_vec(category, budget)
-    already_seen = user_product_interactions(user_id)
     knn_boost    = knn_boost_from_model(user_id, model) if model else {}
 
     scored = []
@@ -241,9 +278,18 @@ def recommend_products(
         })
 
     scored.sort(key=lambda x: x["score"], reverse=True)
+    
+    # Determine recommendation type for UI feedback
+    rec_type = "personalized"
+    if has_history and knn_boost:
+        rec_type = "collaborative"
+    elif has_category or has_budget:
+        rec_type = "content_based"
+    
     return {
         "recommendations": scored[:top_n],
         "model_version": model.get("version") if model else None,
+        "recommendation_type": rec_type,
     }
 
 
@@ -258,6 +304,16 @@ def recommend_industries(
     top_n: int = Query(default=10),
 ):
     model = get_model()
+
+    # Check if user has any meaningful input or interaction history
+    has_category = category and category.strip()
+    has_budget = budget > 0
+    already_seen = user_industry_interactions(user_id)
+    has_history = len(already_seen) > 0
+
+    # Log when generating recommendations without input
+    if not has_category and not has_budget and not has_history:
+        print(f"[WARN] User {user_id} requesting industry recommendations with no input or history. Returning popular industries.")
 
     if model and model.get("industry_lookup"):
         industries  = list(model["industry_lookup"].values())
@@ -279,16 +335,39 @@ def recommend_industries(
         industry_pop = {r["industry_id"]: r["cnt"] / max_cnt for r in pop_rows}
 
     if not industries:
-        return {"recommendations": [], "model_version": None}
+        return {"recommendations": [], "model_version": None, "recommendation_type": "none"}
+
+    # If no meaningful input, return popular industries explicitly
+    if not has_category and not has_budget and not has_history:
+        popular = [
+            {
+                "industry_id":   ind["id"],
+                "company_name":  ind.get("company_name"),
+                "sector":        ind.get("sector"),
+                "location":      ind.get("location"),
+                "product_count": ind.get("product_count"),
+                "customer_count":ind.get("customer_count"),
+                "score":         industry_pop.get(ind["id"], 0.0),
+                "similarity":    0.0,
+                "popularity":    industry_pop.get(ind["id"], 0.0),
+            }
+            for ind in industries
+            if ind["id"] not in already_seen
+        ]
+        popular.sort(key=lambda x: x["popularity"], reverse=True)
+        return {
+            "recommendations": popular[:top_n],
+            "model_version": model.get("version") if model else None,
+            "recommendation_type": "popular"
+        }
 
     filtered = [
         i for i in industries
         if not category or category.lower() in (i.get("sector") or "").lower()
     ]
     if not filtered:
-        return {"recommendations": [], "model_version": None}
+        return {"recommendations": [], "model_version": None, "recommendation_type": "none"}
 
-    already_seen = user_industry_interactions(user_id)
     user_vec     = user_query_vec(category, budget)
 
     max_products  = max((i.get("product_count") or 0 for i in filtered), default=1) or 1
@@ -321,9 +400,16 @@ def recommend_industries(
         })
 
     scored.sort(key=lambda x: x["score"], reverse=True)
+    
+    # Determine recommendation type for UI feedback
+    rec_type = "personalized"
+    if has_category or has_budget:
+        rec_type = "content_based"
+    
     return {
         "recommendations": scored[:top_n],
         "model_version": model.get("version") if model else None,
+        "recommendation_type": rec_type,
     }
 
 

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import Logo from "../components/Logo";
 import "./Login.css";
 
@@ -20,6 +21,7 @@ async function syncGuestCartOnLogin(token) {
 
 function Login() {
   const navigate = useNavigate();
+  const { login: authLogin } = useAuth();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,8 +52,8 @@ function Login() {
         throw new Error(data.message || "Login failed");
       }
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // Use AuthContext to store authentication
+      authLogin(data.user, data.token);
 
       const { role, status } = data.user;
 

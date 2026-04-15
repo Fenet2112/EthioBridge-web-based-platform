@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import './ProfileDropdown.css';
 import DarkModeToggle from './DarkModeToggle';
 
@@ -7,6 +8,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 function ProfileDropdown() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [profile, setProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -144,7 +146,7 @@ function ProfileDropdown() {
   };
 
   const handleLogout = () => {
-    localStorage.clear();
+    logout();
     navigate('/');
   };
 

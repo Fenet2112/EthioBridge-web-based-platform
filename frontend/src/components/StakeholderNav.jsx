@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { 
   FaIndustry, FaComments, FaBox, FaStar, FaUser, FaQuestionCircle,
   FaLink, FaTimes, FaHome, FaDoorOpen
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
 function StakeholderNav({ unreadCount = 0 }) {
   const navigate  = useNavigate();
   const location  = useLocation();
+  const { logout } = useAuth();
   const active    = location.pathname;
   const [open, setOpen] = useState(false);
   const drawerRef = useRef(null);
@@ -41,7 +43,10 @@ function StakeholderNav({ unreadCount = 0 }) {
 
   const go = (path) => { navigate(path); setOpen(false); };
 
-  const handleLogout = () => { localStorage.clear(); navigate("/"); };
+  const handleLogout = () => { 
+    logout(); 
+    navigate("/"); 
+  };
 
   return (
     <>

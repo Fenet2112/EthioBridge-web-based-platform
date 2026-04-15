@@ -74,24 +74,35 @@ export default function RecommendationSection({
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const enabled = !!localStorage.getItem("token") && user.role === "stakeholder";
 
-  const { recommendations, loading, source } = useRecommendations({
+  const { recommendations, loading, source, recommendationType } = useRecommendations({
     type, category, budget, topN, enabled,
   });
 
   if (!enabled || (!loading && recommendations.length === 0)) return null;
 
   const defaultTitle = type === "products" ? "🎯 Recommended for You" : "🏭 Industries You May Like";
+  
+  // Determine badge based on recommendation type
+  let badge = null;
+  if (recommendationType === "popular") {
+    badge = <span className="rec-fallback-badge">🔥 Trending</span>;
+  } else if (recommendationType === "collaborative") {
+    badge = <span className="rec-ml-badge">✨ Based on Similar Users</span>;
+  } else if (recommendationType === "content_based") {
+    badge = <span className="rec-ml-badge">🎯 Based on Your Preferences</span>;
+  } else if (recommendationType === "personalized") {
+    badge = <span className="rec-ml-badge">✨ AI Powered</span>;
+  } else if (source === "fallback") {
+    badge = <span className="rec-fallback-badge">Popular</span>;
+  } else if (source === "ml") {
+    badge = <span className="rec-ml-badge">✨ AI Powered</span>;
+  }
 
   return (
     <section className="rec-section">
       <div className="rec-header">
         <h2>{title || defaultTitle}</h2>
-        {source === "fallback" && (
-          <span className="rec-fallback-badge">Trending</span>
-        )}
-        {source === "ml" && (
-          <span className="rec-ml-badge">✨ AI Powered</span>
-        )}
+        {badge}
       </div>
 
       {loading ? (
