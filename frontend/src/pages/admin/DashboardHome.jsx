@@ -5,7 +5,7 @@ import {
   Legend, ResponsiveContainer
 } from "recharts";
 
-const API = "http://localhost:5000";
+const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const COLORS = ["#0a5c2f", "#1a8a4a", "#f59e0b", "#3b82f6", "#8b5cf6", "#ef4444"];
 
