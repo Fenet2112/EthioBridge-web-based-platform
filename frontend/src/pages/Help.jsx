@@ -27,12 +27,76 @@ function Help() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState(null);
   const [expandedFaq, setExpandedFaq] = useState(null);
+  const [helpFormData, setHelpFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    role: '',
+    message: ''
+  });
+  const [helpSubmitting, setHelpSubmitting] = useState(false);
+  const [helpMessage, setHelpMessage] = useState({ type: '', text: '' });
+
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   const scrollToCategory = (categoryId) => {
     setActiveCategory(categoryId);
     const detailsSection = document.getElementById('category-details');
     if (detailsSection) {
       detailsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleHelpChange = (e) => {
+    const { name, value } = e.target;
+    setHelpFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleHelpSubmit = async (e) => {
+    e.preventDefault();
+    setHelpSubmitting(true);
+    setHelpMessage({ type: '', text: '' });
+
+    try {
+      console.log('[Help] Submitting help form:', helpFormData);
+      
+      const response = await fetch(`${API_BASE_URL}/api/contact/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...helpFormData,
+          source: 'help'
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log('[Help] Help form submitted successfully');
+        setHelpMessage({ 
+          type: 'success', 
+          text: 'Thank you! Our support team will respond within 24 hours.' 
+        });
+        setHelpFormData({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          role: '',
+          message: ''
+        });
+      } else {
+        throw new Error(data.message || 'Failed to send message');
+      }
+    } catch (error) {
+      console.error('[Help] Error submitting help form:', error);
+      setHelpMessage({ 
+        type: 'error', 
+        text: error.message || 'Failed to send message. Please try again.' 
+      });
+    } finally {
+      setHelpSubmitting(false);
     }
   };
 
@@ -359,14 +423,96 @@ function Help() {
               <FaLifeRing />
             </div>
             <h2>Still need help?</h2>
-            <p>Can't find what you're looking for? Our support team is here to assist you.</p>
+            <p>Can't find what you're looking for? Send us a message and our support team will assist you.</p>
+            
+            {helpMessage.text && (
+              <div className={`help-message ${helpMessage.type}`}>
+                {helpMessage.text}
+              </div>
+            )}
+
+            <form className="help-contact-form" onSubmit={handleHelpSubmit}>
+              <div className="help-form-row">
+                <div className="help-form-field">
+                  <label>First Name</label>
+                  <input 
+                    type="text" 
+                    name="firstName"
+                    placeholder="Your first name" 
+                    value={helpFormData.firstName}
+                    onChange={handleHelpChange}
+                    required 
+                  />
+                </div>
+                <div className="help-form-field">
+                  <label>Last Name</label>
+                  <input 
+                    type="text" 
+                    name="lastName"
+                    placeholder="Your last name" 
+                    value={helpFormData.lastName}
+                    onChange={handleHelpChange}
+                    required 
+                  />
+                </div>
+              </div>
+              <div className="help-form-field">
+                <label>Email Address</label>
+                <input 
+                  type="email" 
+                  name="email"
+                  placeholder="your.email@example.com" 
+                  value={helpFormData.email}
+                  onChange={handleHelpChange}
+                  required 
+                />
+              </div>
+              <div className="help-form-field">
+                <label>Phone Number (Optional)</label>
+                <input 
+                  type="tel" 
+                  name="phone"
+                  placeholder="+251 9XX XXX XXX" 
+                  value={helpFormData.phone}
+                  onChange={handleHelpChange}
+                />
+              </div>
+              <div className="help-form-field">
+                <label>I am a</label>
+                <select 
+                  name="role"
+                  value={helpFormData.role}
+                  onChange={handleHelpChange}
+                  required
+                >
+                  <option value="">Select your role...</option>
+                  <option value="industry">Industry / Supplier</option>
+                  <option value="stakeholder">Stakeholder / Investor</option>
+                  <option value="contractor">Contractor</option>
+                  <option value="government">Government Agency</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div className="help-form-field">
+                <label>How can we help you?</label>
+                <textarea 
+                  name="message"
+                  placeholder="Describe your issue or question..." 
+                  rows={5} 
+                  value={helpFormData.message}
+                  onChange={handleHelpChange}
+                  required 
+                />
+              </div>
+              <button type="submit" className="help-submit-btn" disabled={helpSubmitting}>
+                {helpSubmitting ? 'Sending...' : 'Send Message'}
+              </button>
+            </form>
+
             <div className="contact-actions">
-              <a href="mailto:support@ethiobridge.et" className="contact-btn primary">
-                <FaEnvelope /> Email Support
+              <a href="mailto:support@ethiobridge.et" className="contact-btn secondary">
+                <FaEnvelope /> Or Email: support@ethiobridge.et
               </a>
-              <Link to="/" className="contact-btn secondary">
-                Back to Home
-              </Link>
             </div>
           </div>
         </div>

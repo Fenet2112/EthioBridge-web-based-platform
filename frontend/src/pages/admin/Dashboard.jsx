@@ -9,6 +9,7 @@ import ActivityLogsView, { logAction } from "../views/ActivityLogsView";
 import NotificationsView from "../views/NotificationsView";
 import Settings from "./Settings";
 import Testimonials from "./Testimonials";
+import ContactMessages from "./ContactMessages";
 import { 
   FaChartBar, 
   FaUsers, 
@@ -39,7 +40,8 @@ import {
   FaIdCard,
   FaUser,
   FaExclamationTriangle,
-  FaComments
+  FaComments,
+  FaLifeRing
 } from "react-icons/fa";
 
 const API = process.env.REACT_APP_API_URL || "https://ethiobridge-web-based-platform.onrender.com";
@@ -70,6 +72,7 @@ const NAV = [
   { id: "industries",icon: <FaIndustry />, label: "Industries" },
   { id: "products",  icon: <FaBox />, label: "Products" },
   { id: "testimonials", icon: <FaComments />, label: "Testimonials" },
+  { id: "messages",  icon: <FaLifeRing />, label: "Contact Messages" },
   { id: "analytics", icon: <FaChartLine />, label: "Analytics" },
   { id: "notifs",    icon: <FaBell />, label: "Notifications" },
   { id: "logs",      icon: <FaFileAlt />, label: "Activity Logs" },
@@ -290,7 +293,7 @@ function Dashboard() {
         </nav>
         <div className="sidebar-section-label">MANAGEMENT</div>
         <nav className="admin-nav">
-          {NAV.slice(4, 6).map(n => (
+          {NAV.slice(4, 8).map(n => (
             <button key={n.id} className={view === n.id ? "active" : ""} onClick={() => navTo(n.id)}>
               <span className="nav-icon">{n.icon}</span>{n.label}
             </button>
@@ -298,7 +301,7 @@ function Dashboard() {
         </nav>
         <div className="sidebar-section-label">INSIGHTS</div>
         <nav className="admin-nav">
-          {NAV.slice(6).map(n => (
+          {NAV.slice(8).map(n => (
             n.external ? (
               <Link key={n.id} to={n.path} className="admin-nav-link">
                 <span className="nav-icon">{n.icon}</span>{n.label}
@@ -337,6 +340,7 @@ function Dashboard() {
           {view === "industries" && <IndustriesView tok={tok} />}
           {view === "products"   && <ProductsView tok={tok} />}
           {view === "testimonials" && <Testimonials />}
+          {view === "messages"   && <ContactMessages />}
           {view === "analytics"  && <AnalyticsView tok={tok} />}
           {view === "logs"       && <ActivityLogsView />}
           {view === "notifs"     && <NotificationsView tok={tok} />}

@@ -16,6 +16,16 @@ function Home() {
   const [testimonials, setTestimonials] = useState([]);
   const [loadingTestimonials, setLoadingTestimonials] = useState(true);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [contactFormData, setContactFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    role: '',
+    message: ''
+  });
+  const [contactSubmitting, setContactSubmitting] = useState(false);
+  const [contactMessage, setContactMessage] = useState({ type: '', text: '' });
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -73,6 +83,58 @@ function Home() {
         ))}
       </div>
     );
+  };
+
+  const handleContactChange = (e) => {
+    const { name, value } = e.target;
+    setContactFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setContactSubmitting(true);
+    setContactMessage({ type: '', text: '' });
+
+    try {
+      console.log('[Home] Submitting contact form:', contactFormData);
+      
+      const response = await fetch(`${API_BASE_URL}/api/contact/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...contactFormData,
+          source: 'contact'
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log('[Home] Contact form submitted successfully');
+        setContactMessage({ 
+          type: 'success', 
+          text: 'Thank you for your message! We will get back to you within 24 hours.' 
+        });
+        setContactFormData({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          role: '',
+          message: ''
+        });
+      } else {
+        throw new Error(data.message || 'Failed to send message');
+      }
+    } catch (error) {
+      console.error('[Home] Error submitting contact form:', error);
+      setContactMessage({ 
+        type: 'error', 
+        text: error.message || 'Failed to send message. Please try again.' 
+      });
+    } finally {
+      setContactSubmitting(false);
+    }
   };
 
   return (
@@ -491,42 +553,87 @@ function Home() {
               <h3>Send Us a Message</h3>
               <p>We typically respond within 24 hours.</p>
 
-              <form className="contact-form" onSubmit={e => { e.preventDefault(); alert('Message sent! We\'ll be in touch shortly.'); e.target.reset(); }}>
+              {contactMessage.text && (
+                <div className={`contact-message ${contactMessage.type}`}>
+                  {contactMessage.text}
+                </div>
+              )}
+
+              <form className="contact-form" onSubmit={handleContactSubmit}>
                 <div className="cf-row">
                   <div className="cf-field">
                     <label>First Name</label>
-                    <input type="text" placeholder="Abebe" required />
+                    <input 
+                      type="text" 
+                      name="firstName"
+                      placeholder="Abebe" 
+                      value={contactFormData.firstName}
+                      onChange={handleContactChange}
+                      required 
+                    />
                   </div>
                   <div className="cf-field">
                     <label>Last Name</label>
-                    <input type="text" placeholder="Kebede" required />
+                    <input 
+                      type="text" 
+                      name="lastName"
+                      placeholder="Kebede" 
+                      value={contactFormData.lastName}
+                      onChange={handleContactChange}
+                      required 
+                    />
                   </div>
                 </div>
                 <div className="cf-field">
                   <label>Email Address</label>
-                  <input type="email" placeholder="abebe@company.et" required />
+                  <input 
+                    type="email" 
+                    name="email"
+                    placeholder="abebe@company.et" 
+                    value={contactFormData.email}
+                    onChange={handleContactChange}
+                    required 
+                  />
                 </div>
                 <div className="cf-field">
                   <label>Phone Number</label>
-                  <input type="tel" placeholder="+251 9XX XXX XXX" />
+                  <input 
+                    type="tel" 
+                    name="phone"
+                    placeholder="+251 9XX XXX XXX" 
+                    value={contactFormData.phone}
+                    onChange={handleContactChange}
+                  />
                 </div>
                 <div className="cf-field">
                   <label>I am a</label>
-                  <select required>
+                  <select 
+                    name="role"
+                    value={contactFormData.role}
+                    onChange={handleContactChange}
+                    required
+                  >
                     <option value="">Select your role...</option>
-                    <option>Industry / Supplier</option>
-                    <option>Stakeholder / Investor</option>
-                    <option>Contractor</option>
-                    <option>Government Agency</option>
-                    <option>Other</option>
+                    <option value="industry">Industry / Supplier</option>
+                    <option value="stakeholder">Stakeholder / Investor</option>
+                    <option value="contractor">Contractor</option>
+                    <option value="government">Government Agency</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
                 <div className="cf-field">
                   <label>Message</label>
-                  <textarea placeholder="Tell us how we can help you..." rows={4} required />
+                  <textarea 
+                    name="message"
+                    placeholder="Tell us how we can help you..." 
+                    rows={4} 
+                    value={contactFormData.message}
+                    onChange={handleContactChange}
+                    required 
+                  />
                 </div>
-                <button type="submit" className="cf-submit">
-                  Send Message
+                <button type="submit" className="cf-submit" disabled={contactSubmitting}>
+                  {contactSubmitting ? 'Sending...' : 'Send Message'}
                   <span>→</span>
                 </button>
               </form>
