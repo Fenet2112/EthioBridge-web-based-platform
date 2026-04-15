@@ -89,9 +89,6 @@ function Home() {
               Get Started Free
               <span className="btn-arrow">→</span>
             </Link>
-            <Link to="/about" className="btn-secondary">
-              Learn More
-            </Link>
           </div>
         </div>
 
