@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
@@ -33,6 +33,54 @@ const greenIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+// Component to handle map resize and lifecycle
+function MapResizeHandler() {
+  const map = useMap();
+  
+  useEffect(() => {
+    // Invalidate size on mount
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+      console.log('[Map] Size invalidated on mount');
+    }, 100);
+
+    // Handle window resize
+    const handleResize = () => {
+      map.invalidateSize();
+      console.log('[Map] Size invalidated on resize');
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [map]);
+
+  return null;
+}
+
+// Component to update map view when filters change
+function MapViewController({ center, industries }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (industries.length > 0) {
+      // Fit bounds to show all markers
+      const bounds = industries.map(ind => [ind.latitude, ind.longitude]);
+      if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10 });
+      }
+    } else {
+      // Reset to center if no industries
+      map.setView(center, 7);
+    }
+  }, [industries, center, map]);
+
+  return null;
+}
+
 function Explore() {
   const navigate = useNavigate();
   const [industries, setIndustries] = useState([]);
@@ -42,6 +90,8 @@ function Explore() {
   const [selectedSector, setSelectedSector] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [mapKey, setMapKey] = useState(0); // Key to force map remount if needed
+  const mapContainerRef = useRef(null);
 
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -50,12 +100,14 @@ function Explore() {
 
   // Fetch industries with location data
   useEffect(() => {
+    console.log('[Explore] Component mounted, fetching industries...');
     fetchIndustries();
   }, []);
 
   const fetchIndustries = async () => {
     try {
       setError(null);
+      console.log('[Explore] Fetching industries from API...');
       const response = await fetch(`${API_BASE_URL}/api/industries/explore`);
       
       if (!response.ok) {
@@ -63,6 +115,7 @@ function Explore() {
       }
       
       const data = await response.json();
+      console.log('[Explore] Received', data.length, 'industries');
       
       // Use real coordinates if available, otherwise generate mock coordinates
       const industriesWithCoords = data.map((industry, index) => ({
@@ -75,8 +128,9 @@ function Explore() {
       setIndustries(industriesWithCoords);
       setFilteredIndustries(industriesWithCoords);
       setLoading(false);
+      console.log('[Explore] Industries loaded successfully');
     } catch (error) {
-      console.error('Error fetching industries:', error);
+      console.error('[Explore] Error fetching industries:', error);
       setError('Failed to load industries. Please try again later.');
       // Set empty array on error to prevent crashes
       setIndustries([]);
@@ -87,6 +141,7 @@ function Explore() {
 
   // Filter industries
   useEffect(() => {
+    console.log('[Explore] Filtering industries - Sector:', selectedSector, 'Query:', searchQuery);
     let filtered = industries;
 
     // Filter by sector
@@ -103,6 +158,7 @@ function Explore() {
       );
     }
 
+    console.log('[Explore] Filtered to', filtered.length, 'industries');
     setFilteredIndustries(filtered);
   }, [selectedSector, searchQuery, industries]);
 
@@ -184,7 +240,7 @@ function Explore() {
       </div>
 
       {/* Map Container */}
-      <div className="explore-map-container">
+      <div className="explore-map-container" ref={mapContainerRef}>
         {loading ? (
           <div className="map-loading">
             <div className="loading-spinner"></div>
@@ -199,70 +255,77 @@ function Explore() {
               Try Again
             </button>
           </div>
-        ) : filteredIndustries.length === 0 ? (
-          <div className="map-empty">
-            <div className="empty-icon">🔍</div>
-            <h3>No Industries Found</h3>
-            <p>Try adjusting your search or filters</p>
-            <button className="clear-filters-btn" onClick={() => {
-              setSearchQuery('');
-              setSelectedSector('all');
-            }}>
-              Clear Filters
-            </button>
-          </div>
         ) : (
-          <MapContainer
-            center={ethiopiaCenter}
-            zoom={7}
-            scrollWheelZoom={true}
-            style={{ height: '100%', width: '100%', minHeight: '600px' }}
-            whenCreated={(map) => {
-              console.log('Map created:', map);
-              setTimeout(() => {
-                map.invalidateSize();
-              }, 100);
-            }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            
-            {filteredIndustries.map((industry) => (
-              <Marker
-                key={industry.id}
-                position={[industry.latitude, industry.longitude]}
-                icon={greenIcon}
-              >
-                <Popup>
-                  <div className="map-popup">
-                    <div className="popup-header">
-                      <FaIndustry className="popup-icon" />
-                      <h3>{industry.company_name}</h3>
-                    </div>
-                    <div className="popup-content">
-                      <p className="popup-sector">{industry.sector}</p>
-                      <p className="popup-location">
-                        <FaMapMarkerAlt /> {industry.location}
-                      </p>
-                      {industry.description && (
-                        <p className="popup-description">
-                          {industry.description.substring(0, 100)}...
+          <>
+            {/* Always render MapContainer, show overlay for empty state */}
+            <MapContainer
+              key={mapKey}
+              center={ethiopiaCenter}
+              zoom={7}
+              scrollWheelZoom={true}
+              style={{ height: '100%', width: '100%' }}
+              whenReady={() => {
+                console.log('[Map] Map is ready');
+              }}
+            >
+              <MapResizeHandler />
+              <MapViewController center={ethiopiaCenter} industries={filteredIndustries} />
+              
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              
+              {filteredIndustries.map((industry) => (
+                <Marker
+                  key={industry.id}
+                  position={[industry.latitude, industry.longitude]}
+                  icon={greenIcon}
+                >
+                  <Popup>
+                    <div className="map-popup">
+                      <div className="popup-header">
+                        <FaIndustry className="popup-icon" />
+                        <h3>{industry.company_name}</h3>
+                      </div>
+                      <div className="popup-content">
+                        <p className="popup-sector">{industry.sector}</p>
+                        <p className="popup-location">
+                          <FaMapMarkerAlt /> {industry.location}
                         </p>
-                      )}
+                        {industry.description && (
+                          <p className="popup-description">
+                            {industry.description.substring(0, 100)}...
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        className="popup-btn"
+                        onClick={() => navigate(`/industry/${industry.id}`)}
+                      >
+                        View Products →
+                      </button>
                     </div>
-                    <button
-                      className="popup-btn"
-                      onClick={() => navigate(`/industry/${industry.id}`)}
-                    >
-                      View Products →
-                    </button>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
+
+            {/* Empty state overlay */}
+            {filteredIndustries.length === 0 && (
+              <div className="map-empty-overlay">
+                <div className="empty-icon">🔍</div>
+                <h3>No Industries Found</h3>
+                <p>Try adjusting your search or filters</p>
+                <button className="clear-filters-btn" onClick={() => {
+                  setSearchQuery('');
+                  setSelectedSector('all');
+                }}>
+                  Clear Filters
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
