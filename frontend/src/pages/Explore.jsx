@@ -92,8 +92,24 @@ function Explore() {
   const [showFilters, setShowFilters] = useState(false);
   const [mapKey, setMapKey] = useState(0); // Key to force map remount if needed
   const mapContainerRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+      setIsMobile(mobile);
+      console.log('[Explore] Device type:', mobile ? 'Mobile' : 'Desktop');
+      console.log('[Explore] User Agent:', navigator.userAgent);
+      console.log('[Explore] Window width:', window.innerWidth);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Ethiopia center coordinates
   const ethiopiaCenter = [9.145, 40.489673];
@@ -108,10 +124,25 @@ function Explore() {
     try {
       setError(null);
       console.log('[Explore] Fetching industries from API...');
-      const response = await fetch(`${API_BASE_URL}/api/industries/explore`);
+      console.log('[Explore] API URL:', API_BASE_URL);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      const response = await fetch(`${API_BASE_URL}/api/industries/explore`, {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      console.log('[Explore] Response status:', response.status);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch industries');
+        throw new Error(`Failed to fetch industries (${response.status})`);
       }
       
       const data = await response.json();
@@ -131,7 +162,17 @@ function Explore() {
       console.log('[Explore] Industries loaded successfully');
     } catch (error) {
       console.error('[Explore] Error fetching industries:', error);
-      setError('Failed to load industries. Please try again later.');
+      
+      let errorMessage = 'Failed to load industries. ';
+      if (error.name === 'AbortError') {
+        errorMessage += 'Request timed out. Please check your connection.';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage += 'Network error. Please check your internet connection.';
+      } else {
+        errorMessage += error.message || 'Please try again later.';
+      }
+      
+      setError(errorMessage);
       // Set empty array on error to prevent crashes
       setIndustries([]);
       setFilteredIndustries([]);
@@ -257,15 +298,38 @@ function Explore() {
           </div>
         ) : (
           <>
+            {/* Mobile debug indicator */}
+            {isMobile && (
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                left: '10px',
+                background: 'rgba(10, 92, 47, 0.9)',
+                color: 'white',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                zIndex: 1000,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+              }}>
+                📱 Mobile Mode
+              </div>
+            )}
+
             {/* Always render MapContainer, show overlay for empty state */}
             <MapContainer
               key={mapKey}
               center={ethiopiaCenter}
-              zoom={7}
-              scrollWheelZoom={true}
+              zoom={isMobile ? 6 : 7}
+              scrollWheelZoom={!isMobile}
+              touchZoom={true}
+              dragging={true}
+              tap={true}
               style={{ height: '100%', width: '100%' }}
               whenReady={() => {
                 console.log('[Map] Map is ready');
+                console.log('[Map] Mobile mode:', isMobile);
               }}
             >
               <MapResizeHandler />

@@ -251,6 +251,8 @@
   height: calc(100vh - 400px); /* Adjust based on header + nav + info panel height */
   background: #f5f5f5;
   overflow: hidden; /* Prevent scrollbars */
+  /* Add visual indicator for debugging */
+  border: 2px solid #0a5c2f;
 }
 
 /* Ensure Leaflet map fills container and is always visible */
@@ -265,6 +267,21 @@
   left: 0;
   right: 0;
   bottom: 0;
+  /* Force hardware acceleration on mobile */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Fix for mobile touch events */
+.leaflet-container {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: pan-x pan-y;
+}
+
+/* Ensure tiles load on mobile */
+.leaflet-tile {
+  max-width: none !important;
+  max-height: none !important;
 }
 
 /* Fix leaflet tiles loading */
@@ -591,8 +608,28 @@
     text-align: center;
   }
 
+  /* CRITICAL: Ensure map has proper height on mobile */
   .explore-map-container {
-    min-height: 500px;
+    min-height: 500px !important;
+    height: calc(100vh - 350px) !important;
+    /* Remove border on mobile for production */
+    border: 1px solid #ddd;
+  }
+
+  .explore-map-container .leaflet-container {
+    min-height: 500px !important;
+    /* Ensure touch events work */
+    touch-action: pan-x pan-y !important;
+  }
+
+  /* Adjust map controls for mobile */
+  .leaflet-control-zoom {
+    margin-top: 10px !important;
+    margin-right: 10px !important;
+  }
+
+  .leaflet-control-attribution {
+    font-size: 0.7rem !important;
   }
 
   .explore-info-panel {
@@ -609,6 +646,15 @@
 
   .info-label {
     font-size: 0.8rem;
+  }
+
+  /* Make popups mobile-friendly */
+  .leaflet-popup-content-wrapper {
+    max-width: 280px !important;
+  }
+
+  .map-popup {
+    min-width: 240px;
   }
 }
 
