@@ -20,7 +20,7 @@ function AdminTestimonials() {
   const fetchTestimonials = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('adminToken');
       
       const url = filter === 'all' 
         ? `${API_BASE_URL}/api/testimonials/admin/all`
@@ -49,7 +49,7 @@ function AdminTestimonials() {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('adminToken');
       const response = await fetch(`${API_BASE_URL}/api/testimonials/admin/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -67,7 +67,7 @@ function AdminTestimonials() {
 
   const handleStatusUpdate = async (id, status) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('adminToken');
       const response = await fetch(`${API_BASE_URL}/api/testimonials/admin/${id}/status`, {
         method: 'PATCH',
         headers: {
@@ -99,7 +99,7 @@ function AdminTestimonials() {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('adminToken');
       const response = await fetch(`${API_BASE_URL}/api/testimonials/admin/${id}`, {
         method: 'DELETE',
         headers: {
