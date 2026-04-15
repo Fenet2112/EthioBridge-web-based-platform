@@ -2,6 +2,35 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const { authenticateToken } = require('../middleware/auth');
+const jwt = require('jsonwebtoken');
+
+// Admin authentication middleware (same as in admin.js)
+const authenticateAdmin = async (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : null;
+
+  if (!token) {
+    return res.status(401).json({ message: "Admin access denied. No token provided." });
+  }
+
+  try {
+    // Use admin secret from environment
+    const adminSecret = process.env.ADMIN_JWT_SECRET || 'admin-super-secret-key-change-in-production';
+    const decoded = jwt.verify(token, adminSecret);
+    
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({ message: "Access denied. Admin role required." });
+    }
+    
+    req.admin = decoded;
+    next();
+  } catch (err) {
+    console.error('[Testimonials] Admin auth error:', err.message);
+    return res.status(403).json({ message: "Invalid or expired admin token." });
+  }
+};
 
 // ── GET APPROVED TESTIMONIALS (Public) ──
 router.get('/approved', async (req, res) => {
@@ -96,18 +125,8 @@ router.post('/submit', authenticateToken, async (req, res) => {
 });
 
 // ── GET ALL TESTIMONIALS (Admin Only) ──
-router.get('/admin/all', authenticateToken, async (req, res) => {
+router.get('/admin/all', authenticateAdmin, async (req, res) => {
   try {
-    // Check if user is admin
-    const userResult = await pool.query(
-      'SELECT role FROM users WHERE id = $1',
-      [req.user.id]
-    );
-
-    if (userResult.rows.length === 0 || userResult.rows[0].role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin only.' });
-    }
-
     const { status } = req.query;
     
     let query = `
@@ -144,21 +163,11 @@ router.get('/admin/all', authenticateToken, async (req, res) => {
 });
 
 // ── UPDATE TESTIMONIAL STATUS (Admin Only) ──
-router.patch('/admin/:id/status', authenticateToken, async (req, res) => {
+router.patch('/admin/:id/status', authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const adminId = req.user.id;
-
-    // Check if user is admin
-    const userResult = await pool.query(
-      'SELECT role FROM users WHERE id = $1',
-      [adminId]
-    );
-
-    if (userResult.rows.length === 0 || userResult.rows[0].role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin only.' });
-    }
+    const adminId = req.admin.id;
 
     // Validate status
     if (!status || !['approved', 'rejected'].includes(status)) {
@@ -193,20 +202,10 @@ router.patch('/admin/:id/status', authenticateToken, async (req, res) => {
 });
 
 // ── DELETE TESTIMONIAL (Admin Only) ──
-router.delete('/admin/:id', authenticateToken, async (req, res) => {
+router.delete('/admin/:id', authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const adminId = req.user.id;
-
-    // Check if user is admin
-    const userResult = await pool.query(
-      'SELECT role FROM users WHERE id = $1',
-      [adminId]
-    );
-
-    if (userResult.rows.length === 0 || userResult.rows[0].role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin only.' });
-    }
+    const adminId = req.admin.id;
 
     const result = await pool.query(
       'DELETE FROM testimonials WHERE id = $1 RETURNING id',
@@ -227,17 +226,8 @@ router.delete('/admin/:id', authenticateToken, async (req, res) => {
 });
 
 // ── GET TESTIMONIAL STATS (Admin Only) ──
-router.get('/admin/stats', authenticateToken, async (req, res) => {
+router.get('/admin/stats', authenticateAdmin, async (req, res) => {
   try {
-    // Check if user is admin
-    const userResult = await pool.query(
-      'SELECT role FROM users WHERE id = $1',
-      [req.user.id]
-    );
-
-    if (userResult.rows.length === 0 || userResult.rows[0].role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin only.' });
-    }
 
     const result = await pool.query(`
       SELECT 
