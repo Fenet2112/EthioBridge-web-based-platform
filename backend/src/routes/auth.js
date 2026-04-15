@@ -4,7 +4,7 @@ const pool = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const { getJwtSecret } = require("../middleware/auth");
+const { getJwtSecret, generateAccessToken, generateRefreshToken } = require("../middleware/auth");
 const { sendVerificationEmail, sendSignupNotification, sendPasswordResetEmail } = require("../utils/sendEmail");
 const multer = require("multer");
 const path = require("path");
@@ -142,15 +142,17 @@ router.post("/login", async (req, res) => {
       user.email_verified = true;
     }
 
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
-      getJwtSecret(),
-      { expiresIn: "7d" }
-    );
+    // Generate tokens
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+    
+    console.log(`[LOGIN] Tokens generated for ${email}`);
 
     res.json({
       message: "Login successful",
-      token,
+      token: accessToken,
+      refreshToken: refreshToken,
+      expiresIn: '7d',
       user: {
         id: user.id,
         email: user.email,
@@ -525,35 +527,79 @@ router.post("/reset-password", async (req, res) => {
 
 // ── REFRESH TOKEN (get updated user status) ──
 router.post("/refresh-token", async (req, res) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  
-  if (!token) {
-    return res.status(401).json({ message: "No token provided" });
-  }
-
   try {
-    const decoded = jwt.verify(token, getJwtSecret());
+    const { refreshToken } = req.body;
     
+    if (!refreshToken) {
+      return res.status(401).json({ 
+        message: "Refresh token required",
+        code: 'NO_REFRESH_TOKEN'
+      });
+    }
+
+    // Verify refresh token
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, getJwtSecret());
+    } catch (err) {
+      console.log('[Refresh] Token verification failed:', err.message);
+      
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ 
+          message: "Refresh token expired. Please login again.",
+          code: 'REFRESH_TOKEN_EXPIRED'
+        });
+      }
+      
+      return res.status(403).json({ 
+        message: "Invalid refresh token",
+        code: 'INVALID_REFRESH_TOKEN'
+      });
+    }
+    
+    // Check if it's a refresh token
+    if (decoded.type !== 'refresh') {
+      return res.status(403).json({ 
+        message: "Invalid token type",
+        code: 'INVALID_TOKEN_TYPE'
+      });
+    }
+    
+    // Get fresh user data from database
     const result = await pool.query(
       "SELECT id, email, role, status FROM users WHERE id = $1",
       [decoded.id]
     );
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ 
+        message: "User not found",
+        code: 'USER_NOT_FOUND'
+      });
     }
     
     const user = result.rows[0];
-    const newToken = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, status: user.status },
-      getJwtSecret(),
-      { expiresIn: "7d" }
-    );
+    
+    // Check if user is banned or suspended
+    if (user.status === 'banned' || user.status === 'suspended') {
+      return res.status(403).json({
+        message: "Account is no longer active",
+        code: 'ACCOUNT_INACTIVE',
+        status: user.status
+      });
+    }
+    
+    // Generate new tokens
+    const newAccessToken = generateAccessToken(user);
+    const newRefreshToken = generateRefreshToken(user);
+    
+    console.log(`[Refresh] New tokens generated for user ${user.email}`);
     
     res.json({
       message: "Token refreshed successfully",
-      token: newToken,
+      token: newAccessToken,
+      refreshToken: newRefreshToken,
+      expiresIn: '7d',
       user: {
         id: user.id,
         email: user.email,
@@ -562,11 +608,11 @@ router.post("/refresh-token", async (req, res) => {
       }
     });
   } catch (error) {
-    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      return res.status(403).json({ message: "Invalid or expired token" });
-    }
     console.error("Token refresh error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ 
+      message: "Server error",
+      code: 'SERVER_ERROR'
+    });
   }
 });
 

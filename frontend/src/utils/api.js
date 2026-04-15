@@ -69,10 +69,11 @@ function getErrorMessage(error) {
 }
 
 /**
- * API request wrapper with automatic token handling
+ * API request wrapper with automatic token handling and refresh
  */
 export async function apiRequest(endpoint, options = {}) {
   const token = localStorage.getItem('token');
+  const refreshToken = localStorage.getItem('refreshToken');
   
   const headers = {
     ...options.headers,
@@ -88,17 +89,46 @@ export async function apiRequest(endpoint, options = {}) {
       headers,
     });
     
+    // Parse JSON response
+    const data = await response.json();
+    
     // Handle 401 Unauthorized - token expired
     if (response.status === 401) {
-      console.warn('[API] Unauthorized - clearing token');
+      console.warn('[API] Unauthorized - attempting token refresh');
+      
+      // Try to refresh token
+      if (refreshToken && (data.code === 'TOKEN_EXPIRED' || data.code === 'NO_TOKEN')) {
+        const refreshed = await refreshAccessToken(refreshToken);
+        
+        if (refreshed) {
+          // Retry the original request with new token
+          console.log('[API] Retrying request with new token');
+          const newToken = localStorage.getItem('token');
+          headers.Authorization = `Bearer ${newToken}`;
+          
+          const retryResponse = await fetchWithRetry(endpoint, {
+            ...options,
+            headers,
+          });
+          
+          const retryData = await retryResponse.json();
+          
+          if (!retryResponse.ok) {
+            throw new Error(retryData.message || `Request failed with status ${retryResponse.status}`);
+          }
+          
+          return retryData;
+        }
+      }
+      
+      // If refresh failed or no refresh token, redirect to login
+      console.warn('[API] Token refresh failed - redirecting to login');
       localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
       window.location.href = '/login';
       throw new Error('Session expired. Please log in again.');
     }
-    
-    // Parse JSON response
-    const data = await response.json();
     
     if (!response.ok) {
       throw new Error(data.message || `Request failed with status ${response.status}`);
@@ -108,6 +138,39 @@ export async function apiRequest(endpoint, options = {}) {
   } catch (error) {
     console.error('[API] Request failed:', error);
     throw error;
+  }
+}
+
+/**
+ * Refresh access token using refresh token
+ */
+async function refreshAccessToken(refreshToken) {
+  try {
+    console.log('[API] Refreshing access token...');
+    
+    const response = await fetch(`${API_BASE_URL}/api/refresh-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('[API] Token refresh failed:', data.message);
+      return false;
+    }
+    
+    // Update tokens in localStorage
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('refreshToken', data.refreshToken);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    
+    console.log('[API] Token refreshed successfully');
+    return true;
+  } catch (error) {
+    console.error('[API] Token refresh error:', error);
+    return false;
   }
 }
 
