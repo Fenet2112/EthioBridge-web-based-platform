@@ -84,6 +84,9 @@ app.use('/api', recommendationRoutes);
 const chapaRoutes = require('./src/routes/chapa');
 app.use('/api/chapa', chapaRoutes);
 
+const testimonialRoutes = require('./src/routes/testimonials');
+app.use('/api/testimonials', testimonialRoutes);
+
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
 

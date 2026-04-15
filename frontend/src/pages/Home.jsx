@@ -1,17 +1,23 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { 
   FaFlag, FaHardHat, FaIndustry, FaHandshake, FaFileAlt, FaSearch, 
   FaRocket, FaCheckCircle, FaComments, FaChartBar, FaShieldAlt, 
   FaMobileAlt, FaEnvelope, FaPhone, FaMapMarkerAlt, FaClock,
-  FaBox, FaClipboardList, FaUsers, FaStar, FaCheck
+  FaBox, FaClipboardList, FaUsers, FaStar, FaCheck, FaQuoteLeft
 } from "react-icons/fa";
 import Logo from "../components/Logo";
 import DarkModeToggle from "../components/DarkModeToggle";
+import FeedbackForm from "../components/FeedbackForm";
 import "./Home.css";
 
 function Home() {
   const heroRef = useRef(null);
+  const [testimonials, setTestimonials] = useState([]);
+  const [loadingTestimonials, setLoadingTestimonials] = useState(true);
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -27,6 +33,47 @@ function Home() {
     document.querySelectorAll(".animate-on-scroll").forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, []);
+
+  // Fetch approved testimonials
+  useEffect(() => {
+    fetchTestimonials();
+  }, []);
+
+  const fetchTestimonials = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/testimonials/approved`);
+      if (response.ok) {
+        const data = await response.json();
+        setTestimonials(data);
+        console.log('[Home] Loaded', data.length, 'testimonials');
+      }
+    } catch (error) {
+      console.error('[Home] Error fetching testimonials:', error);
+    } finally {
+      setLoadingTestimonials(false);
+    }
+  };
+
+  const getRoleDisplay = (role) => {
+    const roleMap = {
+      'stakeholder': 'Stakeholder',
+      'industry': 'Industry Owner',
+      'investor': 'Investor',
+      'other': 'User'
+    };
+    return roleMap[role] || role;
+  };
+
+  const renderStars = (rating) => {
+    if (!rating) return null;
+    return (
+      <div className="testimonial-rating">
+        {[...Array(5)].map((_, i) => (
+          <FaStar key={i} className={i < rating ? 'star-filled' : 'star-empty'} />
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="home">
@@ -292,48 +339,56 @@ function Home() {
           <h2>What Our Users Say</h2>
           <p>Real experiences from construction professionals across Ethiopia</p>
         </div>
-        <div className="testimonials-container">
-          {[
-            {
-              name: "Abebe Tadesse",
-              role: "Construction Stakeholder",
-              company: "Addis Construction Group",
-              image: "https://ui-avatars.com/api/?name=Abebe+Tadesse&background=0a5c2f&color=fff&size=600",
-              text: "EthioBridge transformed how we source construction materials. Finding verified suppliers is now effortless, and the direct messaging feature saves us countless hours. The platform's verification system gives us confidence in every connection we make."
-            },
-            {
-              name: "Meron Bekele",
-              role: "Industry Supplier",
-              company: "Ethiopian Steel Industries",
-              image: "https://ui-avatars.com/api/?name=Meron+Bekele&background=0a5c2f&color=fff&size=600",
-              text: "Managing our product catalog and tracking purchase requests has never been easier. The analytics dashboard helps us understand our market position and grow strategically. Since joining EthioBridge, our business visibility has increased significantly."
-            },
-            {
-              name: "Daniel Haile",
-              role: "Investor",
-              company: "Horizon Investment Partners",
-              image: "https://ui-avatars.com/api/?name=Daniel+Haile&background=0a5c2f&color=fff&size=600",
-              text: "The platform's verification system gives us confidence in every connection. We've successfully partnered with multiple industries through EthioBridge. The smart recommendation system is incredibly helpful and suggests exactly what we need based on our requirements."
-            }
-          ].map((testimonial, i) => (
-            <div className={`testimonial-showcase animate-on-scroll ${i % 2 === 1 ? 'reverse' : ''}`} key={i} style={{ animationDelay: `${i * 0.2}s` }}>
-              <div className="testimonial-image-wrap">
-                <div className="testimonial-shape shape-1"></div>
-                <div className="testimonial-shape shape-2"></div>
-                <img src={testimonial.image} alt={testimonial.name} className="testimonial-main-image" />
-              </div>
-              <div className="testimonial-content-wrap">
-                <div className="testimonial-quote-icon">"</div>
-                <p className="testimonial-main-text">{testimonial.text}</p>
-                <div className="testimonial-author-info">
-                  <h3 className="testimonial-author-name">{testimonial.name}</h3>
-                  <p className="testimonial-author-role">{testimonial.role}</p>
-                  <p className="testimonial-author-company">{testimonial.company}</p>
+
+        {loadingTestimonials ? (
+          <div className="testimonials-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading testimonials...</p>
+          </div>
+        ) : testimonials.length === 0 ? (
+          <div className="testimonials-empty">
+            <p>No testimonials yet. Be the first to share your experience!</p>
+          </div>
+        ) : (
+          <div className="testimonials-grid">
+            {testimonials.map((testimonial, i) => (
+              <div className="testimonial-card animate-on-scroll" key={testimonial.id} style={{ animationDelay: `${i * 0.1}s` }}>
+                <div className="testimonial-quote-icon-small">
+                  <FaQuoteLeft />
+                </div>
+                {renderStars(testimonial.rating)}
+                <p className="testimonial-text">{testimonial.message}</p>
+                <div className="testimonial-author">
+                  <div className="testimonial-avatar">
+                    {testimonial.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="testimonial-author-details">
+                    <h4>{testimonial.name}</h4>
+                    <p>{getRoleDisplay(testimonial.role)}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        )}
+
+        <div className="testimonials-cta animate-on-scroll">
+          <button 
+            className="feedback-btn"
+            onClick={() => setShowFeedbackForm(true)}
+          >
+            Share Your Experience
+          </button>
         </div>
+
+        {showFeedbackForm && (
+          <FeedbackForm 
+            onClose={() => setShowFeedbackForm(false)}
+            onSuccess={() => {
+              fetchTestimonials(); // Refresh testimonials after submission
+            }}
+          />
+        )}
       </section>
 
       {/* ── SERVICES ── */}
