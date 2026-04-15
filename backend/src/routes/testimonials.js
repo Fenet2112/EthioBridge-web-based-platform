@@ -33,39 +33,49 @@ router.post('/submit', authenticateToken, async (req, res) => {
     const { message, rating, role } = req.body;
     const userId = req.user.id;
 
+    console.log('[Testimonials] Submit request from user:', userId);
+    console.log('[Testimonials] Request body:', { message: message?.substring(0, 50), rating, role });
+
     // Validation
     if (!message || message.trim().length < 10) {
+      console.log('[Testimonials] Validation failed: message too short');
       return res.status(400).json({ message: 'Message must be at least 10 characters long' });
     }
 
     if (!role || !['stakeholder', 'industry', 'investor', 'other'].includes(role)) {
+      console.log('[Testimonials] Validation failed: invalid role');
       return res.status(400).json({ message: 'Invalid role selected' });
     }
 
     if (rating && (rating < 1 || rating > 5)) {
+      console.log('[Testimonials] Validation failed: invalid rating');
       return res.status(400).json({ message: 'Rating must be between 1 and 5' });
     }
 
     // Get user's name from database
+    console.log('[Testimonials] Fetching user details...');
     const userResult = await pool.query(
       'SELECT full_name, email FROM users WHERE id = $1',
       [userId]
     );
 
     if (userResult.rows.length === 0) {
+      console.log('[Testimonials] User not found:', userId);
       return res.status(404).json({ message: 'User not found' });
     }
 
     const userName = userResult.rows[0].full_name || userResult.rows[0].email.split('@')[0];
+    console.log('[Testimonials] User name:', userName);
 
     // Insert testimonial
+    console.log('[Testimonials] Inserting testimonial...');
     const result = await pool.query(`
       INSERT INTO testimonials (user_id, name, role, message, rating, status)
       VALUES ($1, $2, $3, $4, $5, 'pending')
       RETURNING id, name, role, message, rating, status, created_at
     `, [userId, userName, role, message.trim(), rating || null]);
 
-    console.log(`[Testimonials] New feedback submitted by user ${userId}`);
+    console.log(`[Testimonials] New feedback submitted successfully by user ${userId}, testimonial ID: ${result.rows[0].id}`);
     
     res.status(201).json({
       message: 'Thank you for your feedback! It will be reviewed by our team.',
@@ -73,7 +83,8 @@ router.post('/submit', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('[Testimonials] Error submitting feedback:', error);
-    res.status(500).json({ message: 'Failed to submit feedback' });
+    console.error('[Testimonials] Error stack:', error.stack);
+    res.status(500).json({ message: 'Failed to submit feedback', error: error.message });
   }
 });
 

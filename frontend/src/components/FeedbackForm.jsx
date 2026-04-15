@@ -35,6 +35,8 @@ function FeedbackForm({ onClose, onSuccess }) {
         return;
       }
 
+      console.log('[FeedbackForm] Submitting feedback...', { role: formData.role, rating: formData.rating });
+
       const response = await fetch(`${API_BASE_URL}/api/testimonials/submit`, {
         method: 'POST',
         headers: {
@@ -45,9 +47,10 @@ function FeedbackForm({ onClose, onSuccess }) {
       });
 
       const data = await response.json();
+      console.log('[FeedbackForm] Response:', response.status, data);
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to submit feedback');
+        throw new Error(data.message || data.error || 'Failed to submit feedback');
       }
 
       console.log('[FeedbackForm] Feedback submitted successfully');
