@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FaEnvelope, FaEnvelopeOpen, FaReply, FaArchive, FaFilter, 
-  FaPhone, FaUser, FaClock, FaCheckCircle, FaTimesCircle 
+  FaPhone, FaUser, FaClock, FaCheckCircle, FaTimesCircle, FaPaperPlane,
+  FaExclamationTriangle, FaCheck, FaHourglassHalf
 } from 'react-icons/fa';
 import './ContactMessages.css';
 
@@ -10,15 +11,19 @@ function ContactMessages() {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedMessage, setSelectedMessage] = useState(null);
+  const [showReplyModal, setShowReplyModal] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     fetchMessages();
     fetchStats();
-  }, [statusFilter, sourceFilter]);
+  }, [statusFilter, sourceFilter, priorityFilter]);
 
   const fetchMessages = async () => {
     try {
@@ -31,6 +36,7 @@ function ContactMessages() {
       let url = `${API_BASE_URL}/api/contact/admin/messages?limit=100`;
       if (statusFilter !== 'all') url += `&status=${statusFilter}`;
       if (sourceFilter !== 'all') url += `&source=${sourceFilter}`;
+      if (priorityFilter !== 'all') url += `&priority=${priorityFilter}`;
 
       const response = await fetch(url, {
         headers: {
@@ -70,16 +76,19 @@ function ContactMessages() {
     }
   };
 
-  const updateMessageStatus = async (messageId, newStatus, adminNotes = '') => {
+  const updateMessageStatus = async (messageId, newStatus, priority = null) => {
     try {
       const adminToken = localStorage.getItem('adminToken');
+      const body = { status: newStatus };
+      if (priority) body.priority = priority;
+
       const response = await fetch(`${API_BASE_URL}/api/contact/admin/messages/${messageId}/status`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${adminToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ status: newStatus, adminNotes })
+        body: JSON.stringify(body)
       });
 
       if (response.ok) {
@@ -87,7 +96,8 @@ function ContactMessages() {
         fetchMessages();
         fetchStats();
         if (selectedMessage && selectedMessage.id === messageId) {
-          setSelectedMessage(null);
+          const updated = await response.json();
+          setSelectedMessage(updated.data);
         }
       } else {
         throw new Error('Failed to update status');
@@ -98,16 +108,69 @@ function ContactMessages() {
     }
   };
 
+  const sendReply = async () => {
+    if (!replyText.trim()) {
+      alert('Please enter a reply message');
+      return;
+    }
+
+    setSendingReply(true);
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch(`${API_BASE_URL}/api/contact/admin/messages/${selectedMessage.id}/reply`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reply: replyText, notifyUser: true })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[ContactMessages] Reply sent successfully');
+        setShowReplyModal(false);
+        setReplyText('');
+        setSelectedMessage(data.data);
+        fetchMessages();
+        fetchStats();
+        alert('Reply sent successfully! User has been notified via email.');
+      } else {
+        throw new Error('Failed to send reply');
+      }
+    } catch (error) {
+      console.error('[ContactMessages] Error sending reply:', error);
+      alert('Failed to send reply. Please try again.');
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const badges = {
-      unread: { icon: <FaEnvelope />, class: 'status-unread', label: 'Unread' },
-      read: { icon: <FaEnvelopeOpen />, class: 'status-read', label: 'Read' },
+      pending: { icon: <FaHourglassHalf />, class: 'status-pending', label: 'Pending' },
+      in_progress: { icon: <FaClock />, class: 'status-in-progress', label: 'In Progress' },
       replied: { icon: <FaReply />, class: 'status-replied', label: 'Replied' },
-      archived: { icon: <FaArchive />, class: 'status-archived', label: 'Archived' }
+      resolved: { icon: <FaCheckCircle />, class: 'status-resolved', label: 'Resolved' }
     };
-    const badge = badges[status] || badges.unread;
+    const badge = badges[status] || badges.pending;
     return (
       <span className={`status-badge ${badge.class}`}>
+        {badge.icon} {badge.label}
+      </span>
+    );
+  };
+
+  const getPriorityBadge = (priority) => {
+    const badges = {
+      urgent: { icon: <FaExclamationTriangle />, class: 'priority-urgent', label: 'Urgent' },
+      high: { icon: <FaExclamationTriangle />, class: 'priority-high', label: 'High' },
+      normal: { icon: <FaClock />, class: 'priority-normal', label: 'Normal' },
+      low: { icon: <FaClock />, class: 'priority-low', label: 'Low' }
+    };
+    const badge = badges[priority] || badges.normal;
+    return (
+      <span className={`priority-badge ${badge.class}`}>
         {badge.icon} {badge.label}
       </span>
     );
@@ -145,29 +208,29 @@ function ContactMessages() {
     <div className="contact-messages-container">
       <div className="contact-messages-header">
         <div>
-          <h1>Contact Messages</h1>
-          <p>Manage messages from Contact Us and Help Center</p>
+          <h1>Support Tickets</h1>
+          <p>Manage support requests from Contact Us and Help Center</p>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="contact-stats-grid">
         <div className="contact-stat-card">
-          <div className="stat-icon unread">
-            <FaEnvelope />
+          <div className="stat-icon pending">
+            <FaHourglassHalf />
           </div>
           <div className="stat-content">
-            <div className="stat-value">{stats.unread_count || 0}</div>
-            <div className="stat-label">Unread</div>
+            <div className="stat-value">{stats.pending_count || 0}</div>
+            <div className="stat-label">Pending</div>
           </div>
         </div>
         <div className="contact-stat-card">
-          <div className="stat-icon read">
-            <FaEnvelopeOpen />
+          <div className="stat-icon in-progress">
+            <FaClock />
           </div>
           <div className="stat-content">
-            <div className="stat-value">{stats.read_count || 0}</div>
-            <div className="stat-label">Read</div>
+            <div className="stat-value">{stats.in_progress_count || 0}</div>
+            <div className="stat-label">In Progress</div>
           </div>
         </div>
         <div className="contact-stat-card">
@@ -180,12 +243,21 @@ function ContactMessages() {
           </div>
         </div>
         <div className="contact-stat-card">
-          <div className="stat-icon total">
+          <div className="stat-icon resolved">
             <FaCheckCircle />
           </div>
           <div className="stat-content">
-            <div className="stat-value">{stats.total_count || 0}</div>
-            <div className="stat-label">Total</div>
+            <div className="stat-value">{stats.resolved_count || 0}</div>
+            <div className="stat-label">Resolved</div>
+          </div>
+        </div>
+        <div className="contact-stat-card urgent">
+          <div className="stat-icon urgent">
+            <FaExclamationTriangle />
+          </div>
+          <div className="stat-content">
+            <div className="stat-value">{stats.urgent_count || 0}</div>
+            <div className="stat-label">Urgent</div>
           </div>
         </div>
       </div>
@@ -197,10 +269,10 @@ function ContactMessages() {
           <label>Status:</label>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">All Status</option>
-            <option value="unread">Unread</option>
-            <option value="read">Read</option>
+            <option value="pending">Pending</option>
+            <option value="in_progress">In Progress</option>
             <option value="replied">Replied</option>
-            <option value="archived">Archived</option>
+            <option value="resolved">Resolved</option>
           </select>
         </div>
         <div className="filter-group">
@@ -209,6 +281,16 @@ function ContactMessages() {
             <option value="all">All Sources</option>
             <option value="contact">Contact Us</option>
             <option value="help">Help Center</option>
+          </select>
+        </div>
+        <div className="filter-group">
+          <label>Priority:</label>
+          <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
+            <option value="all">All Priorities</option>
+            <option value="urgent">Urgent</option>
+            <option value="high">High</option>
+            <option value="normal">Normal</option>
+            <option value="low">Low</option>
           </select>
         </div>
       </div>
@@ -224,7 +306,7 @@ function ContactMessages() {
           {messages.map((message) => (
             <div 
               key={message.id} 
-              className={`message-card ${message.status === 'unread' ? 'unread' : ''}`}
+              className={`message-card ${message.status === 'pending' ? 'unread' : ''}`}
               onClick={() => setSelectedMessage(message)}
             >
               <div className="message-card-header">
@@ -234,8 +316,12 @@ function ContactMessages() {
                 </div>
                 <div className="message-badges">
                   {getSourceBadge(message.source)}
+                  {getPriorityBadge(message.priority)}
                   {getStatusBadge(message.status)}
                 </div>
+              </div>
+              <div className="message-card-subject">
+                {message.subject || 'No subject'}
               </div>
               <div className="message-card-meta">
                 <span><FaEnvelope /> {message.email}</span>
@@ -247,6 +333,11 @@ function ContactMessages() {
                 {message.message.substring(0, 150)}
                 {message.message.length > 150 && '...'}
               </div>
+              {message.admin_reply && (
+                <div className="message-card-reply-indicator">
+                  <FaReply /> Has admin reply
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -257,7 +348,7 @@ function ContactMessages() {
         <div className="message-modal-overlay" onClick={() => setSelectedMessage(null)}>
           <div className="message-modal" onClick={(e) => e.stopPropagation()}>
             <div className="message-modal-header">
-              <h2>Message Details</h2>
+              <h2>Support Ticket #{selectedMessage.id}</h2>
               <button className="modal-close" onClick={() => setSelectedMessage(null)}>×</button>
             </div>
             <div className="message-modal-body">
@@ -271,51 +362,147 @@ function ContactMessages() {
               <div className="message-detail-section">
                 <h3>Details</h3>
                 <p><FaClock /> Received: {formatDate(selectedMessage.created_at)}</p>
+                {selectedMessage.updated_at && (
+                  <p><FaClock /> Updated: {formatDate(selectedMessage.updated_at)}</p>
+                )}
                 <p>Source: {getSourceBadge(selectedMessage.source)}</p>
+                <p>Priority: {getPriorityBadge(selectedMessage.priority)}</p>
                 <p>Status: {getStatusBadge(selectedMessage.status)}</p>
+                <p>Status: {selectedMessage.status_label}</p>
               </div>
               <div className="message-detail-section">
-                <h3>Message</h3>
+                <h3>Subject</h3>
+                <p className="message-subject">{selectedMessage.subject || 'No subject'}</p>
+              </div>
+              <div className="message-detail-section">
+                <h3>User's Message</h3>
                 <div className="message-content">
                   {selectedMessage.message}
                 </div>
               </div>
+              
+              {/* Admin Reply Section */}
+              {selectedMessage.admin_reply && (
+                <div className="message-detail-section admin-reply-section">
+                  <h3>Admin Reply</h3>
+                  <div className="admin-reply-content">
+                    {selectedMessage.admin_reply}
+                  </div>
+                  {selectedMessage.replied_at && (
+                    <p className="reply-timestamp">
+                      <FaClock /> Replied at: {formatDate(selectedMessage.replied_at)}
+                    </p>
+                  )}
+                  {selectedMessage.user_notified && (
+                    <p className="reply-notified">
+                      <FaCheck /> User has been notified via email
+                    </p>
+                  )}
+                </div>
+              )}
+
               {selectedMessage.admin_notes && (
                 <div className="message-detail-section">
-                  <h3>Admin Notes</h3>
+                  <h3>Admin Notes (Internal)</h3>
                   <p>{selectedMessage.admin_notes}</p>
                 </div>
               )}
             </div>
             <div className="message-modal-actions">
-              {selectedMessage.status === 'unread' && (
+              {selectedMessage.status === 'pending' && (
                 <button 
-                  className="action-btn read"
-                  onClick={() => updateMessageStatus(selectedMessage.id, 'read')}
+                  className="action-btn in-progress"
+                  onClick={() => updateMessageStatus(selectedMessage.id, 'in_progress', 'normal')}
                 >
-                  <FaEnvelopeOpen /> Mark as Read
+                  <FaClock /> Mark In Progress
                 </button>
               )}
-              {(selectedMessage.status === 'unread' || selectedMessage.status === 'read') && (
+              {selectedMessage.status !== 'resolved' && (
                 <button 
-                  className="action-btn replied"
-                  onClick={() => updateMessageStatus(selectedMessage.id, 'replied')}
+                  className="action-btn reply"
+                  onClick={() => setShowReplyModal(true)}
                 >
-                  <FaReply /> Mark as Replied
+                  <FaPaperPlane /> Send Reply
                 </button>
               )}
-              <button 
-                className="action-btn archive"
-                onClick={() => updateMessageStatus(selectedMessage.id, 'archived')}
-              >
-                <FaArchive /> Archive
-              </button>
+              {selectedMessage.status !== 'resolved' && (
+                <button 
+                  className="action-btn resolve"
+                  onClick={() => updateMessageStatus(selectedMessage.id, 'resolved')}
+                >
+                  <FaCheckCircle /> Mark Resolved
+                </button>
+              )}
+              {selectedMessage.status === 'resolved' && (
+                <button 
+                  className="action-btn pending"
+                  onClick={() => updateMessageStatus(selectedMessage.id, 'pending')}
+                >
+                  <FaHourglassHalf /> Reopen Ticket
+                </button>
+              )}
               <a 
-                href={`mailto:${selectedMessage.email}?subject=Re: Your message to EthioBridge`}
+                href={`mailto:${selectedMessage.email}?subject=Re: Your support request #${selectedMessage.id}`}
                 className="action-btn email"
               >
                 <FaEnvelope /> Reply via Email
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reply Modal */}
+      {showReplyModal && (
+        <div className="message-modal-overlay" onClick={() => setShowReplyModal(false)}>
+          <div className="reply-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="reply-modal-header">
+              <h2>Send Reply to #{selectedMessage?.id}</h2>
+              <button className="modal-close" onClick={() => setShowReplyModal(false)}>×</button>
+            </div>
+            <div className="reply-modal-body">
+              <div className="reply-to-info">
+                <strong>To:</strong> {selectedMessage?.first_name} {selectedMessage?.last_name} ({selectedMessage?.email})
+              </div>
+              <div className="reply-original">
+                <strong>Original Message:</strong>
+                <p>{selectedMessage?.message}</p>
+              </div>
+              <div className="reply-form">
+                <label>Your Reply:</label>
+                <textarea 
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder="Type your response to the user..."
+                  rows={8}
+                />
+              </div>
+              <div className="reply-options">
+                <label>
+                  <input type="checkbox" defaultChecked /> 
+                  Send email notification to user
+                </label>
+              </div>
+            </div>
+            <div className="reply-modal-actions">
+              <button 
+                className="cancel-btn"
+                onClick={() => setShowReplyModal(false)}
+                disabled={sendingReply}
+              >
+                Cancel
+              </button>
+              <button 
+                className="send-btn"
+                onClick={sendReply}
+                disabled={sendingReply || !replyText.trim()}
+              >
+                {sendingReply ? (
+                  <>Sending...</>
+                ) : (
+                  <><FaPaperPlane /> Send Reply</>
+                )}
+              </button>
             </div>
           </div>
         </div>

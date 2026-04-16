@@ -74,6 +74,7 @@ const purchaseRoutes = require("./routes/purchases.js");
 const messageRoutes = require("./routes/messages.js");
 const subscriptionRoutes = require("./routes/subscription.js");
 const profileRoutes = require("./routes/profile.js");
+const contactRoutes = require("./routes/contact.js");
 
 app.use("/api", authRoutes);
 app.use("/api/admin", adminRoutes);
@@ -83,6 +84,7 @@ app.use("/api", purchaseRoutes);
 app.use("/api", messageRoutes);
 app.use("/api", subscriptionRoutes);
 app.use("/api", profileRoutes);
+app.use("/api/contact", contactRoutes);
 
 // Test routes
 app.get("/", (req, res) => {

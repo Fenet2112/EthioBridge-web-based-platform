@@ -22,6 +22,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/admin/Dashboard";
 import AdminLogin from "./pages/admin/Login";
 import Help from "./pages/Help";
+import MyRequests from "./pages/MyRequests";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Explore from "./pages/Explore";
 
@@ -72,6 +73,9 @@ function App() {
 
       {/* Payment Success Page */}
       <Route path="/payment/success" element={<PaymentSuccess />} />
+
+      {/* Support Requests Page */}
+      <Route path="/my-requests" element={<MyRequests />} />
 
       {/* Help Page */}
       <Route path="/help" element={<Help />} />

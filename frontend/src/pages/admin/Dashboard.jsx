@@ -72,7 +72,7 @@ const NAV = [
   { id: "industries",icon: <FaIndustry />, label: "Industries" },
   { id: "products",  icon: <FaBox />, label: "Products" },
   { id: "testimonials", icon: <FaComments />, label: "Testimonials" },
-  { id: "messages",  icon: <FaLifeRing />, label: "Contact Messages" },
+  { id: "messages",  icon: <FaLifeRing />, label: "Support Tickets" },
   { id: "analytics", icon: <FaChartLine />, label: "Analytics" },
   { id: "notifs",    icon: <FaBell />, label: "Notifications" },
   { id: "logs",      icon: <FaFileAlt />, label: "Activity Logs" },
