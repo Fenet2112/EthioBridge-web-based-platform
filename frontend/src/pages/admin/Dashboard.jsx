@@ -10,7 +10,6 @@ import NotificationsView from "../views/NotificationsView";
 import Settings from "./Settings";
 import Testimonials from "./Testimonials";
 import ContactMessages from "./ContactMessages";
-import StructuredApproval from "./StructuredApproval";
 import { 
   FaChartBar, 
   FaUsers, 
@@ -67,7 +66,6 @@ function StatusBadge({ status }) {
 
 const NAV = [
   { id: "home",      icon: <FaChartBar />, label: "Dashboard" },
-  { id: "structured-approval", icon: <FaShieldAlt />, label: "Structured Approval" },
   { id: "users",     icon: <FaUsers />, label: "Approvals" },
   { id: "purchases", icon: <FaClipboardList />, label: "Purchase Requests" },
   { id: "manage",    icon: <FaShieldAlt />, label: "User Management" },
@@ -323,7 +321,7 @@ function Dashboard() {
         </div>
         <div className="sidebar-section-label">MAIN MENU</div>
         <nav className="admin-nav">
-          {NAV.slice(0, 5).map(n => (
+          {NAV.slice(0, 4).map(n => (
             <button key={n.id} className={view === n.id ? "active" : ""}
               onClick={() => { navTo(n.id); if (n.id === "users") setFilter("pending"); if (n.id === "purchases") setPrFilter("pending"); }}>
               <span className="nav-icon">{n.icon}</span>{n.label}
@@ -332,7 +330,7 @@ function Dashboard() {
         </nav>
         <div className="sidebar-section-label">MANAGEMENT</div>
         <nav className="admin-nav">
-          {NAV.slice(5, 9).map(n => (
+          {NAV.slice(4, 8).map(n => (
             <button key={n.id} className={view === n.id ? "active" : ""} onClick={() => navTo(n.id)}>
               <span className="nav-icon">{n.icon}</span>{n.label}
             </button>
@@ -340,7 +338,7 @@ function Dashboard() {
         </nav>
         <div className="sidebar-section-label">INSIGHTS</div>
         <nav className="admin-nav">
-          {NAV.slice(9).map(n => (
+          {NAV.slice(8).map(n => (
             n.external ? (
               <Link key={n.id} to={n.path} className="admin-nav-link">
                 <span className="nav-icon">{n.icon}</span>{n.label}
@@ -376,7 +374,6 @@ function Dashboard() {
 
         <main className="admin-main">
           {view === "home"       && <DashboardHome tok={tok} />}
-          {view === "structured-approval" && <StructuredApproval />}
           {view === "industries" && <IndustriesView tok={tok} />}
           {view === "products"   && <ProductsView tok={tok} />}
           {view === "testimonials" && <Testimonials />}
