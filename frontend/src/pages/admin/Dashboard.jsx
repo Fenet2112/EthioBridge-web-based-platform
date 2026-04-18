@@ -114,6 +114,10 @@ function Dashboard() {
   const [actionReason, setActionReason] = useState("");
   const [userDetailsModal, setUserDetailsModal] = useState(null);
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
+  
+  // Approval criteria details
+  const [approvalDetails, setApprovalDetails] = useState(null);
+  const [approvalDetailsLoading, setApprovalDetailsLoading] = useState(false);
 
   const handleLogout = () => { localStorage.removeItem("adminToken"); navigate("/login"); };
 
@@ -240,17 +244,50 @@ function Dashboard() {
 
   const fetchUserDetails = async (userId) => {
     setUserDetailsLoading(true);
+    setApprovalDetailsLoading(true);
     try {
+      // Fetch basic user details
       const res = await fetch(`${API}/api/admin/users/${userId}/details`, {
         headers: { Authorization: `Bearer ${tok()}` }
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
       setUserDetailsModal(data);
+      
+      // Fetch approval criteria details
+      try {
+        const approvalRes = await fetch(`${API}/api/admin/structured-approval/user/${userId}/details`, {
+          headers: { Authorization: `Bearer ${tok()}` }
+        });
+        if (approvalRes.ok) {
+          const approvalData = await approvalRes.json();
+          setApprovalDetails(approvalData);
+        } else {
+          // If no approval data exists, calculate it
+          const calculateRes = await fetch(`${API}/api/admin/structured-approval/user/${userId}/recalculate`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${tok()}` }
+          });
+          if (calculateRes.ok) {
+            // Fetch again after calculation
+            const newApprovalRes = await fetch(`${API}/api/admin/structured-approval/user/${userId}/details`, {
+              headers: { Authorization: `Bearer ${tok()}` }
+            });
+            if (newApprovalRes.ok) {
+              const newApprovalData = await newApprovalRes.json();
+              setApprovalDetails(newApprovalData);
+            }
+          }
+        }
+      } catch (approvalError) {
+        console.error('Failed to fetch approval details:', approvalError);
+        setApprovalDetails(null);
+      }
     } catch (e) {
       alert("Error loading user details: " + e.message);
     } finally {
       setUserDetailsLoading(false);
+      setApprovalDetailsLoading(false);
     }
   };
 
@@ -383,7 +420,20 @@ function Dashboard() {
                         <div className="detail-row"><span>📧</span><span>{user.email}</span></div>
                         {user.role === "industry" && user.sector && <div className="detail-row"><span>🏗️</span><span>{user.sector}</span></div>}
                         {user.role === "stakeholder" && user.organization_type && <div className="detail-row"><span>🏢</span><span>{user.organization_type}</span></div>}
-                        <button className="view-details-btn" onClick={() => setViewDetailsModal(user)}>👁️ View Full Details</button>
+                        <button className="view-details-btn" onClick={() => {
+                          setViewDetailsModal(user);
+                          // Also fetch approval details for this user
+                          if (user.status === 'pending') {
+                            setApprovalDetailsLoading(true);
+                            fetch(`${API}/api/admin/structured-approval/user/${user.id}/details`, {
+                              headers: { Authorization: `Bearer ${tok()}` }
+                            })
+                            .then(res => res.ok ? res.json() : null)
+                            .then(data => setApprovalDetails(data))
+                            .catch(() => setApprovalDetails(null))
+                            .finally(() => setApprovalDetailsLoading(false));
+                          }
+                        }}>👁️ View Full Details</button>
                       </div>
                       {user.status === "pending" && (
                         <div className="user-actions">
@@ -628,16 +678,211 @@ function Dashboard() {
                     {viewDetailsModal.contact_person && <div className="details-row"><span>👤</span><div><div className="details-label">Contact Person</div><div>{viewDetailsModal.contact_person}</div></div></div>}
                   </div>
                 )}
+
+                {/* Approval Criteria Section for Pending Users */}
+                {viewDetailsModal.status === 'pending' && (
+                  <>
+                    {approvalDetailsLoading ? (
+                      <div className="details-section">
+                        <h3>🔍 Approval Analysis</h3>
+                        <div style={{ textAlign: "center", padding: "20px", color: "#6b7280" }}>
+                          <div className="loading-spinner" style={{ width: "24px", height: "24px", margin: "0 auto 12px" }}></div>
+                          Loading approval criteria...
+                        </div>
+                      </div>
+                    ) : approvalDetails ? (
+                      <>
+                        {/* Approval Score Summary */}
+                        <div className="details-section" style={{ background: "#f8fafc", borderColor: "#e2e8f0" }}>
+                          <h3>🔍 Approval Analysis</h3>
+                          <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "16px" }}>
+                            <div style={{ 
+                              width: "70px", height: "70px", borderRadius: "50%", 
+                              background: `conic-gradient(#10b981 ${(approvalDetails.score?.score_percentage || 0) * 3.6}deg, #f3f4f6 0deg)`,
+                              display: "flex", alignItems: "center", justifyContent: "center"
+                            }}>
+                              <div style={{ 
+                                width: "54px", height: "54px", borderRadius: "50%", 
+                                background: "white", display: "flex", flexDirection: "column",
+                                alignItems: "center", justifyContent: "center"
+                              }}>
+                                <div style={{ fontSize: "1rem", fontWeight: "800", color: "#1f2937" }}>
+                                  {Math.round(approvalDetails.score?.score_percentage || 0)}%
+                                </div>
+                                <div style={{ fontSize: "0.5rem", color: "#6b7280" }}>SCORE</div>
+                              </div>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div className="details-row">
+                                <span>🎯</span>
+                                <div>
+                                  <div className="details-label">Risk Level</div>
+                                  <div>
+                                    <span style={{
+                                      padding: "3px 10px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: "600",
+                                      background: approvalDetails.score?.risk_level === 'low' ? '#dcfce7' : 
+                                                approvalDetails.score?.risk_level === 'medium' ? '#fef3c7' : '#fee2e2',
+                                      color: approvalDetails.score?.risk_level === 'low' ? '#166534' : 
+                                            approvalDetails.score?.risk_level === 'medium' ? '#92400e' : '#dc2626'
+                                    }}>
+                                      {approvalDetails.score?.risk_level?.toUpperCase() || 'UNKNOWN'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="details-row">
+                                <span>🤖</span>
+                                <div>
+                                  <div className="details-label">Recommendation</div>
+                                  <div>
+                                    <span style={{
+                                      padding: "3px 10px", borderRadius: "10px", fontSize: "0.75rem", fontWeight: "600",
+                                      background: approvalDetails.score?.recommendation === 'approve' ? '#dcfce7' : 
+                                                approvalDetails.score?.recommendation === 'reject' ? '#fee2e2' : '#e0e7ff',
+                                      color: approvalDetails.score?.recommendation === 'approve' ? '#166534' : 
+                                            approvalDetails.score?.recommendation === 'reject' ? '#dc2626' : '#3730a3'
+                                    }}>
+                                      {approvalDetails.score?.recommendation?.toUpperCase() || 'REVIEW'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Validation Criteria */}
+                        <div className="details-section">
+                          <h3>✅ Validation Criteria ({approvalDetails.criteria?.length || 0})</h3>
+                          <div style={{ display: "grid", gap: "6px" }}>
+                            {approvalDetails.criteria?.map((criteria, index) => (
+                              <div key={index} style={{
+                                padding: "10px 12px", borderRadius: "6px", border: "1px solid",
+                                background: criteria.status === 'passed' ? '#f0fdf4' : '#fef2f2',
+                                borderColor: criteria.status === 'passed' ? '#bbf7d0' : '#fecaca',
+                                display: "flex", alignItems: "center", gap: "10px"
+                              }}>
+                                <span style={{ 
+                                  fontSize: "0.9rem", 
+                                  color: criteria.status === 'passed' ? '#16a34a' : '#dc2626' 
+                                }}>
+                                  {criteria.status === 'passed' ? '✅' : '❌'}
+                                </span>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ 
+                                    fontWeight: "600", color: "#374151", fontSize: "0.8rem",
+                                    textTransform: "capitalize"
+                                  }}>
+                                    {criteria.criteria_type?.replace(/_/g, ' ') || 'Unknown Criteria'}
+                                  </div>
+                                  {criteria.notes && (
+                                    <div style={{ fontSize: "0.7rem", color: "#6b7280", marginTop: "1px" }}>
+                                      {criteria.notes}
+                                    </div>
+                                  )}
+                                </div>
+                                <div style={{ 
+                                  fontSize: "0.7rem", fontWeight: "700", color: "#059669",
+                                  display: "flex", alignItems: "center", gap: "3px"
+                                }}>
+                                  +{criteria.score || 0}
+                                  {criteria.is_required && (
+                                    <span style={{
+                                      background: "#fef3c7", color: "#92400e", padding: "1px 4px",
+                                      borderRadius: "6px", fontSize: "0.6rem"
+                                    }}>
+                                      REQ
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Fraud Indicators */}
+                        {approvalDetails.fraudIndicators?.length > 0 && (
+                          <div className="details-section" style={{ background: "#fef2f2", borderColor: "#fecaca" }}>
+                            <h3>🚨 Fraud Indicators ({approvalDetails.fraudIndicators.length})</h3>
+                            <div style={{ display: "grid", gap: "6px" }}>
+                              {approvalDetails.fraudIndicators.map((fraud, index) => (
+                                <div key={index} style={{
+                                  padding: "8px 12px", borderRadius: "6px", 
+                                  background: fraud.severity === 'high' ? '#fef2f2' : 
+                                            fraud.severity === 'medium' ? '#fffbeb' : '#f0f9ff',
+                                  border: "1px solid",
+                                  borderColor: fraud.severity === 'high' ? '#fecaca' : 
+                                             fraud.severity === 'medium' ? '#fed7aa' : '#bae6fd',
+                                  display: "flex", alignItems: "center", gap: "8px"
+                                }}>
+                                  <span>⚠️</span>
+                                  <div style={{ flex: 1, fontSize: "0.8rem" }}>
+                                    <strong>{fraud.detection_type}:</strong> {fraud.details}
+                                  </div>
+                                  <span style={{
+                                    fontSize: "0.65rem", fontWeight: "700", textTransform: "uppercase",
+                                    color: fraud.severity === 'high' ? '#dc2626' : 
+                                          fraud.severity === 'medium' ? '#d97706' : '#0369a1'
+                                  }}>
+                                    {fraud.severity}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="details-section">
+                        <h3>🔍 Approval Analysis</h3>
+                        <div style={{ textAlign: "center", padding: "16px", color: "#6b7280" }}>
+                          <span style={{ fontSize: "1.5rem", marginBottom: "6px", display: "block" }}>📊</span>
+                          No approval analysis available
+                          <div style={{ fontSize: "0.75rem", marginTop: "3px" }}>
+                            Click "Analyze" to calculate approval criteria
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
             <div className="details-modal-footer">
-              <button className="modal-cancel" onClick={() => setViewDetailsModal(null)}>Close</button>
+              <button className="modal-cancel" onClick={() => {setViewDetailsModal(null); setApprovalDetails(null);}}>Close</button>
               {viewDetailsModal.status === "pending" && (
                 <>
+                  {!approvalDetails && !approvalDetailsLoading && (
+                    <button className="action-btn" style={{ flex: "unset", padding: "10px 20px", background: "#667eea", color: "white" }}
+                      onClick={async () => {
+                        setApprovalDetailsLoading(true);
+                        try {
+                          const calculateRes = await fetch(`${API}/api/admin/structured-approval/user/${viewDetailsModal.id}/recalculate`, {
+                            method: 'POST',
+                            headers: { Authorization: `Bearer ${tok()}` }
+                          });
+                          if (calculateRes.ok) {
+                            const approvalRes = await fetch(`${API}/api/admin/structured-approval/user/${viewDetailsModal.id}/details`, {
+                              headers: { Authorization: `Bearer ${tok()}` }
+                            });
+                            if (approvalRes.ok) {
+                              const approvalData = await approvalRes.json();
+                              setApprovalDetails(approvalData);
+                            }
+                          }
+                        } catch (error) {
+                          console.error('Failed to calculate approval criteria:', error);
+                        } finally {
+                          setApprovalDetailsLoading(false);
+                        }
+                      }}>
+                      🔍 Analyze Criteria
+                    </button>
+                  )}
                   <button className="approve-btn" style={{ flex: "unset", padding: "10px 20px" }}
-                    onClick={() => { handleUserApprove(viewDetailsModal.id, viewDetailsModal.company_name || viewDetailsModal.organization_name); setViewDetailsModal(null); }}>✓ Approve</button>
+                    onClick={() => { handleUserApprove(viewDetailsModal.id, viewDetailsModal.company_name || viewDetailsModal.organization_name); setViewDetailsModal(null); setApprovalDetails(null); }}>✓ Approve</button>
                   <button className="reject-btn" style={{ flex: "unset", padding: "10px 20px" }}
-                    onClick={() => { setRejectModal({ id: viewDetailsModal.id, type: "user" }); setViewDetailsModal(null); setRejectReason(""); }}>✕ Reject</button>
+                    onClick={() => { setRejectModal({ id: viewDetailsModal.id, type: "user" }); setViewDetailsModal(null); setApprovalDetails(null); setRejectReason(""); }}>✕ Reject</button>
                 </>
               )}
             </div>
@@ -734,26 +979,198 @@ function Dashboard() {
                     {userDetailsModal.suspended_until && <div className="details-row"><span>⏰</span><div><div className="details-label">Suspended Until</div><div>{new Date(userDetailsModal.suspended_until).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</div></div></div>}
                   </div>
                 )}
+
+                {/* Approval Criteria Section */}
+                {approvalDetailsLoading ? (
+                  <div className="details-section">
+                    <h3>🔍 Approval Analysis</h3>
+                    <div style={{ textAlign: "center", padding: "20px", color: "#6b7280" }}>
+                      <div className="loading-spinner" style={{ width: "24px", height: "24px", margin: "0 auto 12px" }}></div>
+                      Loading approval criteria...
+                    </div>
+                  </div>
+                ) : approvalDetails ? (
+                  <>
+                    {/* Approval Score Summary */}
+                    <div className="details-section" style={{ background: "#f8fafc", borderColor: "#e2e8f0" }}>
+                      <h3>🔍 Approval Analysis</h3>
+                      <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "16px" }}>
+                        <div style={{ 
+                          width: "80px", height: "80px", borderRadius: "50%", 
+                          background: `conic-gradient(#10b981 ${(approvalDetails.score?.score_percentage || 0) * 3.6}deg, #f3f4f6 0deg)`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          position: "relative"
+                        }}>
+                          <div style={{ 
+                            width: "60px", height: "60px", borderRadius: "50%", 
+                            background: "white", display: "flex", flexDirection: "column",
+                            alignItems: "center", justifyContent: "center"
+                          }}>
+                            <div style={{ fontSize: "1.2rem", fontWeight: "800", color: "#1f2937" }}>
+                              {Math.round(approvalDetails.score?.score_percentage || 0)}%
+                            </div>
+                            <div style={{ fontSize: "0.6rem", color: "#6b7280" }}>SCORE</div>
+                          </div>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div className="details-row">
+                            <span>🎯</span>
+                            <div>
+                              <div className="details-label">Risk Level</div>
+                              <div>
+                                <span style={{
+                                  padding: "4px 12px", borderRadius: "12px", fontSize: "0.8rem", fontWeight: "600",
+                                  background: approvalDetails.score?.risk_level === 'low' ? '#dcfce7' : 
+                                            approvalDetails.score?.risk_level === 'medium' ? '#fef3c7' : '#fee2e2',
+                                  color: approvalDetails.score?.risk_level === 'low' ? '#166534' : 
+                                        approvalDetails.score?.risk_level === 'medium' ? '#92400e' : '#dc2626'
+                                }}>
+                                  {approvalDetails.score?.risk_level?.toUpperCase() || 'UNKNOWN'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="details-row">
+                            <span>🤖</span>
+                            <div>
+                              <div className="details-label">Recommendation</div>
+                              <div>
+                                <span style={{
+                                  padding: "4px 12px", borderRadius: "12px", fontSize: "0.8rem", fontWeight: "600",
+                                  background: approvalDetails.score?.recommendation === 'approve' ? '#dcfce7' : 
+                                            approvalDetails.score?.recommendation === 'reject' ? '#fee2e2' : '#e0e7ff',
+                                  color: approvalDetails.score?.recommendation === 'approve' ? '#166534' : 
+                                        approvalDetails.score?.recommendation === 'reject' ? '#dc2626' : '#3730a3'
+                                }}>
+                                  {approvalDetails.score?.recommendation?.toUpperCase() || 'REVIEW'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="details-row">
+                        <span>📊</span>
+                        <div>
+                          <div className="details-label">Score Breakdown</div>
+                          <div>{approvalDetails.score?.total_score || 0} / {approvalDetails.score?.max_possible_score || 100} points</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Validation Criteria */}
+                    <div className="details-section">
+                      <h3>✅ Validation Criteria ({approvalDetails.criteria?.length || 0})</h3>
+                      <div style={{ display: "grid", gap: "8px" }}>
+                        {approvalDetails.criteria?.map((criteria, index) => (
+                          <div key={index} style={{
+                            padding: "12px 16px", borderRadius: "8px", border: "1px solid",
+                            background: criteria.status === 'passed' ? '#f0fdf4' : '#fef2f2',
+                            borderColor: criteria.status === 'passed' ? '#bbf7d0' : '#fecaca',
+                            display: "flex", alignItems: "center", gap: "12px"
+                          }}>
+                            <span style={{ 
+                              fontSize: "1.1rem", 
+                              color: criteria.status === 'passed' ? '#16a34a' : '#dc2626' 
+                            }}>
+                              {criteria.status === 'passed' ? '✅' : '❌'}
+                            </span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ 
+                                fontWeight: "600", color: "#374151", fontSize: "0.9rem",
+                                textTransform: "capitalize"
+                              }}>
+                                {criteria.criteria_type?.replace(/_/g, ' ') || 'Unknown Criteria'}
+                              </div>
+                              {criteria.notes && (
+                                <div style={{ fontSize: "0.8rem", color: "#6b7280", marginTop: "2px" }}>
+                                  {criteria.notes}
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ 
+                              fontSize: "0.8rem", fontWeight: "700", color: "#059669",
+                              display: "flex", alignItems: "center", gap: "4px"
+                            }}>
+                              +{criteria.score || 0}
+                              {criteria.is_required && (
+                                <span style={{
+                                  background: "#fef3c7", color: "#92400e", padding: "2px 6px",
+                                  borderRadius: "8px", fontSize: "0.7rem"
+                                }}>
+                                  REQ
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Fraud Indicators */}
+                    {approvalDetails.fraudIndicators?.length > 0 && (
+                      <div className="details-section" style={{ background: "#fef2f2", borderColor: "#fecaca" }}>
+                        <h3>🚨 Fraud Indicators ({approvalDetails.fraudIndicators.length})</h3>
+                        <div style={{ display: "grid", gap: "8px" }}>
+                          {approvalDetails.fraudIndicators.map((fraud, index) => (
+                            <div key={index} style={{
+                              padding: "10px 14px", borderRadius: "6px", 
+                              background: fraud.severity === 'high' ? '#fef2f2' : 
+                                        fraud.severity === 'medium' ? '#fffbeb' : '#f0f9ff',
+                              border: "1px solid",
+                              borderColor: fraud.severity === 'high' ? '#fecaca' : 
+                                         fraud.severity === 'medium' ? '#fed7aa' : '#bae6fd',
+                              display: "flex", alignItems: "center", gap: "10px"
+                            }}>
+                              <span>⚠️</span>
+                              <div style={{ flex: 1, fontSize: "0.85rem" }}>
+                                <strong>{fraud.detection_type}:</strong> {fraud.details}
+                              </div>
+                              <span style={{
+                                fontSize: "0.7rem", fontWeight: "700", textTransform: "uppercase",
+                                color: fraud.severity === 'high' ? '#dc2626' : 
+                                      fraud.severity === 'medium' ? '#d97706' : '#0369a1'
+                              }}>
+                                {fraud.severity}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="details-section">
+                    <h3>🔍 Approval Analysis</h3>
+                    <div style={{ textAlign: "center", padding: "20px", color: "#6b7280" }}>
+                      <span style={{ fontSize: "2rem", marginBottom: "8px", display: "block" }}>📊</span>
+                      No approval analysis available
+                      <div style={{ fontSize: "0.8rem", marginTop: "4px" }}>
+                        Criteria will be calculated when user status changes to pending
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             
             <div className="details-modal-footer">
-              <button className="modal-cancel" onClick={() => setUserDetailsModal(null)}>Close</button>
+              <button className="modal-cancel" onClick={() => {setUserDetailsModal(null); setApprovalDetails(null);}}>Close</button>
               {userDetailsModal.status !== "banned" && (
                 <button className="reject-btn" style={{ flex: "unset", padding: "10px 20px" }}
-                  onClick={() => { setActionModal({ user: userDetailsModal, action: "ban" }); setUserDetailsModal(null); setActionReason(""); }}>
+                  onClick={() => { setActionModal({ user: userDetailsModal, action: "ban" }); setUserDetailsModal(null); setApprovalDetails(null); setActionReason(""); }}>
                   🚫 Ban User
                 </button>
               )}
               {userDetailsModal.status !== "suspended" && userDetailsModal.status !== "banned" && (
                 <button className="um-btn um-suspend" style={{ flex: "unset", padding: "10px 20px" }}
-                  onClick={() => { setActionModal({ user: userDetailsModal, action: "suspend" }); setUserDetailsModal(null); setActionReason(""); }}>
+                  onClick={() => { setActionModal({ user: userDetailsModal, action: "suspend" }); setUserDetailsModal(null); setApprovalDetails(null); setActionReason(""); }}>
                   ⏸ Suspend User
                 </button>
               )}
               {(userDetailsModal.status === "suspended" || userDetailsModal.status === "banned") && (
                 <button className="approve-btn" style={{ flex: "unset", padding: "10px 20px" }}
-                  onClick={() => { setActionModal({ user: userDetailsModal, action: "activate" }); setUserDetailsModal(null); setActionReason(""); }}>
+                  onClick={() => { setActionModal({ user: userDetailsModal, action: "activate" }); setUserDetailsModal(null); setApprovalDetails(null); setActionReason(""); }}>
                   🔓 Activate User
                 </button>
               )}
