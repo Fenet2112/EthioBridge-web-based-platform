@@ -90,6 +90,9 @@ app.use('/api/testimonials', testimonialRoutes);
 const contactRoutes = require('./src/routes/contact');
 app.use('/api/contact', contactRoutes);
 
+const structuredApprovalRoutes = require('./src/routes/structuredApproval');
+app.use('/api/admin/structured-approval', structuredApprovalRoutes);
+
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
 
