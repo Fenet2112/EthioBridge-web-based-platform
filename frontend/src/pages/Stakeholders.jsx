@@ -4,6 +4,7 @@ import { io } from "socket.io-client";
 import StakeholderNav from "../components/StakeholderNav";
 import SubscriptionModal from "../components/SubscriptionModal";
 import RecommendWidget from "../components/RecommendWidget";
+import { getUserLocation, addDistanceToIndustries, sortIndustriesByDistance, formatDistance } from '../utils/distance';
 import "./Stakeholders.css";
 import "./StakeholdersDarkMode.css";
 
@@ -17,6 +18,11 @@ function Stakeholders() {
   const [industries, setIndustries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Location and distance states
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [sortByDistance, setSortByDistance] = useState(false);
 
   // Messaging state
   const [messages, setMessages] = useState([]);
@@ -105,7 +111,13 @@ function Stakeholders() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Failed to fetch industries");
-        setIndustries(data);
+        
+        // Add distance information if user location is available
+        const industriesWithDistance = userLocation 
+          ? addDistanceToIndustries(data, userLocation)
+          : data;
+        
+        setIndustries(industriesWithDistance);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -114,13 +126,55 @@ function Stakeholders() {
     };
 
     fetchIndustries();
-  }, [navigate]);
+    // Try to get user location on mount
+    requestUserLocation();
+  }, [navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filteredIndustries = industries.filter((industry) =>
-    (industry.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    industry.sector?.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (locationFilter === "" || industry.location?.toLowerCase().includes(locationFilter.toLowerCase()))
-  );
+  // Request user's current location
+  const requestUserLocation = async () => {
+    setLocationLoading(true);
+    
+    try {
+      console.log('[Stakeholders] Requesting user location...');
+      const location = await getUserLocation();
+      console.log('[Stakeholders] User location obtained:', location);
+      setUserLocation(location);
+      
+      // Update industries with distance information
+      if (industries.length > 0) {
+        const industriesWithDistance = addDistanceToIndustries(industries, location);
+        setIndustries(industriesWithDistance);
+      }
+    } catch (error) {
+      console.error('[Stakeholders] Error getting user location:', error);
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+
+  // Update industries with distance when user location changes
+  useEffect(() => {
+    if (userLocation && industries.length > 0) {
+      console.log('[Stakeholders] Updating industries with distance information');
+      const industriesWithDistance = addDistanceToIndustries(industries, userLocation);
+      setIndustries(industriesWithDistance);
+    }
+  }, [userLocation]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const filteredIndustries = (() => {
+    let filtered = industries.filter((industry) =>
+      (industry.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      industry.sector?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+      (locationFilter === "" || industry.location?.toLowerCase().includes(locationFilter.toLowerCase()))
+    );
+
+    // Sort by distance if enabled and user location is available
+    if (sortByDistance && userLocation) {
+      filtered = sortIndustriesByDistance(filtered, userLocation);
+    }
+
+    return filtered;
+  })();
 
   const sendMessage = async () => {
     if (!currentMessage.trim() && !selectedFile) return;
@@ -285,8 +339,39 @@ function Stakeholders() {
               <option>Logistics</option>
             </select>
           </div>
+          
+          {/* Location Controls */}
+          <div className="filter-group">
+            <button 
+              className={`location-btn ${userLocation ? 'active' : ''} ${locationLoading ? 'loading' : ''}`}
+              onClick={requestUserLocation}
+              disabled={locationLoading}
+              title={userLocation ? 'Location enabled' : 'Get my location'}
+            >
+              <span className="material-icon">my_location</span>
+              {locationLoading ? 'Getting...' : userLocation ? 'Located' : 'My Location'}
+            </button>
+          </div>
+
+          {/* Distance Sort */}
+          {userLocation && (
+            <div className="filter-group">
+              <button 
+                className={`sort-btn ${sortByDistance ? 'active' : ''}`}
+                onClick={() => setSortByDistance(!sortByDistance)}
+                title="Sort by nearest distance"
+              >
+                <span className="material-icon">sort</span>
+                {sortByDistance ? 'By Distance' : 'Sort Distance'}
+              </button>
+            </div>
+          )}
+          
           <div className="filter-result">
-            <span>Showing {filteredIndustries.length} verified partners</span>
+            <span>
+              Showing {filteredIndustries.length} verified partners
+              {userLocation && sortByDistance && ' (sorted by distance)'}
+            </span>
           </div>
         </div>
       </section>
@@ -313,6 +398,11 @@ function Stakeholders() {
                     {industry.company_name?.charAt(0) || "?"}
                   </div>
                   <span className="badge-verified">Verified</span>
+                  {industry.distance !== null && (
+                    <div className="distance-badge">
+                      {formatDistance(industry.distance)}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="card-body">

@@ -638,3 +638,131 @@
     right: -100%;
   }
 }
+/* Location and Distance Features */
+.location-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg-secondary, #f8f9fa);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  color: var(--text-secondary, #666);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.location-btn:hover {
+  background: var(--bg-primary, #fff);
+  border-color: var(--primary-color, #0a5c2f);
+  color: var(--text-primary, #333);
+}
+
+.location-btn.active {
+  background: var(--primary-color, #0a5c2f);
+  border-color: var(--primary-color, #0a5c2f);
+  color: white;
+}
+
+.location-btn.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.location-btn.loading .material-icon {
+  animation: spin 1s linear infinite;
+}
+
+.sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg-secondary, #f8f9fa);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  color: var(--text-secondary, #666);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sort-btn:hover {
+  background: var(--bg-primary, #fff);
+  border-color: var(--primary-color, #0a5c2f);
+  color: var(--text-primary, #333);
+}
+
+.sort-btn.active {
+  background: var(--primary-color, #0a5c2f);
+  border-color: var(--primary-color, #0a5c2f);
+  color: white;
+}
+
+.distance-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--primary-color, #0a5c2f);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.card-top {
+  position: relative;
+}
+
+/* Update filter bar to handle multiple filter groups */
+.filter-content {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-result {
+  margin-left: auto;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .filter-content {
+    gap: 16px;
+  }
+  
+  .location-btn,
+  .sort-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+  
+  .distance-badge {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+  
+  .filter-result {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
+  }
+}

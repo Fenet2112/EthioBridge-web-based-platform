@@ -9,10 +9,13 @@ import {
   FaMapMarkerAlt, 
   FaFilter,
   FaSearch,
-  FaTimes
+  FaTimes,
+  FaLocationArrow,
+  FaSort
 } from 'react-icons/fa';
 import Logo from '../components/Logo';
 import DarkModeToggle from '../components/DarkModeToggle';
+import { getUserLocation, addDistanceToIndustries, sortIndustriesByDistance, formatDistance } from '../utils/distance';
 import './Explore.css';
 
 // Fix for default marker icons in React Leaflet
@@ -93,6 +96,12 @@ function Explore() {
   const [mapKey, setMapKey] = useState(0); // Key to force map remount if needed
   const mapContainerRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Location and distance states
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState(null);
+  const [sortByDistance, setSortByDistance] = useState(false);
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -118,6 +127,8 @@ function Explore() {
   useEffect(() => {
     console.log('[Explore] Component mounted, fetching industries...');
     fetchIndustries();
+    // Try to get user location on mount
+    requestUserLocation();
   }, []);
 
   const fetchIndustries = async () => {
@@ -156,8 +167,13 @@ function Explore() {
         longitude: industry.longitude || (38.7 + (Math.random() * 2))
       }));
       
-      setIndustries(industriesWithCoords);
-      setFilteredIndustries(industriesWithCoords);
+      // Add distance information if user location is available
+      const industriesWithDistance = userLocation 
+        ? addDistanceToIndustries(industriesWithCoords, userLocation)
+        : industriesWithCoords;
+      
+      setIndustries(industriesWithDistance);
+      setFilteredIndustries(industriesWithDistance);
       setLoading(false);
       console.log('[Explore] Industries loaded successfully');
     } catch (error) {
@@ -180,10 +196,46 @@ function Explore() {
     }
   };
 
-  // Filter industries
+  // Request user's current location
+  const requestUserLocation = async () => {
+    setLocationLoading(true);
+    setLocationError(null);
+    
+    try {
+      console.log('[Explore] Requesting user location...');
+      const location = await getUserLocation();
+      console.log('[Explore] User location obtained:', location);
+      setUserLocation(location);
+      
+      // Update industries with distance information
+      if (industries.length > 0) {
+        const industriesWithDistance = addDistanceToIndustries(industries, location);
+        setIndustries(industriesWithDistance);
+        setFilteredIndustries(industriesWithDistance);
+      }
+    } catch (error) {
+      console.error('[Explore] Error getting user location:', error);
+      setLocationError(error.message);
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+
+  // Update industries with distance when user location changes
   useEffect(() => {
-    console.log('[Explore] Filtering industries - Sector:', selectedSector, 'Query:', searchQuery);
-    let filtered = industries;
+    if (userLocation && industries.length > 0) {
+      console.log('[Explore] Updating industries with distance information');
+      const industriesWithDistance = addDistanceToIndustries(industries, userLocation);
+      setIndustries(industriesWithDistance);
+      // Re-apply current filters
+      applyFilters(industriesWithDistance);
+    }
+  }, [userLocation]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Apply filters and sorting
+  const applyFilters = (industriesToFilter = industries) => {
+    console.log('[Explore] Applying filters - Sector:', selectedSector, 'Query:', searchQuery, 'Sort by distance:', sortByDistance);
+    let filtered = industriesToFilter;
 
     // Filter by sector
     if (selectedSector !== 'all') {
@@ -199,9 +251,19 @@ function Explore() {
       );
     }
 
+    // Sort by distance if enabled and user location is available
+    if (sortByDistance && userLocation) {
+      filtered = sortIndustriesByDistance(filtered, userLocation);
+    }
+
     console.log('[Explore] Filtered to', filtered.length, 'industries');
     setFilteredIndustries(filtered);
-  }, [selectedSector, searchQuery, industries]);
+  };
+
+  // Filter industries when filters change
+  useEffect(() => {
+    applyFilters();
+  }, [selectedSector, searchQuery, sortByDistance, industries]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Get unique sectors
   const sectors = ['all', ...new Set(industries.map(ind => ind.sector).filter(Boolean))];
@@ -250,13 +312,47 @@ function Explore() {
             )}
           </div>
           
-          <button 
-            className="filters-toggle-btn"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <FaFilter /> Filters
-          </button>
+          <div className="explore-actions">
+            {/* Location Button */}
+            <button 
+              className={`location-btn ${userLocation ? 'active' : ''} ${locationLoading ? 'loading' : ''}`}
+              onClick={requestUserLocation}
+              disabled={locationLoading}
+              title={userLocation ? 'Location enabled' : 'Get my location'}
+            >
+              <FaLocationArrow />
+              {locationLoading ? 'Getting...' : userLocation ? 'Located' : 'My Location'}
+            </button>
+
+            {/* Distance Sort Button */}
+            {userLocation && (
+              <button 
+                className={`sort-btn ${sortByDistance ? 'active' : ''}`}
+                onClick={() => setSortByDistance(!sortByDistance)}
+                title="Sort by nearest distance"
+              >
+                <FaSort />
+                {sortByDistance ? 'By Distance' : 'Sort Distance'}
+              </button>
+            )}
+
+            <button 
+              className="filters-toggle-btn"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <FaFilter /> Filters
+            </button>
+          </div>
         </div>
+
+        {/* Location Error */}
+        {locationError && (
+          <div className="location-error">
+            <span>📍</span>
+            <span>{locationError}</span>
+            <button onClick={requestUserLocation}>Try Again</button>
+          </div>
+        )}
 
         {showFilters && (
           <div className="filters-dropdown">
@@ -275,6 +371,7 @@ function Explore() {
             </div>
             <div className="filter-stats">
               Showing {filteredIndustries.length} of {industries.length} industries
+              {userLocation && sortByDistance && ' (sorted by distance)'}
             </div>
           </div>
         )}
@@ -357,6 +454,11 @@ function Explore() {
                         <p className="popup-location">
                           <FaMapMarkerAlt /> {industry.location}
                         </p>
+                        {industry.distance !== null && (
+                          <p className="popup-distance">
+                            📍 {formatDistance(industry.distance)}
+                          </p>
+                        )}
                         {industry.description && (
                           <p className="popup-description">
                             {industry.description.substring(0, 100)}...
@@ -410,8 +512,63 @@ function Explore() {
             <span className="info-number">11</span>
             <span className="info-label">Regions</span>
           </div>
+          {userLocation && (
+            <>
+              <div className="info-divider"></div>
+              <div className="info-stat">
+                <span className="info-number">📍</span>
+                <span className="info-label">Location Enabled</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
+
+      {/* Industry List View */}
+      {filteredIndustries.length > 0 && (
+        <div className="explore-industry-list">
+          <div className="industry-list-header">
+            <h2>
+              <FaIndustry /> Industries 
+              {userLocation && sortByDistance && ' (Nearest First)'}
+            </h2>
+            <p>{filteredIndustries.length} industries found</p>
+          </div>
+          <div className="industry-grid">
+            {filteredIndustries.map((industry) => (
+              <div key={industry.id} className="industry-card" onClick={() => navigate(`/industry/${industry.id}`)}>
+                <div className="industry-card-header">
+                  <div className="industry-icon">
+                    <FaIndustry />
+                  </div>
+                  <div className="industry-info">
+                    <h3>{industry.company_name}</h3>
+                    <p className="industry-sector">{industry.sector}</p>
+                  </div>
+                  {industry.distance !== null && (
+                    <div className="industry-distance">
+                      {formatDistance(industry.distance)}
+                    </div>
+                  )}
+                </div>
+                <div className="industry-card-body">
+                  <p className="industry-location">
+                    <FaMapMarkerAlt /> {industry.location}
+                  </p>
+                  {industry.description && (
+                    <p className="industry-description">
+                      {industry.description.substring(0, 120)}...
+                    </p>
+                  )}
+                </div>
+                <div className="industry-card-footer">
+                  <span className="view-products-link">View Products →</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
