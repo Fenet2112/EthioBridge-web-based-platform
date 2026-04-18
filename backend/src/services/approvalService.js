@@ -79,7 +79,7 @@ class ApprovalService {
    */
   static async getPendingApprovals(entityType) {
     try {
-      let query, params = [entityType];
+      let query, params = [];
       
       if (entityType === 'user') {
         query = `
