@@ -205,13 +205,22 @@ router.post("/profile/industry", async (req, res) => {
     // Don't reset approved users back to pending when they edit their profile
     const currentStatus = userResult.rows[0].status;
     if (currentStatus === 'incomplete') {
+      // Run through the approval workflow
+      const { processIndustryApproval } = require('../services/approvalWorkflow');
       await pool.query("UPDATE users SET status = 'pending' WHERE id = $1", [user_id]);
+      const { newStatus, reason } = await processIndustryApproval(parseInt(user_id));
+      console.log(`[Auth] Industry ${user_id} workflow result: ${newStatus} — ${reason}`);
+      const finalStatus = newStatus || 'pending';
+      const msg = finalStatus === 'approved'
+        ? 'Industry profile approved automatically.'
+        : finalStatus === 'rejected'
+        ? `Industry profile rejected: ${reason}`
+        : 'Industry profile submitted. Awaiting admin approval.';
+      return res.json({ message: msg, status: finalStatus, reason });
     }
 
     res.json({ 
-      message: currentStatus === 'incomplete' 
-        ? "Industry profile submitted. Awaiting admin approval." 
-        : "Industry profile updated successfully."
+      message: "Industry profile updated successfully."
     });
   } catch (error) {
     console.error("Industry profile error:", error);
@@ -261,13 +270,22 @@ router.post("/profile/stakeholder", uploadStakeholderID.single("id_document"), a
     // Don't reset approved users back to pending when they edit their profile
     const currentStatus = userResult.rows[0].status;
     if (currentStatus === 'incomplete') {
+      // Run through the approval workflow
+      const { processStakeholderApproval } = require('../services/approvalWorkflow');
       await pool.query("UPDATE users SET status = 'pending' WHERE id = $1", [user_id]);
+      const { newStatus, reason } = await processStakeholderApproval(parseInt(user_id));
+      console.log(`[Auth] Stakeholder ${user_id} workflow result: ${newStatus} — ${reason}`);
+      const finalStatus = newStatus || 'pending';
+      const msg = finalStatus === 'approved'
+        ? 'Stakeholder profile approved automatically.'
+        : finalStatus === 'rejected'
+        ? `Stakeholder profile rejected: ${reason}`
+        : 'Stakeholder profile submitted. Awaiting admin approval.';
+      return res.json({ message: msg, status: finalStatus, reason });
     }
 
     res.json({ 
-      message: currentStatus === 'incomplete' 
-        ? "Stakeholder profile submitted. Awaiting admin approval." 
-        : "Stakeholder profile updated successfully."
+      message: "Stakeholder profile updated successfully."
     });
   } catch (error) {
     console.error("Stakeholder profile CRASH:", error.message);

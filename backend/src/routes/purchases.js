@@ -184,6 +184,17 @@ router.post(
         requires_verification: requiresVerification,
       });
 
+      // ── Run approval workflow for non-verification requests ──
+      if (!requiresVerification) {
+        try {
+          const { processPurchaseRequestApproval } = require('../services/approvalWorkflow');
+          const { newStatus, reason } = await processPurchaseRequestApproval(result.rows[0].id);
+          console.log(`[Purchases] Workflow result for PR ${result.rows[0].id}: ${newStatus} — ${reason}`);
+        } catch (wfErr) {
+          console.error('[Purchases] Workflow error (non-fatal):', wfErr.message);
+        }
+      }
+
       // ── Notify the industry about the new purchase request ──
       try {
         const industryUserRes = await pool.query(

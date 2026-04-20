@@ -810,6 +810,9 @@ router.put('/settings/workflows/:type', requireAdminAuth, async (req, res) => {
       return res.status(404).json({ message: 'Workflow type not found' });
     }
 
+    // Invalidate the in-memory workflow cache so new mode takes effect immediately
+    try { require('../services/approvalWorkflow').invalidateCache(); } catch {}
+
     res.json({
       message: 'Workflow updated successfully',
       workflow: result.rows[0]
@@ -863,6 +866,45 @@ router.get('/settings/profile', requireAdminAuth, async (req, res) => {
   } catch (error) {
     console.error('Get admin profile error:', error);
     res.status(500).json({ message: 'Failed to get profile' });
+  }
+});
+
+// ========================================
+// APPROVAL LOGS
+// ========================================
+router.get('/approval-logs', requireAdminAuth, async (req, res) => {
+  try {
+    const { entityType, decision, limit = '50' } = req.query;
+    let query = `
+      SELECT al.*,
+        CASE
+          WHEN al.entity_type IN ('industry','stakeholder') THEN
+            COALESCE(
+              (SELECT i.company_name FROM industries i JOIN users u ON u.id = i.user_id WHERE u.id = al.entity_id LIMIT 1),
+              (SELECT s.organization_name FROM stakeholders s JOIN users u ON u.id = s.user_id WHERE u.id = al.entity_id LIMIT 1),
+              (SELECT u.email FROM users u WHERE u.id = al.entity_id LIMIT 1)
+            )
+          WHEN al.entity_type = 'purchase_request' THEN
+            CONCAT('PR #', al.entity_id, ' — ',
+              (SELECT p.name FROM purchase_requests pr JOIN products p ON p.id = pr.product_id WHERE pr.id = al.entity_id LIMIT 1)
+            )
+          ELSE CONCAT(al.entity_type, ' #', al.entity_id)
+        END AS entity_name
+      FROM approval_logs al
+    `;
+    const params = [];
+    const conditions = [];
+    let n = 1;
+    if (entityType) { conditions.push(`al.entity_type = $${n++}`); params.push(entityType); }
+    if (decision)   { conditions.push(`al.decision = $${n++}`);    params.push(decision); }
+    if (conditions.length) query += ` WHERE ${conditions.join(' AND ')}`;
+    query += ` ORDER BY al.created_at DESC LIMIT $${n}`;
+    params.push(parseInt(limit));
+    const result = await pool.query(query, params);
+    res.json({ logs: result.rows });
+  } catch (err) {
+    console.error('[Admin] approval-logs error:', err.message);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
