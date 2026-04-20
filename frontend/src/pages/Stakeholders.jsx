@@ -112,10 +112,13 @@ function Stakeholders() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Failed to fetch industries");
         
+        // Handle both array response and paginated {industries:[]} response
+        const list = Array.isArray(data) ? data : (data.industries || []);
+
         // Add distance information if user location is available
         const industriesWithDistance = userLocation 
-          ? addDistanceToIndustries(data, userLocation)
-          : data;
+          ? addDistanceToIndustries(list, userLocation)
+          : list;
         
         setIndustries(industriesWithDistance);
       } catch (err) {
