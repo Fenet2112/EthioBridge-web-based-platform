@@ -93,6 +93,9 @@ app.use('/api/contact', contactRoutes);
 const notificationRoutes = require('./src/routes/notifications');
 app.use('/api/industry/notifications', notificationRoutes);
 
+const statsRoutes = require('./src/routes/stats');
+app.use('/api/stats', statsRoutes);
+
 const structuredApprovalRoutes = require('./src/routes/structuredApproval');
 app.use('/api/admin/structured-approval', structuredApprovalRoutes);
 
