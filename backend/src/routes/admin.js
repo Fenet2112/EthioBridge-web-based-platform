@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const { sendApprovalEmail, sendRejectionEmail, sendSuspensionEmail } = require('../utils/sendEmail');
+const { createNotification } = require('../utils/createNotification');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
@@ -34,7 +35,7 @@ const getAdminAuth = async () => {
   return adminCredentials;
 };
 
-// Admin login middleware - verify admin token
+// Admin login middleware
 const requireAdminAuth = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.startsWith("Bearer ")
@@ -48,11 +49,11 @@ const requireAdminAuth = async (req, res, next) => {
   try {
     const adminAuth = await getAdminAuth();
     const decoded = jwt.verify(token, adminAuth.secret);
-    
+
     if (decoded.role !== 'admin') {
       return res.status(403).json({ message: "Access denied. Admin role required." });
     }
-    
+
     req.admin = decoded;
     next();
   } catch (err) {
@@ -60,7 +61,9 @@ const requireAdminAuth = async (req, res, next) => {
   }
 };
 
-// ── ADMIN LOGIN ──
+// ========================================
+// ADMIN LOGIN
+// ========================================
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -70,7 +73,7 @@ router.post('/login', async (req, res) => {
 
   try {
     const creds = getAdminCredentials();
-    
+
     if (email !== creds.adminEmail) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -95,11 +98,171 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ── GET ALL PENDING USERS WITH PROFILE DATA ──
+// ========================================
+// GET ALL USERS WITH ADVANCED FILTERING (Admin)
+// ========================================
+router.get('/users/all', requireAdminAuth, async (req, res) => {
+  try {
+    const {
+      role,
+      status,
+      search,
+      sortBy = "created_at",
+      sortOrder = "DESC",
+      page = "1",
+      limit = "20",
+      startDate,
+      endDate,
+      minLoginCount,
+      maxLoginCount,
+      minProducts,
+      maxProducts,
+      minRequests,
+      maxRequests
+    } = req.query;
+
+    let query = `
+      SELECT
+        u.id, u.email, u.role, u.status, u.email_verified, u.created_at,
+        u.last_login_at, u.login_count,
+        COALESCE(i.company_name, s.organization_name) AS display_name,
+        i.sector,
+        s.organization_type,
+        COUNT(DISTINCT p.id) AS product_count,
+        COUNT(DISTINCT pr.id) AS request_count
+      FROM users u
+      LEFT JOIN industries i ON i.user_id = u.id
+      LEFT JOIN stakeholders s ON s.user_id = u.id
+      LEFT JOIN products p ON p.industry_id = i.id
+      LEFT JOIN purchase_requests pr ON pr.stakeholder_id = s.id
+    `;
+
+    const queryParams = [];
+    let paramCount = 1;
+    let whereAdded = false;
+
+    // Add WHERE clause only if needed
+    const conditions = [];
+
+    if (role) {
+      conditions.push(`u.role = $${paramCount++}`);
+      queryParams.push(role);
+    }
+
+    if (status) {
+      conditions.push(`u.status = $${paramCount++}`);
+      queryParams.push(status);
+    }
+
+    if (search) {
+      conditions.push(`(
+        LOWER(u.email) LIKE LOWER($${paramCount++}) OR
+        LOWER(COALESCE(i.company_name, '')) LIKE LOWER($${paramCount++}) OR
+        LOWER(COALESCE(s.organization_name, '')) LIKE LOWER($${paramCount++})
+      )`);
+      const searchTerm = `%${search}%`;
+      queryParams.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    if (startDate) {
+      conditions.push(`u.created_at >= $${paramCount++}`);
+      queryParams.push(startDate);
+    }
+
+    if (endDate) {
+      conditions.push(`u.created_at <= $${paramCount++}`);
+      queryParams.push(endDate);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(' AND ')}`;
+      whereAdded = true;
+    }
+
+    query += ` GROUP BY u.id, u.email, u.role, u.status, u.email_verified, u.created_at, u.last_login_at, u.login_count, i.company_name, s.organization_name, i.sector, s.organization_type`;
+
+    // HAVING conditions for aggregate counts
+    const havingConditions = [];
+    if (minProducts) {
+      havingConditions.push(`COUNT(DISTINCT p.id) >= ${paramCount++}`);
+      queryParams.push(parseInt(minProducts));
+    }
+    if (maxProducts) {
+      havingConditions.push(`COUNT(DISTINCT p.id) <= ${paramCount++}`);
+      queryParams.push(parseInt(maxProducts));
+    }
+    if (minRequests) {
+      havingConditions.push(`COUNT(DISTINCT pr.id) >= ${paramCount++}`);
+      queryParams.push(parseInt(minRequests));
+    }
+    if (maxRequests) {
+      havingConditions.push(`COUNT(DISTINCT pr.id) <= ${paramCount++}`);
+      queryParams.push(parseInt(maxRequests));
+    }
+    if (havingConditions.length > 0) {
+      query += ` HAVING ${havingConditions.join(' AND ')}`;
+    }
+
+    // Sorting
+    const allowedSortColumns = [
+      "u.created_at", "u.email", "u.role", "u.status",
+      "display_name", "product_count", "request_count", "login_count"
+    ];
+    const sortColumn = allowedSortColumns.includes(sortBy) ? sortBy : "u.created_at";
+    const sortDirection = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
+    query += ` ORDER BY ${sortColumn} ${sortDirection}`;
+
+    // Get total count
+    const countQuery = query.replace(
+      /SELECT[\s\S]*?FROM/s,
+      "SELECT COUNT(*) FROM"
+    ).split("ORDER BY")[0];
+
+    const totalResult = await pool.query(countQuery, queryParams);
+    const total = parseInt(totalResult.rows[0].count);
+
+    // Pagination
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, parseInt(limit) || 20);
+    const offset = (pageNum - 1) * limitNum;
+
+    query += ` LIMIT $${paramCount++} OFFSET $${paramCount++}`;
+    queryParams.push(limitNum, offset);
+
+    const result = await pool.query(query, queryParams);
+
+    res.json({
+      users: result.rows,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        hasNext: pageNum * limitNum < total,
+        hasPrev: pageNum > 1
+      }
+    });
+  } catch (error) {
+    console.error("[ADMIN] Get users error:", error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+// ========================================
+// GET PENDING USERS WITH FILTERING
+// ========================================
 router.get('/pending', requireAdminAuth, async (req, res) => {
   try {
-    console.log('[ADMIN] Fetching pending users...');
-    const result = await pool.query(`
+    const {
+      role,
+      search,
+      sortBy = "created_at",
+      sortOrder = "DESC",
+      page = "1",
+      limit = "20"
+    } = req.query;
+
+    let query = `
       SELECT
         u.id, u.email, u.role, u.status, u.created_at,
         i.company_name, i.sector, i.location AS industry_location,
@@ -112,41 +275,105 @@ router.get('/pending', requireAdminAuth, async (req, res) => {
       LEFT JOIN industries i ON i.user_id = u.id
       LEFT JOIN stakeholders s ON s.user_id = u.id
       WHERE u.status = 'pending'
-      ORDER BY u.created_at DESC
-    `);
-    console.log(`[ADMIN] Found ${result.rows.length} pending users`);
-    res.json(result.rows);
+    `;
+
+    const queryParams = [];
+    let paramCount = 1;
+
+    if (role) {
+      query += ` AND u.role = $${paramCount++}`;
+      queryParams.push(role);
+    }
+
+    if (search) {
+      query += ` AND (
+        LOWER(u.email) LIKE LOWER($${paramCount++}) OR
+        LOWER(COALESCE(i.company_name, '')) LIKE LOWER($${paramCount++}) OR
+        LOWER(COALESCE(s.organization_name, '')) LIKE LOWER($${paramCount++})
+      )`;
+      const searchTerm = `%${search}%`;
+      queryParams.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    // Sorting
+    const allowedSortColumns = ["u.created_at", "u.email", "u.role"];
+    const sortColumn = allowedSortColumns.includes(sortBy) ? sortBy : "u.created_at";
+    const sortDirection = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
+    query += ` ORDER BY ${sortColumn} ${sortDirection}`;
+
+    // Get total count
+    const countQuery = query.replace(
+      /SELECT[\s\S]*?FROM/s,
+      "SELECT COUNT(*) FROM"
+    ).split("ORDER BY")[0];
+
+    const totalResult = await pool.query(countQuery, queryParams);
+    const total = parseInt(totalResult.rows[0].count);
+
+    // Pagination
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, parseInt(limit) || 20);
+    const offset = (pageNum - 1) * limitNum;
+
+    query += ` LIMIT $${paramCount++} OFFSET $${paramCount++}`;
+    queryParams.push(limitNum, offset);
+
+    const result = await pool.query(query, queryParams);
+
+    res.json({
+      users: result.rows,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        hasNext: pageNum * limitNum < total,
+        hasPrev: pageNum > 1
+      }
+    });
   } catch (error) {
     console.error("[ADMIN] Get pending error:", error.message);
-    console.error("[ADMIN] Error details:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
-// ── GET ALL USERS (for admin overview) ──
-router.get('/users', requireAdminAuth, async (req, res) => {
+// ========================================
+// GET SINGLE USER DETAILS
+// ========================================
+router.get('/users/:id/details', requireAdminAuth, async (req, res) => {
+  const { id } = req.params;
   try {
-    console.log('[ADMIN] Fetching all users...');
     const result = await pool.query(`
       SELECT
-        u.id, u.email, u.role, u.status, u.created_at,
-        i.company_name, i.sector,
-        s.organization_name, s.organization_type
+        u.id, u.email, u.role, u.status, u.email_verified, u.created_at,
+        u.last_login_at, u.login_count,
+        u.ban_reason, u.suspended_until,
+        i.company_name, i.sector, i.location AS industry_location,
+        i.description AS industry_description, i.phone AS industry_phone,
+        i.website, i.established_year,
+        s.organization_name, s.organization_type, s.location AS stakeholder_location,
+        s.description AS stakeholder_description, s.phone AS stakeholder_phone,
+        s.contact_person
       FROM users u
       LEFT JOIN industries i ON i.user_id = u.id
       LEFT JOIN stakeholders s ON s.user_id = u.id
-      ORDER BY u.created_at DESC
-    `);
-    console.log(`[ADMIN] Found ${result.rows.length} total users`);
-    res.json(result.rows);
-  } catch (error) {
-    console.error("[ADMIN] Get users error:", error.message);
-    console.error("[ADMIN] Error details:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+      WHERE u.id = $1
+    `, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("[ADMIN] Get user details error:", err.message);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
-// ── APPROVE USER ──
+// ========================================
+// APPROVE USER
+// ========================================
 router.patch('/users/:id/approve', requireAdminAuth, async (req, res) => {
   const { id } = req.params;
   try {
@@ -175,6 +402,14 @@ router.patch('/users/:id/approve', requireAdminAuth, async (req, res) => {
       console.error("Email send failed (non-fatal):", emailErr.message);
     }
 
+    // Notify the industry/stakeholder user
+    await createNotification(
+      pool, parseInt(id),
+      'Account Approved',
+      `Congratulations! Your account has been approved. You now have full access to all platform features.`,
+      'approval'
+    );
+
     res.json({ message: "User approved successfully", user });
   } catch (error) {
     console.error("Approve error:", error);
@@ -182,7 +417,9 @@ router.patch('/users/:id/approve', requireAdminAuth, async (req, res) => {
   }
 });
 
-// ── REJECT USER ──
+// ========================================
+// REJECT USER
+// ========================================
 router.patch('/users/:id/reject', requireAdminAuth, async (req, res) => {
   const { id } = req.params;
   const { rejectionReason } = req.body;
@@ -216,6 +453,14 @@ router.patch('/users/:id/reject', requireAdminAuth, async (req, res) => {
       console.error("Email send failed (non-fatal):", emailErr.message);
     }
 
+    // Notify the user about rejection
+    await createNotification(
+      pool, parseInt(id),
+      'Account Application Rejected',
+      `Your account application has been reviewed and rejected. Reason: ${rejectionReason}. Please contact support if you have questions.`,
+      'approval'
+    );
+
     res.json({ message: "User rejected", user });
   } catch (error) {
     console.error("Reject error:", error);
@@ -223,70 +468,14 @@ router.patch('/users/:id/reject', requireAdminAuth, async (req, res) => {
   }
 });
 
-// ── GET SINGLE USER DETAILS ──
-// IMPORTANT: This route must come BEFORE /users/all to avoid route conflicts
-router.get('/users/:id/details', requireAdminAuth, async (req, res) => {
-  const { id } = req.params;
-  try {
-    console.log(`[ADMIN] Fetching details for user ${id}...`);
-    const result = await pool.query(`
-      SELECT
-        u.id, u.email, u.role, u.status, u.email_verified, u.created_at,
-        u.ban_reason, u.suspended_until,
-        i.company_name, i.sector, i.location AS industry_location,
-        i.description AS industry_description, i.phone AS industry_phone,
-        i.website, i.established_year,
-        s.organization_name, s.organization_type, s.location AS stakeholder_location,
-        s.description AS stakeholder_description, s.phone AS stakeholder_phone,
-        s.contact_person
-      FROM users u
-      LEFT JOIN industries i ON i.user_id = u.id
-      LEFT JOIN stakeholders s ON s.user_id = u.id
-      WHERE u.id = $1
-    `, [id]);
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    
-    console.log(`[ADMIN] User details fetched successfully`);
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error("[ADMIN] Get user details error:", err.message);
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
-
-// ── GET ALL USERS — full management view ──
-router.get('/users/all', requireAdminAuth, async (req, res) => {
-  try {
-    console.log('[ADMIN] Fetching all users for management...');
-    const result = await pool.query(`
-      SELECT
-        u.id, u.email, u.role, u.status, u.email_verified, u.created_at,
-        COALESCE(i.company_name, s.organization_name) AS display_name,
-        i.sector,
-        s.organization_type
-      FROM users u
-      LEFT JOIN industries  i ON i.user_id = u.id
-      LEFT JOIN stakeholders s ON s.user_id = u.id
-      ORDER BY u.created_at DESC
-    `);
-    console.log(`[ADMIN] Found ${result.rows.length} users for management`);
-    res.json(result.rows);
-  } catch (err) {
-    console.error("[ADMIN] Get all users error:", err.message);
-    console.error("[ADMIN] Error details:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
-
-// ── UPDATE USER STATUS (ban / suspend / activate) ──
+// ========================================
+// UPDATE USER STATUS (ban / suspend / activate)
+// ========================================
 router.patch('/users/:id/status', requireAdminAuth, async (req, res) => {
   const { id } = req.params;
   const { status, ban_reason, suspended_until } = req.body;
 
-  const allowed = ['approved', 'suspended', 'banned', 'rejected'];
+  const allowed = ['approved', 'suspended', 'banned', 'rejected', 'incomplete', 'pending'];
   if (!allowed.includes(status)) {
     return res.status(400).json({ message: `status must be one of: ${allowed.join(', ')}` });
   }
@@ -318,30 +507,117 @@ router.patch('/users/:id/status', requireAdminAuth, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+// ========================================
+// GET ALL INDUSTRIES (Admin) - with filtering
+// ========================================
 router.get('/industries', requireAdminAuth, async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT i.id, i.company_name, i.sector, i.location, i.phone, i.website,
-             i.established_year, i.description, i.created_at,
-             u.email, u.status,
-             COUNT(DISTINCT p.id) AS product_count,
-             COUNT(DISTINCT pr.id) AS request_count
+    const {
+      sector,
+      location,
+      minProducts,
+      maxProducts,
+      search,
+      sortBy = "created_at",
+      sortOrder = "DESC",
+      page = "1",
+      limit = "20"
+    } = req.query;
+
+    let query = `
+      SELECT
+        i.id, i.company_name, i.sector, i.location, i.phone, i.website,
+        i.established_year, i.description, i.created_at,
+        u.email, u.status,
+        COUNT(DISTINCT p.id) AS product_count,
+        COUNT(DISTINCT pr.id) AS request_count
       FROM industries i
       JOIN users u ON u.id = i.user_id
       LEFT JOIN products p ON p.industry_id = i.id
       LEFT JOIN purchase_requests pr ON pr.industry_id = i.id
       WHERE u.status = 'approved'
-      GROUP BY i.id, u.email, u.status
-      ORDER BY i.created_at DESC
-    `);
-    res.json(result.rows);
+    `;
+
+    const queryParams = [];
+    let paramCount = 1;
+
+    if (sector) {
+      query += ` AND LOWER(i.sector) LIKE LOWER($${paramCount++})`;
+      queryParams.push(`%${sector}%`);
+    }
+
+    if (location) {
+      query += ` AND LOWER(i.location) LIKE LOWER($${paramCount++})`;
+      queryParams.push(`%${location}%`);
+    }
+
+    if (search) {
+      query += ` AND (
+        LOWER(i.company_name) LIKE LOWER($${paramCount++}) OR
+        LOWER(i.description) LIKE LOWER($${paramCount++})
+      )`;
+      const searchTerm = `%${search}%`;
+      queryParams.push(searchTerm, searchTerm);
+    }
+
+    query += ` GROUP BY i.id, u.email, u.status`;
+
+    // Having clause for product count filters
+    if (minProducts) {
+      query += ` HAVING COUNT(DISTINCT p.id) >= $${paramCount++}`;
+      queryParams.push(parseInt(minProducts));
+    }
+    if (maxProducts) {
+      query += ` HAVING COUNT(DISTINCT p.id) <= $${paramCount++}`;
+      queryParams.push(parseInt(maxProducts));
+    }
+
+    // Sorting
+    const allowedSortColumns = ["i.created_at", "i.company_name", "i.sector", "product_count", "request_count"];
+    const sortColumn = allowedSortColumns.includes(sortBy) ? sortBy : "i.created_at";
+    const sortDirection = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
+    query += ` ORDER BY ${sortColumn} ${sortDirection}`;
+
+    // Get total count
+    const countQuery = query.replace(
+      /SELECT[\s\S]*?FROM/s,
+      "SELECT COUNT(*) FROM"
+    ).split("ORDER BY")[0];
+
+    const totalResult = await pool.query(countQuery, queryParams);
+    const total = parseInt(totalResult.rows[0].count);
+
+    // Pagination
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, parseInt(limit) || 20);
+    const offset = (pageNum - 1) * limitNum;
+
+    query += ` LIMIT $${paramCount++} OFFSET $${paramCount++}`;
+    queryParams.push(limitNum, offset);
+
+    const result = await pool.query(query, queryParams);
+
+    res.json({
+      industries: result.rows,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        hasNext: pageNum * limitNum < total,
+        hasPrev: pageNum > 1
+      }
+    });
   } catch (err) {
     console.error("Admin get industries error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// ── DELETE INDUSTRY ──
+// ========================================
+// DELETE INDUSTRY
+// ========================================
 router.delete('/industries/:id', requireAdminAuth, async (req, res) => {
   const { id } = req.params;
   try {
@@ -353,30 +629,116 @@ router.delete('/industries/:id', requireAdminAuth, async (req, res) => {
   }
 });
 
-// ── GET ALL PRODUCTS (admin) ──
+// ========================================
+// GET ALL PRODUCTS (admin) - with filtering
+// ========================================
 router.get('/products', requireAdminAuth, async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT p.id, p.name, p.description, p.price, p.unit, p.category,
-             p.is_available, p.image_url, p.created_at,
-             i.company_name AS industry_name, i.sector,
-             COUNT(pr.id) AS request_count
+    const {
+      category,
+      is_available,
+      sector,
+      location,
+      search,
+      sortBy = "created_at",
+      sortOrder = "DESC",
+      page = "1",
+      limit = "20"
+    } = req.query;
+
+    let query = `
+      SELECT
+        p.id, p.name, p.description, p.price, p.unit, p.category,
+        p.is_available, p.image_url, p.created_at,
+        i.company_name AS industry_name, i.sector,
+        COUNT(pr.id) AS request_count
       FROM products p
       JOIN industries i ON i.id = p.industry_id
       JOIN users u ON u.id = i.user_id
       LEFT JOIN purchase_requests pr ON pr.product_id = p.id
       WHERE u.status = 'approved'
-      GROUP BY p.id, i.company_name, i.sector
-      ORDER BY request_count DESC, p.created_at DESC
-    `);
-    res.json(result.rows);
+    `;
+
+    const queryParams = [];
+    let paramCount = 1;
+
+    if (category) {
+      query += ` AND LOWER(p.category) LIKE LOWER($${paramCount++})`;
+      queryParams.push(`%${category}%`);
+    }
+
+    if (is_available !== undefined) {
+      query += ` AND p.is_available = $${paramCount++}`;
+      queryParams.push(is_available === "true" || is_available === true);
+    }
+
+    if (sector) {
+      query += ` AND LOWER(i.sector) LIKE LOWER($${paramCount++})`;
+      queryParams.push(`%${sector}%`);
+    }
+
+    if (location) {
+      query += ` AND LOWER(i.location) LIKE LOWER($${paramCount++})`;
+      queryParams.push(`%${location}%`);
+    }
+
+    if (search) {
+      query += ` AND (
+        LOWER(p.name) LIKE LOWER($${paramCount++}) OR
+        LOWER(p.description) LIKE LOWER($${paramCount++}) OR
+        LOWER(i.company_name) LIKE LOWER($${paramCount++})
+      )`;
+      const searchTerm = `%${search}%`;
+      queryParams.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    query += ` GROUP BY p.id, i.company_name, i.sector`;
+
+    // Sorting
+    const allowedSortColumns = ["p.created_at", "p.name", "p.price", "p.category", "request_count"];
+    const sortColumn = allowedSortColumns.includes(sortBy) ? sortBy : "p.created_at";
+    const sortDirection = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
+    query += ` ORDER BY ${sortColumn} ${sortDirection}`;
+
+    // Get total count
+    const countQuery = query.replace(
+      /SELECT[\s\S]*?FROM/s,
+      "SELECT COUNT(*) FROM"
+    ).split("ORDER BY")[0];
+
+    const totalResult = await pool.query(countQuery, queryParams);
+    const total = parseInt(totalResult.rows[0].count);
+
+    // Pagination
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, parseInt(limit) || 20);
+    const offset = (pageNum - 1) * limitNum;
+
+    query += ` LIMIT $${paramCount++} OFFSET $${paramCount++}`;
+    queryParams.push(limitNum, offset);
+
+    const result = await pool.query(query, queryParams);
+
+    res.json({
+      products: result.rows,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        hasNext: pageNum * limitNum < total,
+        hasPrev: pageNum > 1
+      }
+    });
   } catch (err) {
     console.error("Admin get products error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// ── DELETE PRODUCT ──
+// ========================================
+// DELETE PRODUCT
+// ========================================
 router.delete('/products/:id', requireAdminAuth, async (req, res) => {
   const { id } = req.params;
   try {
@@ -388,7 +750,9 @@ router.delete('/products/:id', requireAdminAuth, async (req, res) => {
   }
 });
 
-// ── ANALYTICS SUMMARY ──
+// ========================================
+// ANALYTICS SUMMARY
+// ========================================
 router.get('/analytics', requireAdminAuth, async (req, res) => {
   try {
     const [users, products, requests, sectors] = await Promise.all([
@@ -409,9 +773,9 @@ router.get('/analytics', requireAdminAuth, async (req, res) => {
   }
 });
 
-// ═══════════════════════════════════════════════════════════
+// ========================================
 // ADMIN SETTINGS ENDPOINTS
-// ═══════════════════════════════════════════════════════════
+// ========================================
 
 // Get approval workflow settings
 router.get('/settings/workflows', requireAdminAuth, async (req, res) => {
@@ -435,9 +799,9 @@ router.put('/settings/workflows/:type', requireAdminAuth, async (req, res) => {
     }
 
     const result = await pool.query(
-      `UPDATE approval_workflows 
-       SET mode = $1, conditions = $2, updated_at = CURRENT_TIMESTAMP 
-       WHERE workflow_type = $3 
+      `UPDATE approval_workflows
+       SET mode = $1, conditions = $2, updated_at = CURRENT_TIMESTAMP
+       WHERE workflow_type = $3
        RETURNING *`,
       [mode, conditions || {}, type]
     );
@@ -446,9 +810,9 @@ router.put('/settings/workflows/:type', requireAdminAuth, async (req, res) => {
       return res.status(404).json({ message: 'Workflow type not found' });
     }
 
-    res.json({ 
-      message: 'Workflow updated successfully', 
-      workflow: result.rows[0] 
+    res.json({
+      message: 'Workflow updated successfully',
+      workflow: result.rows[0]
     });
   } catch (error) {
     console.error('Update workflow error:', error);
@@ -480,8 +844,6 @@ router.put('/settings/password', requireAdminAuth, async (req, res) => {
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
     adminCredentials.password = hashedNewPassword;
 
-    // Note: This only updates in-memory. For persistent storage, 
-    // you'd need to update environment variables or use a database
     console.log('[ADMIN] Password changed successfully');
 
     res.json({ message: 'Password changed successfully' });
@@ -495,13 +857,12 @@ router.put('/settings/password', requireAdminAuth, async (req, res) => {
 router.get('/settings/profile', requireAdminAuth, async (req, res) => {
   try {
     const adminAuth = await getAdminAuth();
-    res.json({ 
+    res.json({
       email: adminAuth.email,
-      // Don't send password or secret
     });
   } catch (error) {
-    console.error('Get profile error:', error);
-    res.status(500).json({ message: 'Failed to fetch profile' });
+    console.error('Get admin profile error:', error);
+    res.status(500).json({ message: 'Failed to get profile' });
   }
 });
 

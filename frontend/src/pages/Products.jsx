@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
+import FilterPanel from '../components/FilterPanel';
 import './Products.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -49,13 +50,73 @@ function Products() {
   const [error, setError] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
   const [addedId, setAddedId] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
   const cartRef = useRef(null);
+
+  // Filter state
+  const [currentFilters, setCurrentFilters] = useState({});
+  const [totalResults, setTotalResults] = useState(0);
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, hasNext: false, hasPrev: false });
 
   const { cart, totalItems, totalPrice, addToCart, updateQty, removeItem, clearCart } = useCart();
 
+  // Fetch products with filters
+  const fetchProducts = useCallback(async (filters = {}, page = 1) => {
+    setLoading(true);
+    setError('');
+    try {
+      const params = new URLSearchParams();
+      params.append('page', page);
+      params.append('limit', '20');
+
+      // Add filters to query params
+      if (filters.category) params.append('category', filters.category);
+      if (filters.minPrice) params.append('minPrice', filters.minPrice);
+      if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
+      if (filters.is_available !== undefined) params.append('is_available', filters.is_available);
+      if (filters.location) params.append('location', filters.location);
+      if (filters.industry_id) params.append('industry_id', filters.industry_id);
+      if (filters.search) params.append('search', filters.search);
+      if (filters.sortBy) params.append('sortBy', filters.sortBy);
+      if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
+
+      const res = await fetch(`${API_BASE_URL}/api/products/all?${params.toString()}`);
+      if (!res.ok) throw new Error('Failed to fetch products');
+      const data = await res.json();
+
+      setProducts(data.products || []);
+      setTotalResults(data.pagination?.total || 0);
+      setPagination(data.pagination || { page: 1, totalPages: 1, hasNext: false, hasPrev: false });
+    } catch (err) {
+      console.error('Products fetch error:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial fetch
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [fetchProducts]);
+
+  // Handle filter apply
+  const handleApplyFilters = (filters) => {
+    setCurrentFilters(filters);
+    fetchProducts(filters, 1); // Reset to page 1
+  };
+
+  // Handle filter reset
+  const handleResetFilters = () => {
+    setCurrentFilters({});
+    fetchProducts({}, 1);
+  };
+
+  // Handle pagination
+  const handlePageChange = (newPage) => {
+    fetchProducts(currentFilters, newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Close cart on outside click
   useEffect(() => {
@@ -65,21 +126,6 @@ function Products() {
     if (cartOpen) document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [cartOpen]);
-
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/products/all`);
-      if (!res.ok) throw new Error('Failed to fetch products');
-      const data = await res.json();
-      console.log('Fetched products:', data.length);
-      setProducts(data);
-    } catch (err) {
-      console.error('Products fetch error:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddToCart = async (product) => {
     await addToCart(product, 1);
@@ -92,16 +138,33 @@ function Products() {
     await updateQty(productId, currentQty + delta);
   };
 
-  if (loading) return <div className="products-page"><div className="loading">Loading products...</div></div>;
-  if (error)   return <div className="products-page"><div className="error">Error: {error}</div></div>;
+  // Extract unique categories from products for filter dropdown
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+
+  if (loading && products.length === 0) return (
+    <div className="products-page">
+      <div className="loading">Loading products...</div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="products-page">
+      <div className="error">Error: {error}</div>
+    </div>
+  );
 
   return (
     <div className="products-page">
-      {/* ── Header ── */}
+      {/* Header */}
       <header className="products-header">
         <div className="header-content">
           <button className="back-btn" onClick={() => navigate('/')}>← Back to Home</button>
-          <h1>All Products</h1>
+          <div>
+            <h1>All Products</h1>
+            <p className="results-summary">
+              {totalResults.toLocaleString()} products available
+            </p>
+          </div>
           <button className="cart-btn" onClick={() => setCartOpen(true)}>
             🛒 Cart
             {totalItems > 0 && <span className="cart-count">{totalItems}</span>}
@@ -109,73 +172,132 @@ function Products() {
         </div>
       </header>
 
-      {/* ── Products Grid ── */}
-      <div className="products-container">
-        {products.length === 0 ? (
-          <div className="no-products">
-            <p>📦 No products available yet.</p>
-            <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '8px' }}>
-              Industries can add products from their dashboard. Check back soon!
-            </p>
-          </div>
-        ) : (
-          <div className="products-grid">
-            {products.map(product => (
-              <div key={product.id} className="product-card">
-                <div className="product-image-container">
-                  <img
-                    src={getProductImage(product)}
-                    alt={product.name}
-                    className="product-image"
-                    onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
-                  />
-                  <div className="product-image-placeholder" style={{ display: 'none' }}>
-                    <span className="placeholder-icon">{getProductIcon(product)}</span>
-                    <span className="placeholder-text">{product.name}</span>
-                  </div>
-                  <div className="product-badges">
-                    {product.is_new      && <span className="badge badge-new">New</span>}
-                    {product.is_featured && <span className="badge badge-top">Top</span>}
-                  </div>
-                  <div className="product-actions">
-                    <button className="action-btn" title="Wishlist">♡</button>
-                    <button className="action-btn" title="Quick View">👁</button>
-                  </div>
-                </div>
-
-                <div className="product-info">
-                  {product.category && <span className="product-category">{product.category}</span>}
-                  <h3 className="product-name">{product.name}</h3>
-                  {product.description && <p className="product-description">{product.description}</p>}
-                  <div className="product-price">
-                    <span className="price-amount">
-                      {product.price ? `${Number(product.price).toLocaleString()} ETB` : 'Price on request'}
-                    </span>
-                    {product.unit && product.unit !== 'unit' && (
-                      <span className="price-unit">/ {product.unit}</span>
-                    )}
-                  </div>
-                  <div className="product-owner">
-                    <span className="owner-label">Sold by:</span>
-                    <span className="owner-name">{product.company_name || 'Unknown'}</span>
-                  </div>
-                  <button
-                    className={`add-to-cart-btn ${addedId === product.id ? 'added' : ''}`}
-                    onClick={() => handleAddToCart(product)}
-                  >
-                    {addedId === product.id ? '✓ Added!' : '🛒 ADD TO CART'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+      {/* Filter Toggle Button (Mobile) */}
+      <div className="filter-toggle">
+        <button
+          className="toggle-filters-btn"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          {showFilters ? '✕ Hide Filters' : '⚙️ Show Filters'}
+        </button>
       </div>
 
-      {/* ── Cart backdrop ── */}
+      <div className="products-layout">
+        {/* Sidebar Filters */}
+        <aside className={`products-sidebar ${showFilters ? 'show' : ''}`}>
+          <FilterPanel
+            filters={{
+              search: true,
+              category: { options: categories },
+              priceRange: true,
+              location: true,
+              availability: true,
+              sorting: true
+            }}
+            initialValues={currentFilters}
+            onApply={handleApplyFilters}
+            onReset={handleResetFilters}
+            totalResults={totalResults}
+            loading={loading}
+            layout="sidebar"
+          />
+        </aside>
+
+        {/* Products Grid */}
+        <main className="products-main">
+          {products.length === 0 ? (
+            <div className="no-products">
+              <p>📦 No products match your filters.</p>
+              <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '8px' }}>
+                Try adjusting your search criteria or clear filters to see all products.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="products-grid">
+                {products.map(product => (
+                  <div key={product.id} className="product-card">
+                    <div className="product-image-container">
+                      <img
+                        src={getProductImage(product)}
+                        alt={product.name}
+                        className="product-image"
+                        onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                      />
+                      <div className="product-image-placeholder" style={{ display: 'none' }}>
+                        <span className="placeholder-icon">{getProductIcon(product)}</span>
+                        <span className="placeholder-text">{product.name}</span>
+                      </div>
+                      <div className="product-badges">
+                        {product.is_new && <span className="badge badge-new">New</span>}
+                        {product.is_featured && <span className="badge badge-top">Top</span>}
+                        {!product.is_available && <span className="badge badge-out">Out of Stock</span>}
+                      </div>
+                      <div className="product-actions">
+                        <button className="action-btn" title="Wishlist">♡</button>
+                        <button className="action-btn" title="Quick View">👁</button>
+                      </div>
+                    </div>
+
+                    <div className="product-info">
+                      {product.category && <span className="product-category">{product.category}</span>}
+                      <h3 className="product-name">{product.name}</h3>
+                      {product.description && <p className="product-description">{product.description}</p>}
+                      <div className="product-price">
+                        <span className="price-amount">
+                          {product.price ? `${Number(product.price).toLocaleString()} ETB` : 'Price on request'}
+                        </span>
+                        {product.unit && product.unit !== 'unit' && (
+                          <span className="price-unit">/ {product.unit}</span>
+                        )}
+                      </div>
+                      <div className="product-owner">
+                        <span className="owner-label">Sold by:</span>
+                        <span className="owner-name">{product.company_name || 'Unknown'}</span>
+                      </div>
+                      <button
+                        className={`add-to-cart-btn ${addedId === product.id ? 'added' : ''} ${!product.is_available ? 'disabled' : ''}`}
+                        onClick={() => product.is_available && handleAddToCart(product)}
+                        disabled={!product.is_available}
+                      >
+                        {addedId === product.id ? '✓ Added!' : (!product.is_available ? 'Out of Stock' : '🛒 ADD TO CART')}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {pagination.totalPages > 1 && (
+                <div className="pagination">
+                  <button
+                    className="pagination-btn"
+                    disabled={!pagination.hasPrev}
+                    onClick={() => handlePageChange(pagination.page - 1)}
+                  >
+                    ← Previous
+                  </button>
+                  <span className="pagination-info">
+                    Page {pagination.page} of {pagination.totalPages}
+                  </span>
+                  <button
+                    className="pagination-btn"
+                    disabled={!pagination.hasNext}
+                    onClick={() => handlePageChange(pagination.page + 1)}
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </main>
+      </div>
+
+      {/* Cart backdrop */}
       {cartOpen && <div className="cart-backdrop" onClick={() => setCartOpen(false)} />}
 
-      {/* ── Cart drawer ── */}
+      {/* Cart drawer */}
       <aside className={`cart-drawer ${cartOpen ? 'open' : ''}`} ref={cartRef}>
         {/* Header */}
         <div className="cart-drawer-header">
@@ -202,32 +324,32 @@ function Products() {
             cart.map(item => {
               const pid = item.product_id ?? item.id;
               return (
-              <div key={item.id || pid} className="cart-item">
-                <div className="cart-item-img">
-                  <img
-                    src={getProductImage(item)}
-                    alt={item.name}
-                    onError={e => { e.target.style.display = 'none'; }}
-                  />
-                </div>
-                <div className="cart-item-info">
-                  <div className="cart-item-name">{item.name}</div>
-                  <div className="cart-item-seller">{item.company_name}</div>
-                  <div className="cart-item-price">
-                    {item.price
-                      ? `${(Number(item.price) * item.quantity).toLocaleString()} ETB`
-                      : 'Price on request'}
+                <div key={item.id || pid} className="cart-item">
+                  <div className="cart-item-img">
+                    <img
+                      src={getProductImage(item)}
+                      alt={item.name}
+                      onError={e => { e.target.style.display = 'none'; }}
+                    />
+                  </div>
+                  <div className="cart-item-info">
+                    <div className="cart-item-name">{item.name}</div>
+                    <div className="cart-item-seller">{item.company_name}</div>
+                    <div className="cart-item-price">
+                      {item.price
+                        ? `${(Number(item.price) * item.quantity).toLocaleString()} ETB`
+                        : 'Price on request'}
+                    </div>
+                  </div>
+                  <div className="cart-item-controls">
+                    <div className="cart-qty">
+                      <button onClick={() => handleUpdateQty(pid, -1, item.quantity)}>−</button>
+                      <span>{item.quantity}</span>
+                      <button onClick={() => handleUpdateQty(pid, +1, item.quantity)}>+</button>
+                    </div>
+                    <button className="cart-remove" onClick={() => removeItem(pid)} title="Remove">🗑</button>
                   </div>
                 </div>
-                <div className="cart-item-controls">
-                  <div className="cart-qty">
-                    <button onClick={() => handleUpdateQty(pid, -1, item.quantity)}>−</button>
-                    <span>{item.quantity}</span>
-                    <button onClick={() => handleUpdateQty(pid, +1, item.quantity)}>+</button>
-                  </div>
-                  <button className="cart-remove" onClick={() => removeItem(pid)} title="Remove">🗑</button>
-                </div>
-              </div>
               );
             })
           )}

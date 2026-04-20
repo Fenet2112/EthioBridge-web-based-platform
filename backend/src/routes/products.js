@@ -15,26 +15,168 @@ async function getIndustryForUser(userId) {
   return result.rows[0] || null;
 }
 
-// ── GET ALL PRODUCTS (public - for Products page) ──
+// ========================================
+// GET ALL PRODUCTS WITH ADVANCED FILTERING (Public)
+// ========================================
 router.get("/products/all", async (req, res) => {
   try {
+    const {
+      // Filter parameters
+      category,
+      minPrice,
+      maxPrice,
+      is_available,
+      location,
+      industry_id,
+      search,
+      // Sorting
+      sortBy = "created_at",
+      sortOrder = "DESC",
+      // Pagination
+      page = "1",
+      limit = "20"
+    } = req.query;
+
+    // Build dynamic query
+    let query = `
+      SELECT
+        p.id, p.name, p.description, p.price, p.unit, p.category,
+        p.image_url, p.is_available, p.created_at,
+        i.company_name, i.id as industry_id, i.location as industry_location,
+        i.sector as industry_sector
+      FROM products p
+      JOIN industries i ON i.id = p.industry_id
+      JOIN users u ON u.id = i.user_id
+      WHERE u.status = 'approved'
+    `;
+
+    const queryParams = [];
+    let paramCount = 1;
+
+    // Add filters dynamically
+    if (is_available !== undefined) {
+      query += ` AND p.is_available = $${paramCount++}`;
+      queryParams.push(is_available === "true" || is_available === true);
+    }
+
+    if (category) {
+      query += ` AND LOWER(p.category) LIKE LOWER($${paramCount++})`;
+      queryParams.push(`%${category}%`);
+    }
+
+    if (minPrice) {
+      query += ` AND p.price >= $${paramCount++}`;
+      queryParams.push(parseFloat(minPrice));
+    }
+
+    if (maxPrice) {
+      query += ` AND p.price <= $${paramCount++}`;
+      queryParams.push(parseFloat(maxPrice));
+    }
+
+    if (location) {
+      query += ` AND LOWER(i.location) LIKE LOWER($${paramCount++})`;
+      queryParams.push(`%${location}%`);
+    }
+
+    if (industry_id) {
+      query += ` AND i.id = $${paramCount++}`;
+      queryParams.push(parseInt(industry_id));
+    }
+
+    if (search) {
+      query += ` AND (
+        LOWER(p.name) LIKE LOWER($${paramCount++}) OR
+        LOWER(p.description) LIKE LOWER($${paramCount++}) OR
+        LOWER(i.company_name) LIKE LOWER($${paramCount++})
+      )`;
+      const searchTerm = `%${search}%`;
+      queryParams.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    // Sorting (validate to prevent SQL injection)
+    const allowedSortColumns = [
+      "p.created_at", "p.name", "p.price", "p.category",
+      "i.company_name", "i.location", "popularity_score"
+    ];
+    const sortColumn = allowedSortColumns.includes(sortBy) ? sortBy : "p.created_at";
+    const sortDirection = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+    // Add sorting with popularity fallback
+    if (sortColumn === "popularity_score") {
+      query += ` ORDER BY i.popularity_score ${sortDirection}, p.created_at DESC`;
+    } else {
+      query += ` ORDER BY ${sortColumn} ${sortDirection}`;
+    }
+
+    // Get total count for pagination
+    const countQuery = query.replace(
+      /SELECT[\s\S]*?FROM/s,
+      "SELECT COUNT(*) FROM"
+    ).split("ORDER BY")[0];
+
+    const totalResult = await pool.query(countQuery, queryParams);
+    const total = parseInt(totalResult.rows[0].count);
+
+    // Pagination
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, parseInt(limit) || 20); // Max 100 per page
+    const offset = (pageNum - 1) * limitNum;
+
+    query += ` LIMIT $${paramCount++} OFFSET $${paramCount++}`;
+    queryParams.push(limitNum, offset);
+
+    // Execute final query
+    const result = await pool.query(query, queryParams);
+
+    // Send response with pagination metadata
+    res.json({
+      products: result.rows,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        hasNext: pageNum * limitNum < total,
+        hasPrev: pageNum > 1
+      }
+    });
+  } catch (error) {
+    console.error("Get all products error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+// ========================================
+// GET PRODUCTS BY CATEGORY (Public)
+// ========================================
+router.get("/products/category/:category", async (req, res) => {
+  try {
+    const { category } = req.params;
     const result = await pool.query(
-      `SELECT 
-        p.id, p.name, p.description, p.price, p.unit, p.category, p.image_url, p.is_available,
+      `SELECT
+        p.id, p.name, p.description, p.price, p.unit, p.category,
+        p.image_url, p.is_available, p.created_at,
         i.company_name, i.id as industry_id
        FROM products p
        JOIN industries i ON i.id = p.industry_id
-       WHERE p.is_available = true
-       ORDER BY p.created_at DESC`
+       JOIN users u ON u.id = i.user_id
+       WHERE u.status = 'approved'
+         AND p.is_available = true
+         AND LOWER(p.category) = LOWER($1)
+       ORDER BY p.created_at DESC`,
+      [category]
     );
     res.json(result.rows);
   } catch (error) {
-    console.error("Get all products error:", error);
+    console.error("Get products by category error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// ── GET MY PRODUCTS (industry dashboard) ──
+// ========================================
+// GET MY PRODUCTS (industry dashboard) ──
+// ========================================
 router.get(
   "/my-products",
   authenticateToken,
@@ -60,7 +202,9 @@ router.get(
   }
 );
 
-// ── CREATE PRODUCT ──
+// ========================================
+// CREATE PRODUCT
+// ========================================
 router.post(
   "/products",
   authenticateToken,
@@ -99,7 +243,7 @@ router.post(
         }
       }
 
-      // ── Duplicate name check ──
+      // Duplicate name check
       const dupCheck = await pool.query(
         "SELECT id FROM products WHERE industry_id = $1 AND LOWER(TRIM(name)) = LOWER(TRIM($2))",
         [industry.id, name]
@@ -133,7 +277,9 @@ router.post(
   }
 );
 
-// ── UPDATE PRODUCT ──
+// ========================================
+// UPDATE PRODUCT
+// ========================================
 router.put(
   "/products/:id",
   authenticateToken,
@@ -202,7 +348,9 @@ router.put(
   }
 );
 
-// ── DELETE PRODUCT ──
+// ========================================
+// DELETE PRODUCT
+// ========================================
 router.delete(
   "/products/:id",
   authenticateToken,
@@ -231,7 +379,9 @@ router.delete(
   }
 );
 
-// ── INDUSTRY DASHBOARD SUMMARY ──
+// ========================================
+// INDUSTRY DASHBOARD SUMMARY
+// ========================================
 router.get(
   "/industry/dashboard-summary",
   authenticateToken,
@@ -273,7 +423,9 @@ router.get(
   }
 );
 
-// ── RECENT PURCHASE REQUESTS (dashboard) ──
+// ========================================
+// RECENT PURCHASE REQUESTS (dashboard)
+// ========================================
 router.get(
   "/industry/recent-requests",
   authenticateToken,
@@ -306,7 +458,9 @@ router.get(
   }
 );
 
-// ── PRODUCTS SUMMARY (dashboard) ──
+// ========================================
+// PRODUCTS SUMMARY (dashboard)
+// ========================================
 router.get(
   "/industry/products-summary",
   authenticateToken,
@@ -332,4 +486,3 @@ router.get(
 );
 
 module.exports = router;
-

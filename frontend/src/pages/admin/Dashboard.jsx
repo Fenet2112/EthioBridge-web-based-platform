@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Dashboard.css";
+import FilterPanel from "../../components/FilterPanel";
 import DashboardHome from "./DashboardHome";
 import IndustriesView from "../views/IndustriesView";
 import ProductsView from "../views/ProductsView";
@@ -105,9 +106,8 @@ function Dashboard() {
 
   // User management
   const [allUsers, setAllUsers]   = useState([]);
-  const [umSearch, setUmSearch]   = useState("");
-  const [umRole, setUmRole]       = useState("all");
-  const [umStatus, setUmStatus]   = useState("all");
+  const [userFilters, setUserFilters] = useState({});
+  const [userPagination, setUserPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [actionModal, setActionModal] = useState(null);
   const [actionReason, setActionReason] = useState("");
   const [userDetailsModal, setUserDetailsModal] = useState(null);
@@ -143,13 +143,33 @@ function Dashboard() {
     finally { setLoading(false); }
   };
 
-  const fetchAllUsers = async () => {
+  const fetchAllUsers = async (filters = {}, page = 1) => {
     setLoading(true); setError("");
     try {
-      const res = await fetch(`${API}/api/admin/users/all`, { headers: { Authorization: `Bearer ${tok()}` } });
+      const params = new URLSearchParams();
+      params.append('page', page);
+      params.append('limit', '20');
+      
+      // Add filters
+      if (filters.search) params.append('search', filters.search);
+      if (filters.role && filters.role !== 'all') params.append('role', filters.role);
+      if (filters.status && filters.status !== 'all') params.append('status', filters.status);
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.minLoginCount) params.append('minLoginCount', filters.minLoginCount);
+      if (filters.maxLoginCount) params.append('maxLoginCount', filters.maxLoginCount);
+      if (filters.minProducts) params.append('minProducts', filters.minProducts);
+      if (filters.maxProducts) params.append('maxProducts', filters.maxProducts);
+      if (filters.minRequests) params.append('minRequests', filters.minRequests);
+      if (filters.maxRequests) params.append('maxRequests', filters.maxRequests);
+      if (filters.sortBy) params.append('sortBy', filters.sortBy);
+      if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
+      
+      const res = await fetch(`${API}/api/admin/users/all?${params.toString()}`, { headers: { Authorization: `Bearer ${tok()}` } });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      setAllUsers(data);
+      setAllUsers(data.users || []);
+      setUserPagination(data.pagination || { page: 1, totalPages: 1, total: 0 });
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
@@ -289,14 +309,8 @@ function Dashboard() {
     }
   };
 
-  const filteredUsers = allUsers.filter(u => {
-    const name = (u.display_name || u.email || "").toLowerCase();
-    const matchSearch = !umSearch || name.includes(umSearch.toLowerCase()) || u.email.toLowerCase().includes(umSearch.toLowerCase());
-    const matchRole   = umRole   === "all" || u.role   === umRole;
-    const matchStatus = umStatus === "all" || u.status === umStatus;
-    return matchSearch && matchRole && matchStatus;
-  });
-
+  // Filtering is done server-side via API
+  
   const filteredPR = purchaseRequests.filter(r =>
     !prSearch || r.product_name?.toLowerCase().includes(prSearch.toLowerCase()) ||
     r.organization_name?.toLowerCase().includes(prSearch.toLowerCase()) ||
@@ -528,38 +542,64 @@ function Dashboard() {
           {view === "manage" && (
             <>
               <div className="admin-topbar">
-                <div><h1>User Management</h1><p>{filteredUsers.length} of {allUsers.length} users shown</p></div>
+                <div><h1>User Management</h1><p>{allUsers.length} users shown</p></div>
                 <button className="refresh-btn" onClick={fetchAllUsers}>↻ Refresh</button>
               </div>
-              <div className="um-filters">
-                <div className="um-search-wrap">
-                  <span>🔍</span>
-                  <input type="text" placeholder="Search by name or email..." value={umSearch} onChange={e => setUmSearch(e.target.value)} className="um-search" />
-                </div>
-                <select className="um-select" value={umRole} onChange={e => setUmRole(e.target.value)}>
-                  <option value="all">All Roles</option>
-                  <option value="industry">Industry</option>
-                  <option value="stakeholder">Stakeholder</option>
-                </select>
-                <select className="um-select" value={umStatus} onChange={e => setUmStatus(e.target.value)}>
-                  <option value="all">All Statuses</option>
-                  <option value="approved">Active</option>
-                  <option value="pending">Pending</option>
-                  <option value="suspended">Suspended</option>
-                  <option value="banned">Banned</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
+              <FilterPanel
+                filters={userFilters}
+                onFilterChange={setUserFilters}
+                onApply={() => fetchAllUsers(userFilters, userPagination)}
+                onReset={() => {
+                  setUserFilters({
+                    search: '',
+                    role: 'all',
+                    status: 'all',
+                    startDate: '',
+                    endDate: '',
+                    minLoginCount: '',
+                    maxLoginCount: '',
+                    minProducts: '',
+                    maxProducts: '',
+                    minRequests: '',
+                    maxRequests: ''
+                  });
+                  fetchAllUsers({}, userPagination);
+                }}
+                config={[
+                  { key: 'search', label: 'Search', type: 'text', placeholder: 'Search by name or email...' },
+                  { key: 'role', label: 'Role', type: 'select', options: [
+                    { value: 'all', label: 'All Roles' },
+                    { value: 'industry', label: 'Industry' },
+                    { value: 'stakeholder', label: 'Stakeholder' }
+                  ]},
+                  { key: 'status', label: 'Status', type: 'select', options: [
+                    { value: 'all', label: 'All Statuses' },
+                    { value: 'approved', label: 'Active' },
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'suspended', label: 'Suspended' },
+                    { value: 'banned', label: 'Banned' },
+                    { value: 'rejected', label: 'Rejected' }
+                  ]},
+                  { key: 'startDate', label: 'Registered After', type: 'date' },
+                  { key: 'endDate', label: 'Registered Before', type: 'date' },
+                  { key: 'minLoginCount', label: 'Min Logins', type: 'number' },
+                  { key: 'maxLoginCount', label: 'Max Logins', type: 'number' },
+                  { key: 'minProducts', label: 'Min Products', type: 'number' },
+                  { key: 'maxProducts', label: 'Max Products', type: 'number' },
+                  { key: 'minRequests', label: 'Min Requests', type: 'number' },
+                  { key: 'maxRequests', label: 'Max Requests', type: 'number' }
+                ]}
+              />
               {error && <div className="admin-error">{error}</div>}
               {loading ? <div className="admin-loading">Loading...</div>
-              : filteredUsers.length === 0 ? (
+              : allUsers.length === 0 ? (
                 <div className="admin-empty"><span>👥</span><p>No users match your filters.</p></div>
               ) : (
                 <div className="um-table-wrap">
                   <table className="um-table">
                     <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
                     <tbody>
-                      {filteredUsers.map(u => (
+                      {allUsers.map(u => (
                         <tr key={u.id} className={`um-row um-row-${u.status}`}>
                           <td className="um-id">#{u.id}</td>
                           <td className="um-name"><span className="um-role-icon">{u.role === "industry" ? <FaIndustry /> : <FaUsers />}</span>{u.display_name || "—"}</td>

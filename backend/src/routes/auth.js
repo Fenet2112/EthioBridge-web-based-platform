@@ -58,7 +58,7 @@ router.post("/signup", async (req, res) => {
 
     const newUser = await pool.query(
       `INSERT INTO users (email, password, role, status, email_verified, verification_token, verification_token_expires)
-       VALUES ($1, $2, $3, 'pending', FALSE, $4, $5)
+       VALUES ($1, $2, $3, 'incomplete', FALSE, $4, $5)
        RETURNING id, email, role, status`,
       [email, hashedPassword, role, verificationToken, tokenExpires]
     );

@@ -6,7 +6,7 @@ import {
   FaIndustry, FaQuestionCircle, FaTimes, FaLock, FaClock, FaCheckCircle,
   FaHandshake, FaShieldAlt, FaCheck, FaTimes as FaTimesCircle, FaPlus,
   FaStar, FaExclamationTriangle, FaInfoCircle, FaPhone, FaMapMarkerAlt,
-  FaEnvelope, FaBuilding, FaCalendar
+  FaEnvelope, FaBuilding, FaCalendar, FaBell
 } from "react-icons/fa";
 import SubscriptionModal from "../components/SubscriptionModal";
 import "./Industry.css";
@@ -59,6 +59,12 @@ function Industry() {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const fileInputRef = useRef(null);
+
+  // Notification state
+  const [notifications, setNotifications] = useState([]);
+  const [notifUnreadCount, setNotifUnreadCount] = useState(0);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [notifsLoading, setNotifsLoading] = useState(false);
 
   const menuItems = [
     { id: "dashboard", label: "Dashboard",                   icon: <FaHome /> },
@@ -319,6 +325,128 @@ function Industry() {
       setMessagesLoading(false);
     }
   };
+
+
+
+  // Notification functions
+  const fetchNotifications = async () => {
+    setNotifsLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE_URL}/api/industry/notifications`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+      }
+    } catch (err) {
+      console.error("Failed to load notifications:", err);
+    } finally {
+      setNotifsLoading(false);
+    }
+  };
+
+  const fetchNotifUnreadCount = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE_URL}/api/industry/notifications/unread-count`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifUnreadCount(data.count || 0);
+      }
+    } catch (err) {
+      console.error("Failed to fetch notification unread count:", err);
+    }
+  };
+
+  const markNotificationRead = async (notifId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`${API_BASE_URL}/api/industry/notifications/${notifId}/read`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, is_read: true } : n));
+      setNotifUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+    }
+  };
+
+  const markAllNotificationsRead = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`${API_BASE_URL}/api/industry/notifications/mark-all-read`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setNotifUnreadCount(0);
+    } catch (err) {
+      console.error("Failed to mark all notifications as read:", err);
+    }
+  };
+
+  const formatTimeAgo = (dateString) => {
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffMs = now - past;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+    if (diffDay > 0) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+    if (diffHour > 0) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+    if (diffMin > 0) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+    return "Just now";
+  };
+
+  const handleNotificationClick = (notification) => {
+    if (!notification.is_read) {
+      markNotificationRead(notification.id);
+    }
+    setShowNotifDropdown(false);
+  };
+
+  const handleMarkAllRead = () => {
+    markAllNotificationsRead();
+  };
+
+  // Fetch notifications when profile is approved
+  useEffect(() => {
+    if (profileStatus === "approved") {
+      fetchNotifications();
+      fetchNotifUnreadCount();
+    }
+  }, [profileStatus]);
+
+  // Poll for new notifications every 15 seconds
+  useEffect(() => {
+    if (profileStatus !== "approved") return;
+    const interval = setInterval(() => {
+      fetchNotifUnreadCount();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [profileStatus]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const container = document.getElementById('notification-bell-container');
+      if (container && !container.contains(event.target)) {
+        setShowNotifDropdown(false);
+      }
+    };
+    if (showNotifDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotifDropdown]);
 
   const sendMessage = async () => {
     if ((!newMessage.trim() && !selectedFile) || !selectedConversation) return;
@@ -694,6 +822,58 @@ function Industry() {
           <Link to="/help" className="help-link" title="Help Center">
             <FaQuestionCircle /> Help
           </Link>
+          
+          {/* Notification Bell */}
+          {profileStatus === "approved" && (
+            <div id="notification-bell-container" style={{ position: 'relative' }}>
+              <button 
+                className="notification-bell" 
+                onClick={() => {
+                  setShowNotifDropdown(!showNotifDropdown);
+                  if (!showNotifDropdown) fetchNotifications();
+                }}
+                title="Notifications"
+              >
+                <FaBell />
+                {notifUnreadCount > 0 && (
+                  <span className="notification-badge">{notifUnreadCount}</span>
+                )}
+              </button>
+
+              {showNotifDropdown && (
+                <div className="notification-dropdown">
+                  <div className="notification-header">
+                    <h4>Notifications</h4>
+                    {notifUnreadCount > 0 && (
+                      <button className="mark-all-read-btn" onClick={handleMarkAllRead}>
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="notification-list">
+                    {notifsLoading ? (
+                      <div className="notif-loading">Loading...</div>
+                    ) : notifications.length === 0 ? (
+                      <div className="no-notifications">No notifications yet</div>
+                    ) : (
+                      notifications.map(notif => (
+                        <div
+                          key={notif.id}
+                          className={`notification-item ${notif.is_read ? 'read' : 'unread'}`}
+                          onClick={() => handleNotificationClick(notif)}
+                        >
+                          <div className="notif-title">{notif.title}</div>
+                          <div className="notif-message">{notif.message}</div>
+                          <div className="notif-time">{formatTimeAgo(notif.created_at)}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
           <span className="welcome-text">Welcome back</span>
           <div className="user-avatar"><FaIndustry /></div>
         </div>

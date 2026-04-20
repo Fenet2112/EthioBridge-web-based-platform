@@ -1214,3 +1214,119 @@
     font-size: 0.85rem;
   }
 }
+
+/* Notification Bell */
+.notification-bell {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #555;
+  padding: 0;
+  margin-right: 15px;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #e74c3c;
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1000;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.notification-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.mark-all-read-btn {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+}
+
+.mark-all-read-btn:hover {
+  text-decoration: underline;
+}
+
+.notification-list {
+  padding: 5px 0;
+}
+
+.notif-loading,
+.no-notifications {
+  padding: 15px;
+  text-align: center;
+  color: #888;
+}
+
+.notification-item {
+  padding: 10px 15px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.notification-item:hover {
+  background: #f9f9f9;
+}
+
+.notification-item.unread {
+  background: #f0f7ff;
+}
+
+.notification-item.read {
+  background: white;
+}
+
+.notif-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.notif-message {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.notif-time {
+  font-size: 0.75rem;
+  color: #999;
+}

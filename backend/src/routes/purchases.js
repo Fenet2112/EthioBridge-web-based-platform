@@ -7,6 +7,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { sendPurchaseApprovedEmail, sendPurchaseRejectedEmail } = require("../utils/sendEmail");
+const { createNotification } = require("../utils/createNotification");
 
 // ── Multer setup for ID documents ──
 const idStorage = multer.diskStorage({
@@ -182,6 +183,31 @@ router.post(
         request: result.rows[0],
         requires_verification: requiresVerification,
       });
+
+      // ── Notify the industry about the new purchase request ──
+      try {
+        const industryUserRes = await pool.query(
+          `SELECT i.user_id, p.name AS product_name, s.organization_name
+           FROM industries i
+           JOIN products p ON p.id = $1
+           JOIN stakeholders s ON s.id = $2
+           WHERE i.id = $3`,
+          [product_id, stakeholder_id, industry_id]
+        );
+        if (industryUserRes.rows.length > 0) {
+          const { user_id, product_name, organization_name } = industryUserRes.rows[0];
+          await createNotification(
+            pool,
+            user_id,
+            'New Purchase Request Received',
+            `${organization_name || 'A stakeholder'} has submitted a purchase request for "${product_name}".`,
+            'request',
+            result.rows[0].id
+          );
+        }
+      } catch (notifErr) {
+        console.error('[Purchases] Notification trigger failed (non-fatal):', notifErr.message);
+      }
     } catch (error) {
       console.error("Create purchase request error:", error);
       res.status(500).json({ message: "Server error: " + error.message });
@@ -389,8 +415,7 @@ router.patch("/admin/purchases/:id/approve", requireAdminAuth, async (req, res) 
       console.error("Purchase approval email failed (non-fatal):", emailErr.message);
     }
 
-    res.json({ message: "Purchase request approved and stakeholder verified", request });
-  } catch (error) {
+    res.json({ message: "Purchase request approved and stakeholder verified", request });  } catch (error) {
     console.error("Admin approve purchase error:", error);
     res.status(500).json({ message: "Server error" });
   }
