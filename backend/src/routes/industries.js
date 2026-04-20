@@ -9,22 +9,15 @@ const { authenticateToken } = require("../middleware/auth");
 router.get("/explore", async (req, res) => {
   try {
     const {
-      sector,
-      location,
-      minProducts,
-      maxProducts,
-      minPopularity,
-      search,
-      sortBy = "created_at",
-      sortOrder = "DESC",
-      page = "1",
-      limit = "20"
+      sector, location, minProducts, maxProducts,
+      search, sortBy = "created_at", sortOrder = "DESC",
+      page = "1", limit = "20"
     } = req.query;
 
     let query = `
       SELECT
         i.id, i.company_name, i.sector, i.location, i.description,
-        i.latitude, i.longitude, i.created_at, i.popularity_score,
+        i.latitude, i.longitude, i.created_at,
         COUNT(DISTINCT p.id)  AS product_count,
         COUNT(DISTINCT pr.id) AS request_count
       FROM industries i
@@ -45,18 +38,13 @@ router.get("/explore", async (req, res) => {
       query += ` AND LOWER(i.location) LIKE LOWER($${n++})`;
       queryParams.push(`%${location}%`);
     }
-    if (minPopularity) {
-      query += ` AND i.popularity_score >= $${n++}`;
-      queryParams.push(parseInt(minPopularity));
-    }
     if (search) {
-      query += ` AND (LOWER(i.company_name) LIKE LOWER($${n++}) OR LOWER(i.description) LIKE LOWER($${n++}))`;
+      query += ` AND (LOWER(i.company_name) LIKE LOWER($${n++}) OR LOWER(COALESCE(i.description,'')) LIKE LOWER($${n++}))`;
       queryParams.push(`%${search}%`, `%${search}%`);
     }
 
-    query += ` GROUP BY i.id, i.company_name, i.sector, i.location, i.description, i.latitude, i.longitude, i.created_at, i.popularity_score`;
+    query += ` GROUP BY i.id, i.company_name, i.sector, i.location, i.description, i.latitude, i.longitude, i.created_at`;
 
-    // HAVING must come after GROUP BY
     if (minProducts) {
       query += ` HAVING COUNT(DISTINCT p.id) >= $${n++}`;
       queryParams.push(parseInt(minProducts));
@@ -71,7 +59,7 @@ router.get("/explore", async (req, res) => {
     const allowedSort = {
       "created_at": "i.created_at", "company_name": "i.company_name",
       "location": "i.location", "product_count": "product_count",
-      "request_count": "request_count", "popularity_score": "i.popularity_score"
+      "request_count": "request_count"
     };
     const sortCol = allowedSort[sortBy] || "i.created_at";
     const sortDir = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
@@ -96,7 +84,7 @@ router.get("/explore", async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Get industries for explore error:", error);
+    console.error("[Industries] /explore error:", error.message);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
@@ -116,7 +104,7 @@ router.get("/", authenticateToken, async (req, res) => {
       SELECT
         i.id, i.user_id, i.company_name, i.sector, i.location,
         i.description, i.phone, i.website, i.established_year,
-        i.latitude, i.longitude, i.created_at, i.popularity_score,
+        i.latitude, i.longitude, i.created_at,
         COUNT(DISTINCT p.id) AS product_count
       FROM industries i
       JOIN users u ON u.id = i.user_id
@@ -136,11 +124,11 @@ router.get("/", authenticateToken, async (req, res) => {
       queryParams.push(`%${location}%`);
     }
     if (search) {
-      query += ` AND (LOWER(i.company_name) LIKE LOWER($${n++}) OR LOWER(i.description) LIKE LOWER($${n++}))`;
+      query += ` AND (LOWER(i.company_name) LIKE LOWER($${n++}) OR LOWER(COALESCE(i.description,'')) LIKE LOWER($${n++}))`;
       queryParams.push(`%${search}%`, `%${search}%`);
     }
 
-    query += ` GROUP BY i.id, i.user_id, i.company_name, i.sector, i.location, i.description, i.phone, i.website, i.established_year, i.latitude, i.longitude, i.created_at, i.popularity_score`;
+    query += ` GROUP BY i.id, i.user_id, i.company_name, i.sector, i.location, i.description, i.phone, i.website, i.established_year, i.latitude, i.longitude, i.created_at`;
 
     if (minProducts) {
       query += ` HAVING COUNT(DISTINCT p.id) >= $${n++}`;
@@ -155,7 +143,7 @@ router.get("/", authenticateToken, async (req, res) => {
 
     const allowedSort = {
       "created_at": "i.created_at", "company_name": "i.company_name",
-      "product_count": "product_count", "popularity_score": "i.popularity_score"
+      "product_count": "product_count"
     };
     const sortCol = allowedSort[sortBy] || "i.created_at";
     const sortDir = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
@@ -180,7 +168,7 @@ router.get("/", authenticateToken, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Get industries error:", error);
+    console.error("[Industries] GET / error:", error.message);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
@@ -194,7 +182,7 @@ router.get("/:id", authenticateToken, async (req, res) => {
     const industryResult = await pool.query(`
       SELECT i.id, i.user_id, i.company_name, i.sector, i.location,
              i.description, i.phone, i.website, i.established_year,
-             i.latitude, i.longitude, i.created_at, i.popularity_score
+             i.latitude, i.longitude, i.created_at
       FROM industries i
       JOIN users u ON u.id = i.user_id
       WHERE i.id = $1 AND u.status = 'approved'
@@ -216,7 +204,7 @@ router.get("/:id", authenticateToken, async (req, res) => {
       products: productsResult.rows,
     });
   } catch (error) {
-    console.error("Get industry detail error:", error);
+    console.error("[Industries] GET /:id error:", error.message);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
