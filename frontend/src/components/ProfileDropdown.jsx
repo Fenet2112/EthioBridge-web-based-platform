@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { API_BASE_URL } from '../utils/api';
 import './ProfileDropdown.css';
 import DarkModeToggle from './DarkModeToggle';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 function ProfileDropdown() {
   const navigate = useNavigate();

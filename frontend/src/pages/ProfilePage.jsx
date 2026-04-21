@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StakeholderNav from '../components/StakeholderNav';
+import { API_BASE_URL } from '../utils/api';
 import './ProfilePage.css';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -152,7 +151,33 @@ function ProfilePage() {
               id="pp-file-input"
             />
             <label htmlFor="pp-file-input" className="pp-btn pp-btn-photo" title="Max 5MB · JPG, PNG, GIF">
-              {photoUploading ? 'Uploading...' : avatarSrc ? '📷 Change Photo' : '📷 Add Photo'}
+              {photoUploading ? (
+                <>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" opacity="0.25"/>
+                    <path d="M12 2 A10 10 0 0 1 22 12" strokeLinecap="round">
+                      <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
+                    </path>
+                  </svg>
+                  Uploading...
+                </>
+              ) : avatarSrc ? (
+                <>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                  Change Photo
+                </>
+              ) : (
+                <>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                  Add Photo
+                </>
+              )}
             </label>
             {avatarSrc && !photoUploading && (
               <button className="pp-btn pp-btn-remove" onClick={handleDeletePhoto}>Remove</button>
@@ -198,7 +223,11 @@ function ProfilePage() {
               </div>
 
               <button className="pp-btn pp-btn-edit" onClick={() => setIsEditing(true)}>
-                ✏️ Edit Profile
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Edit Profile
               </button>
             </>
           ) : (

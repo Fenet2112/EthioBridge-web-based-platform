@@ -1,0 +1,437 @@
+/* ═══════════════════════════════════════════════════════════════
+   STAKEHOLDERS PAGE - DARK MODE ENHANCEMENTS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Import this file in Stakeholders.jsx after Stakeholders.css */
+
+[data-theme="dark"] {
+  /* Modern stakeholder page */
+  .modern-stakeholder-page {
+    background-color: var(--bg-secondary);
+  }
+  
+  /* Hero section */
+  .hero-section {
+    background: linear-gradient(135deg, #0a5c2f 0%, #1a8a4a 60%, #064020 100%);
+    border-bottom: 1px solid var(--border-light);
+  }
+  
+  .text-green {
+    color: #4ade80;
+  }
+  
+  /* Search container */
+  .search-bar {
+    background: var(--bg-primary);
+    box-shadow: 0 8px 24px var(--shadow);
+    border: 1px solid var(--border-light);
+  }
+  
+  .search-bar:focus-within {
+    box-shadow: 0 12px 32px var(--shadow-md);
+    border-color: var(--primary);
+  }
+  
+  .search-icon {
+    color: var(--text-muted);
+  }
+  
+  .search-field {
+    color: var(--text-primary);
+    background: transparent;
+  }
+  
+  .search-field::placeholder {
+    color: var(--text-light);
+  }
+  
+  .search-btn {
+    background: linear-gradient(135deg, #0a5c2f 0%, #064020 100%);
+  }
+  
+  .search-btn:hover {
+    background: linear-gradient(135deg, #1a8a4a 0%, #0a5c2f 100%);
+  }
+  
+  /* Sector pills */
+  .sector-pill {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-light);
+  }
+  
+  .sector-pill.active {
+    background: #0a5c2f;
+    border-color: #0a5c2f;
+    color: #ffffff;
+  }
+  
+  .sector-pill:hover:not(.active) {
+    background: var(--bg-accent);
+    border-color: #0a5c2f;
+    color: #4ade80;
+  }
+  
+  /* Sidebar */
+  .sidebar-card {
+    background: var(--bg-primary);
+    border: 1.5px solid var(--border-light);
+  }
+  
+  .sidebar-card-label {
+    background: rgba(10, 92, 47, 0.15);
+    color: #4ade80;
+  }
+  
+  .sidebar-card-title {
+    color: var(--text-primary);
+  }
+  
+  .sidebar-card-copy {
+    color: var(--text-secondary);
+  }
+  
+  .sidebar-select,
+  .sidebar-input {
+    background: var(--bg-accent);
+    border: 1px solid var(--border-medium);
+    color: var(--text-primary);
+  }
+  
+  .sidebar-select:focus,
+  .sidebar-input:focus {
+    border-color: #0a5c2f;
+    box-shadow: 0 0 0 2px rgba(10, 92, 47, 0.2);
+  }
+  
+  /* Cards header */
+  .cards-title {
+    color: var(--text-primary);
+  }
+  
+  .cards-subtitle {
+    color: var(--text-secondary);
+  }
+  
+  .results-count {
+    color: var(--text-muted);
+  }
+  
+  /* Filter bar */
+  .filter-bar {
+    background: transparent;
+  }
+  
+  .filter-label {
+    color: var(--text-muted);
+  }
+  
+  .filter-select {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-medium);
+    color: var(--text-primary);
+  }
+  
+  .filter-select:focus {
+    border-color: #0a5c2f;
+    box-shadow: 0 0 0 2px rgba(10, 92, 47, 0.2);
+  }
+  
+  .filter-result {
+    color: var(--text-secondary);
+  }
+  
+  .location-btn,
+  .sort-btn {
+    background: var(--bg-accent);
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+  }
+  
+  .location-btn:hover,
+  .sort-btn:hover {
+    background: var(--bg-primary);
+    border-color: #0a5c2f;
+    color: #4ade80;
+  }
+  
+  .location-btn.active,
+  .sort-btn.active {
+    background: #0a5c2f;
+    border-color: #0a5c2f;
+    color: #ffffff;
+  }
+  
+  /* Company cards */
+  .company-card {
+    background: var(--bg-primary);
+    border-color: var(--border-light);
+  }
+  
+  .company-card:hover {
+    border-color: #0a5c2f;
+    box-shadow: 0 12px 32px var(--shadow-md);
+  }
+  
+  .card-top {
+    background: linear-gradient(135deg, var(--bg-accent) 0%, rgba(10, 92, 47, 0.1) 100%);
+  }
+  
+  .company-logo {
+    background: linear-gradient(135deg, #0a5c2f 0%, #064020 100%);
+    border-color: var(--bg-primary);
+  }
+  
+  .badge-verified {
+    background: var(--bg-primary);
+    color: #4ade80;
+  }
+  
+  .distance-badge {
+    background: #0a5c2f;
+    color: #ffffff;
+  }
+  
+  .card-body {
+    background: var(--bg-primary);
+  }
+  
+  .company-name {
+    color: var(--text-primary);
+  }
+  
+  .company-card:hover .company-name {
+    color: #4ade80;
+  }
+  
+  .company-meta {
+    color: var(--text-secondary);
+  }
+  
+  .company-meta .material-icon {
+    color: var(--text-muted);
+  }
+  
+  .dot {
+    color: var(--border-medium);
+  }
+  
+  .company-desc {
+    color: var(--text-secondary);
+  }
+  
+  .card-actions {
+    background: var(--bg-primary);
+  }
+  
+  .btn-outline {
+    background: var(--bg-accent);
+    color: #4ade80;
+  }
+  
+  .btn-outline:hover {
+    background: rgba(10, 92, 47, 0.15);
+    color: #4ade80;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #0a5c2f 0%, #064020 100%);
+  }
+  
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #1a8a4a 0%, #0a5c2f 100%);
+  }
+  
+  /* Load more button */
+  .load-more-btn {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+  }
+  
+  .load-more-btn:hover {
+    background: var(--bg-accent);
+    border-color: #0a5c2f;
+    color: #4ade80;
+  }
+  
+  /* Loading/error/empty states */
+  .loading-state,
+  .error-state,
+  .empty-state {
+    color: var(--text-secondary);
+  }
+  
+  /* Chat sidebar */
+  .chat-sidebar {
+    background: var(--bg-primary);
+    border-left: 1px solid var(--border-light);
+    box-shadow: -4px 0 24px var(--shadow);
+  }
+  
+  .chat-header {
+    background: #0a5c2f;
+    color: #ffffff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .chat-avatar {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .close-chat {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
+  
+  .close-chat:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Chat messages */
+  .chat-messages {
+    background: var(--bg-secondary);
+  }
+  
+  .message-bubble.sent {
+    background: #0a5c2f;
+    color: #ffffff;
+  }
+  
+  .message-bubble.received {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
+  }
+  
+  .file-attachment {
+    background: var(--bg-accent);
+    border: 1px solid var(--border-light);
+  }
+  
+  /* Chat input area */
+  .chat-input-area {
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-light);
+  }
+  
+  .icon-btn {
+    background: var(--bg-accent);
+    color: var(--text-secondary);
+  }
+  
+  .icon-btn:hover {
+    background: #0a5c2f;
+    color: #ffffff;
+  }
+  
+  .chat-input {
+    background: var(--bg-accent);
+    color: var(--text-primary);
+  }
+  
+  .chat-input:focus {
+    background: var(--bg-primary);
+    box-shadow: 0 0 0 2px rgba(10, 92, 47, 0.2);
+  }
+  
+  .send-btn {
+    background: #0a5c2f;
+    color: #ffffff;
+  }
+  
+  .send-btn:hover:not(:disabled) {
+    background: #1a8a4a;
+  }
+  
+  .file-preview {
+    background: var(--bg-accent);
+    color: var(--text-secondary);
+  }
+  
+  .file-preview button {
+    color: var(--text-secondary);
+  }
+  
+  /* Emoji picker wrapper */
+  .emoji-picker-wrapper {
+    box-shadow: 0 8px 32px var(--shadow);
+    border: 1px solid var(--border-light);
+  }
+  
+  /* Footer */
+  .stakeholder-footer {
+    background: linear-gradient(135deg, #0a5c2f 0%, #064020 100%);
+  }
+  
+  .footer-section h4 {
+    color: #4ade80;
+  }
+  
+  .footer-section ul li a {
+    color: rgba(255, 255, 255, 0.8);
+  }
+  
+  .footer-section ul li a:hover {
+    color: #ffffff;
+  }
+  
+  .footer-logo svg {
+    color: #4ade80;
+  }
+  
+  .footer-tagline,
+  .footer-newsletter-text {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  .footer-newsletter input {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
+  
+  .footer-newsletter input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+  
+  .footer-newsletter input:focus {
+    border-color: #4ade80;
+    background: rgba(255, 255, 255, 0.15);
+  }
+  
+  .footer-newsletter button {
+    background: linear-gradient(135deg, #1a8a4a 0%, #0a5c2f 100%);
+  }
+  
+  .footer-newsletter button:hover {
+    background: linear-gradient(135deg, #4ade80 0%, #1a8a4a 100%);
+  }
+  
+  .footer-bottom {
+    border-top-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .footer-bottom p {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .footer-social a {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+  }
+  
+  .footer-social a:hover {
+    background: #1a8a4a;
+    color: #ffffff;
+  }
+}
+
+/* Responsive adjustments for dark mode */
+@media (max-width: 768px) {
+  [data-theme="dark"] {
+    .search-bar {
+      border: 1px solid var(--border-light);
+    }
+  }
+}

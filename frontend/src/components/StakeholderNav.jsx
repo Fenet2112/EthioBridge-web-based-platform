@@ -19,7 +19,7 @@ const NAV_ITEMS = [
   { path: "/help",            icon: <FaQuestionCircle />, label: "Help"         },
 ];
 
-function StakeholderNav({ unreadCount = 0 }) {
+function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, requestUserLocation }) {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { logout } = useAuth();
@@ -64,16 +64,28 @@ function StakeholderNav({ unreadCount = 0 }) {
         </button>
 
         {/* Brand */}
-        <div className="sk-nav-brand" onClick={() => go("/stakeholders")}>
+        <Link to="/" className="sk-nav-brand" title="EthioPartner Home">
           <span className="sk-nav-logo"><FaLink /></span>
           <span className="sk-nav-name">EthioBridge</span>
-        </div>
-
+        </Link>
+        
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+        
         {/* Right side — always visible */}
         <div className="sk-nav-right">
-          <Link to="/" className="sk-nav-home" title="Back to Home">
-            <span className="material-icon">home</span>
-          </Link>
+          <button 
+            className={`sk-location-btn ${userLocation ? 'active' : ''} ${locationLoading ? 'loading' : ''}`}
+            onClick={requestUserLocation}
+            disabled={locationLoading}
+            title={userLocation ? 'Location enabled' : 'Get my location'}
+            aria-label="Get current location"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </button>
           <DarkModeToggle />
           <ProfileDropdown />
         </div>
@@ -85,7 +97,7 @@ function StakeholderNav({ unreadCount = 0 }) {
       {/* ── Slide-in drawer ── */}
       <aside className={`sk-drawer ${open ? "open" : ""}`} ref={drawerRef}>
         <div className="sk-drawer-header">
-          <span className="sk-drawer-title"><FaLink /> EthioBridge</span>
+          <span className="sk-drawer-title"><FaLink /> EthioPartner</span>
           <button className="sk-drawer-close" onClick={() => setOpen(false)}><FaTimes /></button>
         </div>
 
