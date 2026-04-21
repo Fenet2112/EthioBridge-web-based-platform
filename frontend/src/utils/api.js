@@ -1,6 +1,6 @@
 // API utility with retry logic and better error handling
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 /**
  * Enhanced fetch with retry logic and better error handling

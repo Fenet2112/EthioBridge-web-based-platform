@@ -4,8 +4,8 @@ import {
   FaPhone, FaUser, FaClock, FaCheckCircle, FaTimesCircle, FaPaperPlane,
   FaExclamationTriangle, FaCheck, FaHourglassHalf
 } from 'react-icons/fa';
+import { API_BASE_URL } from "../../utils/api";
 import './ContactMessages.css';
-
 function ContactMessages() {
   const [messages, setMessages] = useState([]);
   const [stats, setStats] = useState({});
@@ -18,7 +18,6 @@ function ContactMessages() {
   const [sourceFilter, setSourceFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     fetchMessages();

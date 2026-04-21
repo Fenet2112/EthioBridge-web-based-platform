@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaStar, FaCheck, FaTimes, FaTrash, FaFilter, FaSync } from 'react-icons/fa';
+import { API_BASE_URL } from "../../utils/api";
 import './Testimonials.css';
-
 function AdminTestimonials() {
   const [testimonials, setTestimonials] = useState([]);
   const [stats, setStats] = useState(null);
@@ -10,8 +10,7 @@ function AdminTestimonials() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
+  
   useEffect(() => {
     fetchTestimonials();
     fetchStats();

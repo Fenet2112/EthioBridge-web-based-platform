@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { API_BASE_URL } from '../utils/api';
 
 export function useRecommendations({ type = "products", category = "", budget = 0, topN = 8, enabled = true }) {
   const [recommendations, setRecommendations] = useState([]);

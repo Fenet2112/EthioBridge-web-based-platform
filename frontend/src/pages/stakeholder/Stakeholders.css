@@ -819,7 +819,7 @@
 }
 
 .btn-outline,
-.btn-primary {
+.btn-message {
   padding: 12px 18px;
   border-radius: 10px;
   font-size: 0.9rem;
@@ -833,6 +833,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
 }
 
 .btn-outline {
@@ -849,16 +850,23 @@
   box-shadow: 0 6px 16px rgba(29, 95, 58, 0.12);
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-  color: var(--text-inverse);
-  box-shadow: 0 4px 12px rgba(29, 95, 58, 0.25);
+.btn-message {
+  background: #1d5f3a;
+  color: white;
 }
 
-.btn-primary:hover {
-  background: linear-gradient(135deg, var(--primary-dark) 0%, #0d3d28 100%);
+[data-theme="dark"] .btn-message {
+  background: #1d5f3a;
+  color: white;
+}
+
+.btn-message:hover {
+  background: #14472d;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(29, 95, 58, 0.35);
+}
+
+.btn-message svg {
+  flex-shrink: 0;
 }
 
 /* ═══════════════════════════════════════════════════════════════

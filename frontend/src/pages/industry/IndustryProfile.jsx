@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./ProfileForm.css";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { API_BASE_URL } from "../../utils/api";
+import "../ProfileForm.css";
 
 function IndustryProfile() {
   const navigate = useNavigate();

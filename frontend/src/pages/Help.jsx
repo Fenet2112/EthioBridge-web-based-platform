@@ -19,6 +19,7 @@ import {
   FaCheckCircle,
   FaChevronRight
 } from 'react-icons/fa';
+import { API_BASE_URL } from '../utils/api';
 import Logo from '../components/Logo';
 import DarkModeToggle from '../components/DarkModeToggle';
 import './Help.css';
@@ -37,8 +38,6 @@ function Help() {
   });
   const [helpSubmitting, setHelpSubmitting] = useState(false);
   const [helpMessage, setHelpMessage] = useState({ type: '', text: '' });
-
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   const scrollToCategory = (categoryId) => {
     setActiveCategory(categoryId);

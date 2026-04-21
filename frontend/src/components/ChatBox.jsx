@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { API_BASE_URL } from '../utils/api';
 
 function ChatBox({ conversationId, receiverId, receiverName, onClose }) {
   const [messages, setMessages] = useState([]);

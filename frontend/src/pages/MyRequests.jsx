@@ -5,7 +5,7 @@ import {
   FaPaperPlane, FaArrowLeft, FaRedo, FaPlusCircle
 } from 'react-icons/fa';
 import './MyRequests.css';
-
+import { API_BASE_URL } from "../utils/api";
 function MyRequests() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +24,7 @@ function MyRequests() {
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState({ type: '', text: '' });
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 
   useEffect(() => {
     fetchMyRequests();

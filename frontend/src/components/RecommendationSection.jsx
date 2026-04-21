@@ -1,8 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useRecommendations } from "../hooks/useRecommendations";
+import { API_BASE_URL } from '../utils/api';
 import "./RecommendationSection.css";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 function ScoreBar({ score }) {
   if (score === null || score === undefined) return null;

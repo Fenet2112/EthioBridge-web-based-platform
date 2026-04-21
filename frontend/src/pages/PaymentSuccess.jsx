@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { FaCheckCircle, FaTimesCircle, FaSpinner } from "react-icons/fa";
+import { API_BASE_URL } from "../utils/api";
 import "./PaymentSuccess.css";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 function PaymentSuccess() {
   const navigate = useNavigate();

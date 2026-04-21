@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FaStar, FaRegStar, FaPaperPlane, FaCheckCircle } from 'react-icons/fa';
+import { API_BASE_URL } from '../utils/api';
 import './FeedbackForm.css';
 
 function FeedbackForm({ onClose, onSuccess }) {
@@ -12,8 +13,6 @@ function FeedbackForm({ onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   const handleSubmit = async (e) => {
     e.preventDefault();

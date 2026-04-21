@@ -1,10 +1,9 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { API_BASE_URL } from "../utils/api";
 import Logo from "../components/Logo";
 import "./Login.css";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 async function syncGuestCartOnLogin(token) {
   try {

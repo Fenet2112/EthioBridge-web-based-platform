@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
+import { API_BASE_URL } from "../utils/api";
 import "./VerifyEmail.css";
-
-const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
@@ -20,7 +19,7 @@ export default function VerifyEmail() {
   useEffect(() => {
     // If we got a raw token (old-style link), call the API ourselves
     if (tokenParam && !statusParam) {
-      fetch(`${API}/api/verify-email?token=${tokenParam}`)
+      fetch(`${API_BASE_URL}/api/verify-email?token=${tokenParam}`)
         .then(r => r.json())
         .then(data => {
           if (data.code === "success")               setStatus("success");
@@ -37,7 +36,7 @@ export default function VerifyEmail() {
     if (!resendEmail) return;
     setResendLoading(true);
     try {
-      await fetch(`${API}/api/resend-verification`, {
+      await fetch(`${API_BASE_URL}/api/resend-verification`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: resendEmail }),

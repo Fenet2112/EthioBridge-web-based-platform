@@ -8,12 +8,11 @@ import {
   FaStar, FaExclamationTriangle, FaInfoCircle, FaPhone, FaMapMarkerAlt,
   FaEnvelope, FaBuilding, FaCalendar
 } from "react-icons/fa";
-import SubscriptionModal from "../components/SubscriptionModal";
+import { API_BASE_URL } from "../../utils/api";
+import SubscriptionModal from "../../components/SubscriptionModal";
 import "./Industry.css";
 import "./IndustryDarkMode.css";
 import "./IndustryMessages.css";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 const FREE_PRODUCT_LIMIT = 5;
 let socket;
 

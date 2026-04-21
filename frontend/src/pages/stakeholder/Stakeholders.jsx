@@ -309,11 +309,7 @@ function Stakeholders() {
 
   return (
     <div className="modern-stakeholder-page">
-      <StakeholderNav 
-        userLocation={userLocation}
-        locationLoading={locationLoading}
-        requestUserLocation={requestUserLocation}
-      />
+      <StakeholderNav showSidebar={false} />
 
       {/* Hero Section */}
       <section className="hero-section">
@@ -466,9 +462,12 @@ function Stakeholders() {
                           View Details
                         </button>
                         <button 
-                          className="btn-primary"
+                          className="btn-message"
                           onClick={() => openMessageSidebar(industry)}
                         >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                          </svg>
                           Message
                         </button>
                       </div>

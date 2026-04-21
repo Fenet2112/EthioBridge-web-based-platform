@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { FaPhone, FaLock, FaShieldAlt, FaTimes } from "react-icons/fa";
+import { API_BASE_URL } from '../utils/api';
 import "./PaymentModal.css";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 function PaymentModal({ plan, amount, amountLabel, onClose, onSuccess }) {
   const [step, setStep] = useState("phone"); // phone | processing | error

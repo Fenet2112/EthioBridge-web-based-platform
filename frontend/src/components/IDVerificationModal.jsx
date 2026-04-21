@@ -1,7 +1,6 @@
 import { useState } from "react";
+import { API_BASE_URL } from '../utils/api';
 import "./IDVerificationModal.css";
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const ID_TYPES = [
   { value: "national_id", label: "National ID Card" },

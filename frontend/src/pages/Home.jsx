@@ -9,6 +9,7 @@ import {
 import Logo from "../components/Logo";
 import DarkModeToggle from "../components/DarkModeToggle";
 import FeedbackForm from "../components/FeedbackForm";
+import { API_BASE_URL } from "../utils/api";
 import "./Home.css";
 
 function Home() {
@@ -26,8 +27,6 @@ function Home() {
   });
   const [contactSubmitting, setContactSubmitting] = useState(false);
   const [contactMessage, setContactMessage] = useState({ type: '', text: '' });
-
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     const observer = new IntersectionObserver(

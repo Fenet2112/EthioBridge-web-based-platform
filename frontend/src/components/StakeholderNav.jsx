@@ -3,8 +3,9 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { 
   FaIndustry, FaComments, FaBox, FaStar, FaUser, FaQuestionCircle,
-  FaLink, FaTimes, FaHome, FaDoorOpen
+  FaTimes, FaHome, FaDoorOpen
 } from "react-icons/fa";
+import Logo from "./Logo";
 import ProfileDropdown from "./ProfileDropdown";
 import DarkModeToggle from "./DarkModeToggle";
 import "./StakeholderNav.css";
@@ -19,29 +20,26 @@ const NAV_ITEMS = [
   { path: "/help",            icon: <FaQuestionCircle />, label: "Help"         },
 ];
 
-function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, requestUserLocation }) {
+function StakeholderNav({ unreadCount = 0, showSidebar = true }) {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { logout } = useAuth();
   const active    = location.pathname;
-  const [open, setOpen] = useState(false);
-  const drawerRef = useRef(null);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const sidebarRef = useRef(null);
 
-  // Close drawer on outside click
+  // Close sidebar on outside click when expanded
   useEffect(() => {
     const handler = (e) => {
-      if (drawerRef.current && !drawerRef.current.contains(e.target)) {
-        setOpen(false);
+      if (sidebarExpanded && sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+        setSidebarExpanded(false);
       }
     };
-    if (open) document.addEventListener("mousedown", handler);
+    document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  }, [sidebarExpanded]);
 
-  // Close on route change
-  useEffect(() => { setOpen(false); }, [location.pathname]);
-
-  const go = (path) => { navigate(path); setOpen(false); };
+  const go = (path) => { navigate(path); };
 
   const handleLogout = () => { 
     logout(); 
@@ -52,20 +50,9 @@ function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, reques
     <>
       {/* ── Top bar ── */}
       <nav className="sk-nav">
-        {/* Hamburger */}
-        <button
-          className={`sk-burger ${open ? "open" : ""}`}
-          onClick={() => setOpen(o => !o)}
-          aria-label="Toggle menu"
-        >
-          <span className="sk-bar" />
-          <span className="sk-bar" />
-          <span className="sk-bar" />
-        </button>
-
-        {/* Brand */}
-        <Link to="/stakeholders" className="sk-nav-brand" title="Industries">
-          <span className="sk-nav-logo"><FaLink /></span>
+        {/* Logo */}
+        <Link to="/stakeholders" className="sk-nav-brand" title="EthioBridge">
+          <Logo size={32} color="#4ade80" />
           <span className="sk-nav-name">EthioBridge</span>
         </Link>
         
@@ -79,42 +66,43 @@ function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, reques
         </div>
       </nav>
 
-      {/* ── Backdrop ── */}
-      {open && <div className="sk-backdrop" onClick={() => setOpen(false)} />}
+      {/* ── Collapsible Sidebar (only on non-home pages) ── */}
+      {showSidebar && (
+        <aside 
+          className={`sk-sidebar ${sidebarExpanded ? "expanded" : ""}`} 
+          ref={sidebarRef}
+          onMouseEnter={() => setSidebarExpanded(true)}
+          onMouseLeave={() => setSidebarExpanded(false)}
+        >
+          <nav className="sk-sidebar-nav">
+            {NAV_ITEMS.map(item => (
+              <button
+                key={item.path}
+                className={`sk-sidebar-item ${active === item.path ? "active" : ""}`}
+                onClick={() => go(item.path)}
+                title={item.label}
+              >
+                <span className="sk-sidebar-icon">{item.icon}</span>
+                <span className="sk-sidebar-label">{item.label}</span>
+                {item.path === "/messages" && unreadCount > 0 && (
+                  <span className="sk-sidebar-badge">{unreadCount}</span>
+                )}
+              </button>
+            ))}
+          </nav>
 
-      {/* ── Slide-in drawer ── */}
-      <aside className={`sk-drawer ${open ? "open" : ""}`} ref={drawerRef}>
-        <div className="sk-drawer-header">
-          <span className="sk-drawer-title"><FaLink /> EthioPartner</span>
-          <button className="sk-drawer-close" onClick={() => setOpen(false)}><FaTimes /></button>
-        </div>
-
-        <nav className="sk-drawer-nav">
-          {NAV_ITEMS.map(item => (
-            <button
-              key={item.path}
-              className={`sk-drawer-item ${active === item.path ? "active" : ""}`}
-              onClick={() => go(item.path)}
-            >
-              <span className="sk-drawer-icon">{item.icon}</span>
-              <span className="sk-drawer-label">{item.label}</span>
-              {item.path === "/messages" && unreadCount > 0 && (
-                <span className="sk-drawer-badge">{unreadCount}</span>
-              )}
-              {active === item.path && <span className="sk-drawer-dot" />}
+          <div className="sk-sidebar-footer">
+            <button className="sk-sidebar-home" onClick={() => go("/")} title="Back to Home">
+              <span className="sk-sidebar-icon"><FaHome /></span>
+              <span className="sk-sidebar-label">Back to Home</span>
             </button>
-          ))}
-        </nav>
-
-        <div className="sk-drawer-footer">
-          <button className="sk-drawer-home" onClick={() => go("/")}>
-            <span><FaHome /></span> Back to Home
-          </button>
-          <button className="sk-drawer-logout" onClick={handleLogout}>
-            <span><FaDoorOpen /></span> Logout
-          </button>
-        </div>
-      </aside>
+            <button className="sk-sidebar-logout" onClick={handleLogout} title="Logout">
+              <span className="sk-sidebar-icon"><FaDoorOpen /></span>
+              <span className="sk-sidebar-label">Logout</span>
+            </button>
+          </div>
+        </aside>
+      )}
     </>
   );
 }

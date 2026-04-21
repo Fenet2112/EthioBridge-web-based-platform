@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../utils/api';
 import './Settings.css';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 function Settings({ darkMode, setDarkMode }) {
   const [workflows, setWorkflows] = useState([]);

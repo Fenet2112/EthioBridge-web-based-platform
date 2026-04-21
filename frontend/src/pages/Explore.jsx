@@ -16,6 +16,7 @@ import {
 import Logo from '../components/Logo';
 import DarkModeToggle from '../components/DarkModeToggle';
 import { getUserLocation, addDistanceToIndustries, sortIndustriesByDistance, formatDistance } from '../utils/distance';
+import { API_BASE_URL } from '../utils/api';
 import './Explore.css';
 
 // Fix for default marker icons in React Leaflet
@@ -102,8 +103,6 @@ function Explore() {
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState(null);
   const [sortByDistance, setSortByDistance] = useState(false);
-
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   // Detect mobile device
   useEffect(() => {

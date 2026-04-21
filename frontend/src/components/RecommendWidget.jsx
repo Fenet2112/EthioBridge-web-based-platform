@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from '../utils/api';
 import "./RecommendWidget.css";
-
-const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const CATEGORIES = [
   "Cement", "Steel", "Brick", "Wood", "Paint",
@@ -47,7 +46,7 @@ export default function RecommendWidget({ mode = "products" }) {
 
     try {
       const res = await fetch(
-        `${API}/api/recommendations/${cfg.type}?${params}`,
+        `${API_BASE_URL}/api/recommendations/${cfg.type}?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
