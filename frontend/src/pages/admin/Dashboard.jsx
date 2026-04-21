@@ -126,7 +126,9 @@ function Dashboard() {
       const res = await fetch(ep, { headers: { Authorization: `Bearer ${tok()}` } });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      setUsers(data);
+      // Handle both array response and object with users property
+      const usersList = Array.isArray(data) ? data : (data.users || []);
+      setUsers(usersList);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
@@ -138,7 +140,9 @@ function Dashboard() {
       const res = await fetch(url, { headers: { Authorization: `Bearer ${tok()}` } });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      setPurchaseRequests(data);
+      // Handle both array response and object with purchases property
+      const purchasesList = Array.isArray(data) ? data : (data.purchases || data.purchaseRequests || []);
+      setPurchaseRequests(purchasesList);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
@@ -149,7 +153,9 @@ function Dashboard() {
       const res = await fetch(`${API}/api/admin/users/all`, { headers: { Authorization: `Bearer ${tok()}` } });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      setAllUsers(data);
+      // Handle both array response and object with users property
+      const usersList = Array.isArray(data) ? data : (data.users || []);
+      setAllUsers(usersList);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
