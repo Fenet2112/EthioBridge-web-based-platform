@@ -774,6 +774,74 @@ router.get('/analytics', requireAdminAuth, async (req, res) => {
 });
 
 // ========================================
+// TOP SELLERS ANALYTICS
+// ========================================
+router.get('/analytics/top-sellers', requireAdminAuth, async (req, res) => {
+  try {
+    const { metric = 'revenue', period = 'all', limit = '10' } = req.query;
+
+    // Build date filter
+    let dateFilter = '';
+    if (period === '7d')  dateFilter = `AND pr.created_at >= NOW() - INTERVAL '7 days'`;
+    if (period === '30d') dateFilter = `AND pr.created_at >= NOW() - INTERVAL '30 days'`;
+    if (period === '90d') dateFilter = `AND pr.created_at >= NOW() - INTERVAL '90 days'`;
+
+    // Choose metric
+    let valueExpr, valueLabel;
+    if (metric === 'revenue') {
+      valueExpr = 'COALESCE(SUM(p.price * pr.quantity), 0)';
+      valueLabel = 'total_revenue';
+    } else if (metric === 'quantity') {
+      valueExpr = 'COALESCE(SUM(pr.quantity), 0)';
+      valueLabel = 'total_quantity';
+    } else {
+      // transactions
+      valueExpr = 'COUNT(pr.id)';
+      valueLabel = 'total_transactions';
+    }
+
+    const result = await pool.query(`
+      SELECT
+        i.id,
+        i.company_name AS industry_name,
+        i.sector,
+        ${valueExpr} AS value,
+        COUNT(pr.id)                          AS total_transactions,
+        COALESCE(SUM(pr.quantity), 0)         AS total_quantity,
+        COALESCE(SUM(p.price * pr.quantity), 0) AS total_revenue
+      FROM industries i
+      JOIN users u ON u.id = i.user_id
+      LEFT JOIN purchase_requests pr
+        ON pr.industry_id = i.id
+        AND pr.status IN ('approved', 'completed')
+        ${dateFilter}
+      LEFT JOIN products p ON p.id = pr.product_id
+      WHERE u.status = 'approved'
+      GROUP BY i.id, i.company_name, i.sector
+      ORDER BY value DESC
+      LIMIT $1
+    `, [parseInt(limit)]);
+
+    res.json({
+      metric,
+      period,
+      sellers: result.rows.map(r => ({
+        id: r.id,
+        industry_name: r.industry_name,
+        sector: r.sector,
+        value: parseFloat(r.value) || 0,
+        total_transactions: parseInt(r.total_transactions),
+        total_quantity: parseInt(r.total_quantity),
+        total_revenue: parseFloat(r.total_revenue) || 0,
+      }))
+    });
+  } catch (err) {
+    console.error('[Analytics] top-sellers error:', err.message);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// ========================================
 // ADMIN SETTINGS ENDPOINTS
 // ========================================
 
