@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
+import { API_BASE_URL } from '../utils/api';
 import './Products.css';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const getProductImage = (product) => {
   if (product.image_url) return `${API_BASE_URL}${product.image_url}`;
@@ -71,8 +70,12 @@ function Products() {
       const res = await fetch(`${API_BASE_URL}/api/products/all`);
       if (!res.ok) throw new Error('Failed to fetch products');
       const data = await res.json();
-      console.log('Fetched products:', data.length);
-      setProducts(data);
+      
+      // Handle both array response and paginated {products:[]} response
+      const list = Array.isArray(data) ? data : (data.products || []);
+      
+      console.log('Fetched products:', list.length);
+      setProducts(list);
     } catch (err) {
       console.error('Products fetch error:', err);
       setError(err.message);
@@ -92,7 +95,37 @@ function Products() {
     await updateQty(productId, currentQty + delta);
   };
 
-  if (loading) return <div className="products-page"><div className="loading">Loading products...</div></div>;
+  if (loading) return (
+    <div className="products-page">
+      <header className="products-header">
+        <div className="header-content">
+          <button className="back-btn" onClick={() => navigate('/')}>← Back to Home</button>
+          <h1>All Products</h1>
+          <button className="cart-btn" onClick={() => setCartOpen(true)}>
+            🛒 Cart
+            {totalItems > 0 && <span className="cart-count">{totalItems}</span>}
+          </button>
+        </div>
+      </header>
+      <div className="products-container">
+        <div className="products-grid">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="product-skeleton" style={{ animationDelay: `${i * 0.1}s` }}>
+              <div className="skeleton-product-image" />
+              <div className="skeleton-product-info">
+                <div className="skeleton-line skeleton-category" />
+                <div className="skeleton-line skeleton-name" />
+                <div className="skeleton-line skeleton-desc" />
+                <div className="skeleton-line skeleton-price" />
+                <div className="skeleton-line skeleton-owner" />
+                <div className="skeleton-button" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
   if (error)   return <div className="products-page"><div className="error">Error: {error}</div></div>;
 
   return (

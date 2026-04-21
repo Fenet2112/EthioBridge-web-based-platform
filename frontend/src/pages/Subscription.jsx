@@ -41,9 +41,30 @@ function Subscription() {
   };
 
   if (pageLoading) return (
-    <div className="sub-page-loading">
-      <div className="sub-spinner"></div>
-      <p>Loading subscription info...</p>
+    <div className="sub-page">
+      <div className="sub-page-header">
+        <div className="sub-skeleton-back" />
+        <div className="sub-page-title">
+          <div className="sub-skeleton-title" />
+          <div className="sub-skeleton-subtitle" />
+        </div>
+      </div>
+      
+      <div className="sub-skeleton-banner" />
+      
+      <div className="sub-comparison">
+        {[1, 2].map((i) => (
+          <div key={i} className="sub-skeleton-card">
+            <div className="sub-skeleton-badge" />
+            <div className="sub-skeleton-price" />
+            <div className="sub-skeleton-features">
+              {[1, 2, 3, 4, 5].map((j) => (
+                <div key={j} className="sub-skeleton-feature" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 

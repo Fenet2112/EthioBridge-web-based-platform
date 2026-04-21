@@ -88,6 +88,116 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   SKELETON LOADERS
+   ═══════════════════════════════════════════════════════════════ */
+
+.pp-skeleton-avatar {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--input-bg) 25%, var(--bg-hover) 50%, var(--input-bg) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  flex-shrink: 0;
+}
+
+.pp-skeleton-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.pp-skeleton-line {
+  height: 16px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--input-bg) 25%, var(--bg-hover) 50%, var(--input-bg) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.pp-skeleton-name {
+  width: 300px;
+  height: 32px;
+  max-width: 80%;
+}
+
+.pp-skeleton-username {
+  width: 180px;
+  height: 20px;
+  max-width: 50%;
+}
+
+.pp-skeleton-bio {
+  width: 400px;
+  height: 18px;
+  max-width: 90%;
+}
+
+.pp-skeleton-meta {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.pp-skeleton-meta-item {
+  width: 120px;
+  height: 16px;
+}
+
+.pp-skeleton-button {
+  width: 160px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--input-bg) 25%, var(--bg-hover) 50%, var(--input-bg) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  margin-top: 4px;
+}
+
+.pp-skeleton-section-title {
+  width: 150px;
+  height: 14px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--input-bg) 25%, var(--bg-hover) 50%, var(--input-bg) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  margin-bottom: 24px;
+}
+
+.pp-skeleton-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+}
+
+.pp-skeleton-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pp-skeleton-label {
+  width: 80px;
+  height: 12px;
+}
+
+.pp-skeleton-value {
+  width: 140px;
+  height: 16px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
    HEADER
    ═══════════════════════════════════════════════════════════════ */
 

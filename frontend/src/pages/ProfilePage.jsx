@@ -101,7 +101,38 @@ function ProfilePage() {
 
   if (loading) return (
     <div className="pp-page">
-      <div className="pp-loading"><div className="pp-spinner"></div><p>Loading profile...</p></div>
+      <StakeholderNav />
+      <div className="pp-header">
+        <h1>My Profile</h1>
+        <p>Manage your personal information</p>
+      </div>
+      <div className="pp-body">
+        <div className="pp-profile-header">
+          <div className="pp-skeleton-avatar" />
+          <div className="pp-skeleton-info">
+            <div className="pp-skeleton-line pp-skeleton-name" />
+            <div className="pp-skeleton-line pp-skeleton-username" />
+            <div className="pp-skeleton-line pp-skeleton-bio" />
+            <div className="pp-skeleton-meta">
+              <div className="pp-skeleton-line pp-skeleton-meta-item" />
+              <div className="pp-skeleton-line pp-skeleton-meta-item" />
+              <div className="pp-skeleton-line pp-skeleton-meta-item" />
+            </div>
+            <div className="pp-skeleton-button" />
+          </div>
+        </div>
+        <div className="pp-info-card">
+          <div className="pp-skeleton-section-title" />
+          <div className="pp-skeleton-details">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="pp-skeleton-detail">
+                <div className="pp-skeleton-line pp-skeleton-label" />
+                <div className="pp-skeleton-line pp-skeleton-value" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 
