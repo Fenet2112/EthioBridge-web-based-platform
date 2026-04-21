@@ -3,24 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { API_BASE_URL } from '../utils/api';
 import './ProfileDropdown.css';
-import DarkModeToggle from './DarkModeToggle';
 
 function ProfileDropdown() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [profile, setProfile] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    username: '',
-    full_name: '',
-    bio: ''
-  });
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
   const dropdownRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const [photoUploading, setPhotoUploading] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -30,7 +19,6 @@ function ProfileDropdown() {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
-        setIsEditing(false);
       }
     };
 
@@ -50,97 +38,9 @@ function ProfileDropdown() {
       if (res.ok) {
         const data = await res.json();
         setProfile(data);
-        setFormData({
-          username: data.username || '',
-          full_name: data.full_name || '',
-          bio: data.bio || ''
-        });
       }
     } catch (err) {
       console.error('Error loading profile:', err);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileSelect = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB.'); return; }
-
-    // Show local preview immediately
-    setPreviewUrl(URL.createObjectURL(file));
-    setSelectedFile(file);
-    setPhotoUploading(true);
-
-    const token = localStorage.getItem('token');
-    const fd = new FormData();
-    fd.append('profile_picture', file);
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/profile/me/picture`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Upload failed');
-      // Replace blob URL with persisted server URL
-      setPreviewUrl(null);
-      setSelectedFile(null);
-      setProfile(prev => ({ ...prev, profile_picture: data.profile_picture }));
-    } catch (err) {
-      alert('Photo upload failed: ' + err.message);
-      setPreviewUrl(null);
-      setSelectedFile(null);
-    } finally {
-      setPhotoUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const handleSave = async () => {
-    const token = localStorage.getItem('token');
-    
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/profile/me`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (!res.ok) throw new Error('Failed to update profile');
-
-      // Refresh page to show updated profile
-      window.location.reload();
-    } catch (err) {
-      alert('Error: ' + err.message);
-    }
-  };
-
-  const handleDeletePicture = async () => {
-    if (!window.confirm('Delete profile picture?')) return;
-
-    const token = localStorage.getItem('token');
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/profile/me/picture`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (!res.ok) throw new Error('Failed to delete picture');
-      
-      await fetchProfile();
-      setPreviewUrl(null);
-      alert('Profile picture deleted');
-    } catch (err) {
-      alert('Error: ' + err.message);
     }
   };
 
@@ -156,7 +56,7 @@ function ProfileDropdown() {
     return '?';
   };
 
-  const profilePicUrl = previewUrl || (profile?.profile_picture ? `${API_BASE_URL}${profile.profile_picture}` : null);
+  const profilePicUrl = profile?.profile_picture ? `${API_BASE_URL}${profile.profile_picture}` : null;
 
   return (
     <div className="profile-dropdown-container" ref={dropdownRef}>
@@ -169,180 +69,85 @@ function ProfileDropdown() {
         ) : (
           <div className="profile-avatar-placeholder">{getInitials()}</div>
         )}
-        <span className="dropdown-arrow">▼</span>
       </button>
 
       {isOpen && (
         <div className="profile-dropdown-menu">
-          {!isEditing ? (
-            <>
-              <div className="dropdown-header">
-                {profilePicUrl ? (
-                  <img src={profilePicUrl} alt="Profile" className="dropdown-avatar" />
-                ) : (
-                  <div className="dropdown-avatar-placeholder">{getInitials()}</div>
-                )}
-                <div className="dropdown-user-info">
-                  <h3>{profile?.full_name || 'Set your name'}</h3>
-                  <p>@{profile?.username || 'username'}</p>
-                </div>
-              </div>
+          <div className="dropdown-header">
+            {profilePicUrl ? (
+              <img src={profilePicUrl} alt="Profile" className="dropdown-avatar" />
+            ) : (
+              <div className="dropdown-avatar-placeholder">{getInitials()}</div>
+            )}
+            <div className="dropdown-user-info">
+              <h3>{profile?.full_name || 'Set your name'}</h3>
+              <p>@{profile?.username || 'username'}</p>
+            </div>
+          </div>
 
-              {profile?.bio && (
-                <div className="dropdown-bio">
-                  <p>{profile.bio}</p>
-                </div>
-              )}
-
-              <div className="dropdown-divider"></div>
-
-              <button 
-                className="dropdown-item"
-                onClick={() => setIsEditing(true)}
-              >
-                <span className="item-icon">✏️</span>
-                Edit Profile
-              </button>
-
-              <button 
-                className="dropdown-item"
-                onClick={() => {
-                  console.log('Navigating to /profile');
-                  setIsOpen(false);
-                  navigate('/profile');
-                }}
-              >
-                <span className="item-icon">👤</span>
-                View Full Profile
-              </button>
-
-              <button 
-                className="dropdown-item"
-                onClick={() => {
-                  setIsOpen(false);
-                  navigate('/subscription');
-                }}
-              >
-                <span className="item-icon">⭐</span>
-                Subscription
-              </button>
-
-              <div className="dropdown-divider"></div>
-
-              <div className="dropdown-item dm-row">
-                <span className="item-icon">🌙</span>
-                <span>Dark Mode</span>
-                <DarkModeToggle />
-              </div>
-
-              <div className="dropdown-divider"></div>
-
-              <button
-                className="dropdown-item logout"
-                onClick={handleLogout}
-              >
-                <span className="item-icon">🚪</span>
-                Logout
-              </button>
-            </>
-          ) : (
-            <div className="dropdown-edit-form">
-              <h3>Edit Profile</h3>
-
-              <div className="edit-avatar-section">
-                <div className="edit-avatar-wrap">
-                  {profilePicUrl ? (
-                    <img src={profilePicUrl} alt="Profile" className="edit-avatar" />
-                  ) : (
-                    <div className="edit-avatar-placeholder">{getInitials()}</div>
-                  )}
-                  {photoUploading && (
-                    <div className="edit-avatar-uploading">
-                      <div className="edit-upload-spinner"></div>
-                    </div>
-                  )}
-                </div>
-                <div className="avatar-actions">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                  />
-                  <button
-                    className="btn-change-photo"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={photoUploading}
-                  >
-                    {photoUploading ? 'Uploading...' : 'Change Photo'}
-                  </button>
-                  {profile?.profile_picture && !photoUploading && (
-                    <button
-                      className="btn-delete-photo"
-                      onClick={handleDeletePicture}
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Username</label>
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  placeholder="username"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Full Name</label>
-                <input
-                  type="text"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleInputChange}
-                  placeholder="Your full name"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Bio</label>
-                <textarea
-                  name="bio"
-                  value={formData.bio}
-                  onChange={handleInputChange}
-                  placeholder="Tell us about yourself..."
-                  rows="3"
-                />
-              </div>
-
-              <div className="form-actions">
-                <button className="btn-set" onClick={handleSave}>
-                  Set Profile
-                </button>
-                <button 
-                  className="btn-cancel" 
-                  onClick={() => {
-                    setIsEditing(false);
-                    setSelectedFile(null);
-                    setPreviewUrl(null);
-                    setFormData({
-                      username: profile?.username || '',
-                      full_name: profile?.full_name || '',
-                      bio: profile?.bio || ''
-                    });
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
+          {profile?.bio && (
+            <div className="dropdown-bio">
+              <p>{profile.bio}</p>
             </div>
           )}
+
+          <div className="dropdown-divider"></div>
+
+          <button 
+            className="dropdown-item"
+            onClick={() => {
+              setIsOpen(false);
+              navigate('/profile');
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            Profile
+          </button>
+
+          <button 
+            className="dropdown-item"
+            onClick={() => {
+              setIsOpen(false);
+              navigate('/subscription');
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            Subscription
+          </button>
+
+          <button 
+            className="dropdown-item"
+            onClick={() => {
+              setIsOpen(false);
+              navigate('/help');
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Help
+          </button>
+
+          <div className="dropdown-divider"></div>
+
+          <button
+            className="dropdown-item logout"
+            onClick={handleLogout}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Logout
+          </button>
         </div>
       )}
     </div>

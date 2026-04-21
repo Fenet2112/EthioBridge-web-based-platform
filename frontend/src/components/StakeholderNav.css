@@ -4,8 +4,10 @@
 
 /* ── Top bar ── */
 .sk-nav {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 600;
   display: flex;
   align-items: center;
@@ -18,6 +20,11 @@
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
   backdrop-filter: blur(20px);
   transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .sk-nav {
+  background: rgba(26, 31, 30, 0.98);
+  border-bottom: 1px solid rgba(74, 222, 128, 0.08);
 }
 
 .sk-nav:hover {

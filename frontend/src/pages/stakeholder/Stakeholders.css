@@ -93,6 +93,7 @@
   font-family: var(--font-primary);
   color: var(--text-primary);
   line-height: var(--leading-relaxed);
+  padding-top: 72px; /* Account for fixed header */
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -211,6 +212,62 @@
 .search-field::placeholder {
   color: var(--text-muted);
   font-weight: 400;
+}
+
+.search-location-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid var(--border-light);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.search-location-btn:hover {
+  background: rgba(29, 95, 58, 0.1);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: scale(1.05);
+}
+
+.search-location-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(29, 95, 58, 0.3);
+}
+
+.search-location-btn.active:hover {
+  background: var(--primary-dark);
+  transform: scale(1.05);
+}
+
+.search-location-btn.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+  animation: locationPulse 1.5s ease-in-out infinite;
+}
+
+.search-location-btn.loading:hover {
+  transform: none;
+}
+
+@keyframes locationPulse {
+  0%, 100% { 
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.1);
+  }
 }
 
 .search-btn {

@@ -64,7 +64,7 @@ function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, reques
         </button>
 
         {/* Brand */}
-        <Link to="/" className="sk-nav-brand" title="EthioPartner Home">
+        <Link to="/stakeholders" className="sk-nav-brand" title="Industries">
           <span className="sk-nav-logo"><FaLink /></span>
           <span className="sk-nav-name">EthioBridge</span>
         </Link>
@@ -74,18 +74,6 @@ function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, reques
         
         {/* Right side — always visible */}
         <div className="sk-nav-right">
-          <button 
-            className={`sk-location-btn ${userLocation ? 'active' : ''} ${locationLoading ? 'loading' : ''}`}
-            onClick={requestUserLocation}
-            disabled={locationLoading}
-            title={userLocation ? 'Location enabled' : 'Get my location'}
-            aria-label="Get current location"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
-          </button>
           <DarkModeToggle />
           <ProfileDropdown />
         </div>
