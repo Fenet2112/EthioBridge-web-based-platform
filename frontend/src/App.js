@@ -23,6 +23,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import AdminLogin from "./pages/admin/Login";
 import Help from "./pages/Help";
 import MyRequests from "./pages/MyRequests";
+import MyTransactions from "./pages/MyTransactions";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Explore from "./pages/Explore";
 
@@ -76,6 +77,9 @@ function App() {
 
       {/* Support Requests Page */}
       <Route path="/my-requests" element={<MyRequests />} />
+
+      {/* My Transactions Page */}
+      <Route path="/my-transactions" element={<MyTransactions />} />
 
       {/* Help Page */}
       <Route path="/help" element={<Help />} />

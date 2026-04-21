@@ -3,20 +3,21 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { 
   FaIndustry, FaComments, FaBox, FaStar, FaUser, FaQuestionCircle,
-  FaLink, FaTimes, FaHome, FaDoorOpen
+  FaLink, FaTimes, FaHome, FaDoorOpen, FaClipboardList
 } from "react-icons/fa";
 import ProfileDropdown from "./ProfileDropdown";
 import DarkModeToggle from "./DarkModeToggle";
 import "./StakeholderNav.css";
 
 const NAV_ITEMS = [
-  { path: "/stakeholders",    icon: <FaIndustry />, label: "Industries"   },
-  { path: "/messages",        icon: <FaComments />, label: "Messages"     },
-  { path: "/products",        icon: <FaBox />, label: "Products"     },
-  { path: "/recommendations", icon: <FaStar />, label: "For You"      },
-  { path: "/profile",         icon: <FaUser />, label: "Profile"      },
-  { path: "/subscription",    icon: <FaStar />, label: "Subscription" },
-  { path: "/help",            icon: <FaQuestionCircle />, label: "Help"         },
+  { path: "/stakeholders",    icon: <FaIndustry />,     label: "Industries"      },
+  { path: "/my-transactions", icon: <FaClipboardList />, label: "My Transactions" },
+  { path: "/messages",        icon: <FaComments />,     label: "Messages"        },
+  { path: "/products",        icon: <FaBox />,          label: "Products"        },
+  { path: "/recommendations", icon: <FaStar />,         label: "For You"         },
+  { path: "/profile",         icon: <FaUser />,         label: "Profile"         },
+  { path: "/subscription",    icon: <FaStar />,         label: "Subscription"    },
+  { path: "/help",            icon: <FaQuestionCircle />, label: "Help"          },
 ];
 
 function StakeholderNav({ unreadCount = 0 }) {

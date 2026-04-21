@@ -4,7 +4,6 @@ import { io } from "socket.io-client";
 import StakeholderNav from "../components/StakeholderNav";
 import SubscriptionModal from "../components/SubscriptionModal";
 import RecommendWidget from "../components/RecommendWidget";
-import TransactionHistory from "../components/TransactionHistory";
 import { getUserLocation, addDistanceToIndustries, sortIndustriesByDistance, formatDistance } from '../utils/distance';
 import "./Stakeholders.css";
 import "./StakeholdersDarkMode.css";
@@ -552,15 +551,6 @@ function Stakeholders() {
           )}
         </div>
       </div>
-
-      {/* ── My Transaction History ── */}
-      <section className="cards-section" style={{ paddingTop: 0 }}>
-        <div style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: "1.4rem", fontWeight: 700, color: "#1f2937", margin: 0 }}>My Purchase History</h2>
-          <p style={{ color: "#9ca3af", fontSize: ".88rem", marginTop: 4 }}>All your purchase requests and their current status</p>
-        </div>
-        <TransactionHistory role="stakeholder" />
-      </section>
 
       {showSubModal && (
         <SubscriptionModal
