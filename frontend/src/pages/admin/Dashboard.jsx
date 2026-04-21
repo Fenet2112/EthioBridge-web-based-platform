@@ -12,6 +12,7 @@ import Settings from "./Settings";
 import Testimonials from "./Testimonials";
 import ContactMessages from "./ContactMessages";
 import TransactionsView from "./TransactionsView";
+import UserManagement from "./UserManagement";
 import { 
   FaChartBar, 
   FaUsers, 
@@ -544,88 +545,15 @@ function Dashboard() {
 
           {/* ════ USER MANAGEMENT VIEW ════ */}
           {view === "manage" && (
-            <>
-              <div className="admin-topbar">
-                <div><h1>User Management</h1><p>{allUsers.length} users shown</p></div>
-                <button className="refresh-btn" onClick={fetchAllUsers}>↻ Refresh</button>
-              </div>
-              <FilterPanel
-                filters={userFilters}
-                onFilterChange={setUserFilters}
-                onApply={() => fetchAllUsers(userFilters, userPagination)}
-                onReset={() => {
-                  setUserFilters({
-                    search: '',
-                    role: 'all',
-                    status: 'all',
-                    startDate: '',
-                    endDate: '',
-                    minLoginCount: '',
-                    maxLoginCount: '',
-                    minProducts: '',
-                    maxProducts: '',
-                    minRequests: '',
-                    maxRequests: ''
-                  });
-                  fetchAllUsers({}, userPagination);
-                }}
-                config={[
-                  { key: 'search', label: 'Search', type: 'text', placeholder: 'Search by name or email...' },
-                  { key: 'role', label: 'Role', type: 'select', options: [
-                    { value: 'all', label: 'All Roles' },
-                    { value: 'industry', label: 'Industry' },
-                    { value: 'stakeholder', label: 'Stakeholder' }
-                  ]},
-                  { key: 'status', label: 'Status', type: 'select', options: [
-                    { value: 'all', label: 'All Statuses' },
-                    { value: 'approved', label: 'Active' },
-                    { value: 'pending', label: 'Pending' },
-                    { value: 'suspended', label: 'Suspended' },
-                    { value: 'banned', label: 'Banned' },
-                    { value: 'rejected', label: 'Rejected' }
-                  ]},
-                  { key: 'startDate', label: 'Registered After', type: 'date' },
-                  { key: 'endDate', label: 'Registered Before', type: 'date' },
-                  { key: 'minLoginCount', label: 'Min Logins', type: 'number' },
-                  { key: 'maxLoginCount', label: 'Max Logins', type: 'number' },
-                  { key: 'minProducts', label: 'Min Products', type: 'number' },
-                  { key: 'maxProducts', label: 'Max Products', type: 'number' },
-                  { key: 'minRequests', label: 'Min Requests', type: 'number' },
-                  { key: 'maxRequests', label: 'Max Requests', type: 'number' }
-                ]}
-              />
-              {error && <div className="admin-error">{error}</div>}
-              {loading ? <div className="admin-loading">Loading...</div>
-              : allUsers.length === 0 ? (
-                <div className="admin-empty"><span>👥</span><p>No users match your filters.</p></div>
-              ) : (
-                <div className="um-table-wrap">
-                  <table className="um-table">
-                    <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
-                    <tbody>
-                      {allUsers.map(u => (
-                        <tr key={u.id} className={`um-row um-row-${u.status}`}>
-                          <td className="um-id">#{u.id}</td>
-                          <td className="um-name"><span className="um-role-icon">{u.role === "industry" ? <FaIndustry /> : <FaUsers />}</span>{u.display_name || "—"}</td>
-                          <td className="um-email">{u.email}</td>
-                          <td><span className={`um-role-badge um-role-${u.role}`}>{u.role === "industry" ? "Industry" : "Stakeholder"}</span></td>
-                          <td><StatusBadge status={u.status} /></td>
-                          <td className="um-date">{new Date(u.created_at).toLocaleDateString()}</td>
-                          <td>
-                            <div className="um-actions">
-                              <button className="um-btn um-view" onClick={() => fetchUserDetails(u.id)}><FaEye /> View</button>
-                              {u.status !== "banned" && <button className="um-btn um-ban" onClick={() => { setActionModal({ user: u, action: "ban" }); setActionReason(""); }}><FaBan /> Ban</button>}
-                              {u.status !== "suspended" && u.status !== "banned" && <button className="um-btn um-suspend" onClick={() => { setActionModal({ user: u, action: "suspend" }); setActionReason(""); }}><FaPause /> Suspend</button>}
-                              {(u.status === "suspended" || u.status === "banned") && <button className="um-btn um-activate" onClick={() => { setActionModal({ user: u, action: "activate" }); setActionReason(""); }}><FaUnlock /> Activate</button>}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </>
+            <UserManagement
+              allUsers={allUsers}
+              loading={loading}
+              error={error}
+              fetchAllUsers={fetchAllUsers}
+              setActionModal={setActionModal}
+              setActionReason={setActionReason}
+              fetchUserDetails={fetchUserDetails}
+            />
           )}
         </main>
       </div>
