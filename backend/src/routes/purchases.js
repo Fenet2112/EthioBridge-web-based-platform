@@ -284,21 +284,36 @@ router.get(
   requireRole("stakeholder"),
   async (req, res) => {
     try {
+      const { status, dateFrom, dateTo, page = "1", limit = "50" } = req.query;
+      const params = [req.user.id];
+      let n = 2;
+      let where = `WHERE s.user_id = $1`;
+      if (status && status !== "all") { where += ` AND pr.status = $${n++}`; params.push(status); }
+      if (dateFrom) { where += ` AND pr.created_at >= $${n++}`; params.push(dateFrom); }
+      if (dateTo)   { where += ` AND pr.created_at <= $${n++}::date + interval '1 day'`; params.push(dateTo); }
+
+      const pageNum  = Math.max(1, parseInt(page));
+      const limitNum = Math.min(100, parseInt(limit));
+      const offset   = (pageNum - 1) * limitNum;
+
       const result = await pool.query(`
         SELECT
-          pr.id, pr.status, pr.quantity, pr.notes, pr.admin_notes, pr.created_at,
+          pr.id, pr.status, pr.quantity, pr.notes, pr.admin_notes,
+          pr.created_at, pr.updated_at,
           pr.id_document_url, pr.id_document_type,
-          p.name AS product_name, p.price, p.unit,
+          p.name AS product_name, p.price, p.unit, p.image_url AS product_image,
+          (p.price * pr.quantity) AS total_price,
           i.company_name AS industry_name, i.sector, i.location AS industry_location
         FROM purchase_requests pr
         JOIN stakeholders s ON s.id = pr.stakeholder_id
         JOIN products p ON p.id = pr.product_id
         JOIN industries i ON i.id = pr.industry_id
-        WHERE s.user_id = $1
+        ${where}
         ORDER BY pr.created_at DESC
-      `, [req.user.id]);
+        LIMIT $${n++} OFFSET $${n++}
+      `, [...params, limitNum, offset]);
 
-      res.json(result.rows);
+      res.json({ transactions: result.rows, total: result.rows.length, page: pageNum });
     } catch (error) {
       console.error("Get my requests error:", error);
       res.status(500).json({ message: "Server error" });
@@ -306,7 +321,7 @@ router.get(
   }
 );
 
-// ── GET PURCHASE REQUESTS FOR MY INDUSTRY (all statuses except pending_verification) ──
+// ── GET PURCHASE REQUESTS FOR MY INDUSTRY (transaction history) ──
 router.get(
   "/purchases/industry-requests",
   authenticateToken,
@@ -322,11 +337,26 @@ router.get(
       }
       const industry_id = industryResult.rows[0].id;
 
+      const { status, dateFrom, dateTo, page = "1", limit = "50" } = req.query;
+      const params = [industry_id];
+      let n = 2;
+      let where = `WHERE pr.industry_id = $1`;
+      if (status && status !== "all") { where += ` AND pr.status = $${n++}`; params.push(status); }
+      else { where += ` AND pr.status IN ('approved','pending','rejected','completed')`; }
+      if (dateFrom) { where += ` AND pr.created_at >= $${n++}`; params.push(dateFrom); }
+      if (dateTo)   { where += ` AND pr.created_at <= $${n++}::date + interval '1 day'`; params.push(dateTo); }
+
+      const pageNum  = Math.max(1, parseInt(page));
+      const limitNum = Math.min(100, parseInt(limit));
+      const offset   = (pageNum - 1) * limitNum;
+
       const result = await pool.query(`
         SELECT
           pr.id, pr.status, pr.quantity, pr.notes, pr.full_name, pr.organization_name,
-          pr.phone, pr.location, pr.created_at, pr.id_document_type,
-          p.name AS product_name, p.price, p.unit,
+          pr.phone, pr.location, pr.created_at, pr.updated_at, pr.admin_notes,
+          pr.id_document_type,
+          p.name AS product_name, p.price, p.unit, p.image_url AS product_image,
+          (p.price * pr.quantity) AS total_price,
           s.organization_name AS stakeholder_org, s.contact_person, s.identity_verified,
           s.id AS stakeholder_id,
           c.id AS conversation_id,
@@ -336,11 +366,12 @@ router.get(
         JOIN stakeholders s ON s.id = pr.stakeholder_id
         JOIN users u ON u.id = s.user_id
         LEFT JOIN conversations c ON c.stakeholder_id = pr.stakeholder_id AND c.industry_id = pr.industry_id
-        WHERE pr.industry_id = $1 AND pr.status IN ('approved', 'pending')
+        ${where}
         ORDER BY pr.created_at DESC
-      `, [industry_id]);
+        LIMIT $${n++} OFFSET $${n++}
+      `, [...params, limitNum, offset]);
 
-      res.json(result.rows);
+      res.json({ transactions: result.rows, total: result.rows.length, page: pageNum });
     } catch (error) {
       console.error("Get industry requests error:", error);
       res.status(500).json({ message: "Server error" });

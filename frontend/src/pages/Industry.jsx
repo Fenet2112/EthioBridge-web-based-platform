@@ -9,6 +9,7 @@ import {
   FaEnvelope, FaBuilding, FaCalendar, FaBell
 } from "react-icons/fa";
 import SubscriptionModal from "../components/SubscriptionModal";
+import TransactionHistory from "../components/TransactionHistory";
 import "./Industry.css";
 import "./IndustryDarkMode.css";
 import "./IndustryMessages.css";
@@ -1582,118 +1583,14 @@ function Industry() {
           </div>
         )}
 
-        {/* Purchase Requests Section */}
+        {/* Purchase Requests / Transaction History Section */}
         {canAccessOtherSections && activeSection === "requests" && (
           <div className="requests-section">
-            <div style={{marginBottom: '30px'}}>
-              <h2 style={{marginBottom: '8px'}}>Purchase Requests</h2>
-              <p style={{color: 'var(--text-muted)', fontSize: '14px'}}>Requests from stakeholders who want to buy your products</p>
+            <div style={{ marginBottom: 24 }}>
+              <h2 style={{ marginBottom: 6 }}>Orders &amp; Sales History</h2>
+              <p style={{ color: "var(--text-muted)", fontSize: 14 }}>All purchase requests from stakeholders for your products</p>
             </div>
-
-            {requestsLoading ? (
-              <div style={{textAlign: 'center', padding: '40px', color: 'var(--text-light)'}}>
-                <div style={{fontSize: '40px', marginBottom: '10px'}}>⏳</div>
-                <p>Loading requests...</p>
-              </div>
-            ) : purchaseRequests.length === 0 ? (
-              <div style={{
-                textAlign: 'center', padding: '60px 20px',
-                background: 'var(--bg-input)', borderRadius: '12px',
-                border: '2px dashed var(--border)'
-              }}>
-                <div style={{fontSize: '60px', marginBottom: '15px'}}>📋</div>
-                <h3 style={{color: 'var(--text-muted)', marginBottom: '8px'}}>No Purchase Requests Yet</h3>
-                <p style={{color: 'var(--text-light)', fontSize: '14px'}}>When stakeholders request your products, they'll appear here</p>
-              </div>
-            ) : (
-              <div style={{display: 'grid', gap: '20px'}}>
-                {purchaseRequests.map(req => (
-                  <div key={req.id} className="purchase-request-card">
-                    {/* Header */}
-                    <div className="pr-card-header">
-                      <div>
-                        <h4 className="pr-product-name">📦 {req.product_name}</h4>
-                        <div style={{display:'flex', gap:'8px', flexWrap:'wrap', marginTop:'6px'}}>
-                          {req.status === 'approved' ? (
-                            <span className="pr-badge pr-badge-approved">✓ Verified Request</span>
-                          ) : (
-                            <span className="pr-badge pr-badge-pending">⏳ Pending Review</span>
-                          )}
-                          {req.identity_verified && (
-                            <span className="pr-badge pr-badge-id">🛡️ ID Verified</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="pr-qty-box">
-                        <div className="pr-qty-num">{req.quantity}</div>
-                        <div className="pr-qty-unit">{req.unit}</div>
-                      </div>
-                    </div>
-
-                    {/* Details */}
-                    <div className="pr-details-grid">
-                      <div className="pr-detail">
-                        <div className="pr-detail-label">👤 Stakeholder</div>
-                        <div className="pr-detail-value">{req.full_name}</div>
-                      </div>
-                      <div className="pr-detail">
-                        <div className="pr-detail-label">🏢 Organization</div>
-                        <div className="pr-detail-value">{req.organization_name}</div>
-                      </div>
-                      <div className="pr-detail">
-                        <div className="pr-detail-label">📞 Phone</div>
-                        <div className="pr-detail-value">
-                          <a href={`tel:${req.phone}`} style={{color:'#667eea', textDecoration:'none'}}>{req.phone}</a>
-                        </div>
-                      </div>
-                      <div className="pr-detail">
-                        <div className="pr-detail-label">📍 Location</div>
-                        <div className="pr-detail-value">{req.location}</div>
-                      </div>
-                      <div className="pr-detail">
-                        <div className="pr-detail-label">📅 Date</div>
-                        <div className="pr-detail-value">{new Date(req.created_at).toLocaleDateString()}</div>
-                      </div>
-                      {req.stakeholder_email && (
-                        <div className="pr-detail">
-                          <div className="pr-detail-label">✉️ Email</div>
-                          <div className="pr-detail-value">
-                            <a href={`mailto:${req.stakeholder_email}`} style={{color:'#667eea', textDecoration:'none'}}>{req.stakeholder_email}</a>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {req.notes && (
-                      <div className="pr-notes">
-                        <div className="pr-detail-label">📝 Notes</div>
-                        <div style={{fontSize:'14px', color:'var(--text-muted)', lineHeight:'1.5', marginTop:'4px'}}>{req.notes}</div>
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    {req.status === 'approved' && (
-                      <div className="pr-actions">
-                        <button
-                          className="pr-action-btn pr-msg-btn"
-                          onClick={() => openConversationWithStakeholder(req.stakeholder_id)}
-                        >
-                          💬 Message Stakeholder
-                        </button>
-                        <a href={`tel:${req.phone}`} className="pr-action-btn pr-call-btn">
-                          📞 Call
-                        </a>
-                      </div>
-                    )}
-                    {req.status === 'pending' && (
-                      <div className="pr-pending-notice">
-                        ⏳ This request is under admin review. You'll be able to contact the stakeholder once approved.
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            <TransactionHistory role="industry" />
           </div>
         )}
         {/* Messages Section */}
