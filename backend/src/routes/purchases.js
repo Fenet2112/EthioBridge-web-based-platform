@@ -121,10 +121,10 @@ router.post(
         );
         const p = profileResult.rows[0];
         requestData = {
-          full_name: p.contact_person || full_name || 'N/A',
-          organization_name: p.organization_name || organization_name,
-          phone: p.phone || phone,
-          location: p.location || location,
+          full_name:         p.contact_person    || full_name         || 'N/A',
+          organization_name: p.organization_name || organization_name || 'N/A',
+          phone:             p.phone             || phone             || 'N/A',
+          location:          p.location          || location          || 'N/A',
         };
         requestStatus = 'approved';
       } else {
