@@ -326,7 +326,6 @@ router.get(
   "/purchases/industry-requests",
   authenticateToken,
   requireRole("industry"),
-  requireApproved,
   async (req, res) => {
     try {
       const industryResult = await pool.query(
