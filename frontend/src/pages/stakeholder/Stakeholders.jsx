@@ -404,7 +404,25 @@ function Stakeholders() {
 
           <section className="cards-section">
             {loading ? (
-              <div className="loading-state">Loading industries...</div>
+              <div className="skeleton-grid">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="skeleton-card" style={{ animationDelay: `${i * 0.1}s` }}>
+                    <div className="skeleton-card-top">
+                      <div className="skeleton-logo" />
+                    </div>
+                    <div className="skeleton-card-body">
+                      <div className="skeleton-line title" />
+                      <div className="skeleton-line meta" />
+                      <div className="skeleton-line desc" />
+                      <div className="skeleton-line desc-short" />
+                    </div>
+                    <div className="skeleton-card-actions">
+                      <div className="skeleton-button" />
+                      <div className="skeleton-button" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : error ? (
               <div className="error-state">Error: {error}</div>
             ) : filteredIndustries.length === 0 ? (

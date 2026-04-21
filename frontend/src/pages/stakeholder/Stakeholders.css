@@ -861,6 +861,107 @@
   box-shadow: 0 8px 20px rgba(29, 95, 58, 0.35);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   SKELETON LOADERS
+   ═══════════════════════════════════════════════════════════════ */
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.skeleton-card {
+  background: var(--card-surface);
+  border: 1.5px solid var(--border-light);
+  border-radius: 16px;
+  overflow: hidden;
+  height: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+.skeleton-card-top {
+  height: 140px;
+  background: linear-gradient(90deg, var(--card-surface-soft) 25%, var(--bg-accent) 50%, var(--card-surface-soft) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  position: relative;
+  padding: 18px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.skeleton-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, var(--bg-accent) 25%, var(--bg-hover) 50%, var(--bg-accent) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border: 3px solid var(--card-surface);
+}
+
+.skeleton-card-body {
+  flex: 1;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-line {
+  height: 16px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--bg-accent) 25%, var(--bg-hover) 50%, var(--bg-accent) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-line.title {
+  height: 20px;
+  width: 70%;
+}
+
+.skeleton-line.meta {
+  height: 14px;
+  width: 50%;
+}
+
+.skeleton-line.desc {
+  height: 14px;
+  width: 100%;
+}
+
+.skeleton-line.desc-short {
+  height: 14px;
+  width: 85%;
+}
+
+.skeleton-card-actions {
+  padding: 0 18px 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.skeleton-button {
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--bg-accent) 25%, var(--bg-hover) 50%, var(--bg-accent) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .loading-state,
 .error-state,
 .empty-state {
