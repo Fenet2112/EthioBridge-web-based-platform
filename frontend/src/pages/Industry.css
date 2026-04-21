@@ -1330,3 +1330,118 @@
   font-size: 0.75rem;
   color: #999;
 }
+
+/* ═══════════════════════════════════════════════════════
+   PRODUCT IMAGE UPLOAD
+═══════════════════════════════════════════════════════ */
+
+.product-img-upload-wrap {
+  margin-bottom: 4px;
+}
+
+.product-img-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 140px;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  cursor: pointer;
+  background: #f9fafb;
+  transition: border-color .2s, background .2s;
+  color: #6b7280;
+  font-size: .88rem;
+}
+.product-img-placeholder:hover {
+  border-color: #0a5c2f;
+  background: #f0fdf4;
+  color: #0a5c2f;
+}
+.product-img-icon { font-size: 2rem; }
+
+.product-img-preview-box {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+.product-img-preview {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1.5px solid #e5e7eb;
+  display: block;
+}
+.product-img-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,.55);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: .75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s;
+}
+.product-img-remove:hover { background: #dc2626; }
+
+/* ── Product card with image ── */
+.product-item-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px var(--shadow);
+  transition: transform .2s, box-shadow .2s;
+  display: flex;
+  flex-direction: column;
+}
+.product-item-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px var(--shadow-md);
+}
+
+.product-item-img-wrap {
+  width: 100%;
+  height: 160px;
+  background: #f3f4f6;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.product-item-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.product-item-img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  color: #d1d5db;
+  background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+}
+
+.product-item-body {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.product-item-body h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}

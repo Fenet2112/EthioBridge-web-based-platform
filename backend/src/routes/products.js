@@ -3,8 +3,32 @@ const router = express.Router();
 const pool = require("../config/db");
 const { authenticateToken, requireRole, requireApproved } = require("../middleware/auth");
 const { resolveSubType } = require("./subscription");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
 const FREE_PRODUCT_LIMIT = 5;
+
+// ── Multer for product images ──
+const productImgDir = "uploads/products";
+if (!fs.existsSync(productImgDir)) fs.mkdirSync(productImgDir, { recursive: true });
+
+const productStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, productImgDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `product_${req.user?.id || "x"}_${Date.now()}${ext}`);
+  },
+});
+const uploadProductImage = multer({
+  storage: productStorage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB
+  fileFilter: (req, file, cb) => {
+    const ok = /jpeg|jpg|png|webp/.test(path.extname(file.originalname).toLowerCase()) &&
+               /image\/(jpeg|jpg|png|webp)/.test(file.mimetype);
+    ok ? cb(null, true) : cb(new Error("Only JPG, PNG, or WebP images are allowed (max 2 MB)"));
+  },
+});
 
 // Helper: verify the requesting user owns the industry resource
 async function getIndustryForUser(userId) {
@@ -203,23 +227,26 @@ router.get(
 );
 
 // ========================================
-// CREATE PRODUCT
+// CREATE PRODUCT  (supports optional image upload)
 // ========================================
 router.post(
   "/products",
   authenticateToken,
   requireRole("industry"),
   requireApproved,
+  uploadProductImage.single("image"),
   async (req, res) => {
     const { name, description, price, unit, category } = req.body;
 
     if (!name) {
+      if (req.file) fs.unlinkSync(req.file.path);
       return res.status(400).json({ message: "Product name is required" });
     }
 
     try {
       const industry = await getIndustryForUser(req.user.id);
       if (!industry) {
+        if (req.file) fs.unlinkSync(req.file.path);
         return res.status(404).json({ message: "Industry profile not found" });
       }
 
@@ -235,6 +262,7 @@ router.post(
           [industry.id]
         );
         if (parseInt(countRes.rows[0].count) >= FREE_PRODUCT_LIMIT) {
+          if (req.file) fs.unlinkSync(req.file.path);
           return res.status(402).json({
             message: `Free plan allows up to ${FREE_PRODUCT_LIMIT} products. Upgrade to Premium for unlimited listings.`,
             requires_subscription: true,
@@ -249,6 +277,7 @@ router.post(
         [industry.id, name]
       );
       if (dupCheck.rows.length > 0) {
+        if (req.file) fs.unlinkSync(req.file.path);
         return res.status(409).json({
           message: "This product already exists. Please update the existing product instead.",
           duplicate: true,
@@ -256,9 +285,11 @@ router.post(
         });
       }
 
+      const imageUrl = req.file ? `/uploads/products/${req.file.filename}` : null;
+
       const result = await pool.query(
-        `INSERT INTO products (industry_id, name, description, price, unit, category)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO products (industry_id, name, description, price, unit, category, image_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING *`,
         [
           industry.id,
@@ -267,10 +298,12 @@ router.post(
           price ? parseFloat(price) : null,
           unit || "unit",
           category || null,
+          imageUrl,
         ]
       );
       res.status(201).json(result.rows[0]);
     } catch (error) {
+      if (req.file) { try { fs.unlinkSync(req.file.path); } catch {} }
       console.error("Create product error:", error);
       res.status(500).json({ message: "Server error" });
     }
@@ -278,13 +311,14 @@ router.post(
 );
 
 // ========================================
-// UPDATE PRODUCT
+// UPDATE PRODUCT  (supports optional image upload)
 // ========================================
 router.put(
   "/products/:id",
   authenticateToken,
   requireRole("industry"),
   requireApproved,
+  uploadProductImage.single("image"),
   async (req, res) => {
     const { id } = req.params;
     const { name, description, price, unit, category, is_available } = req.body;
@@ -292,15 +326,17 @@ router.put(
     try {
       const industry = await getIndustryForUser(req.user.id);
       if (!industry) {
+        if (req.file) fs.unlinkSync(req.file.path);
         return res.status(404).json({ message: "Industry profile not found" });
       }
 
       // Ensure product belongs to this industry
       const check = await pool.query(
-        "SELECT id FROM products WHERE id = $1 AND industry_id = $2",
+        "SELECT id, image_url FROM products WHERE id = $1 AND industry_id = $2",
         [id, industry.id]
       );
       if (check.rows.length === 0) {
+        if (req.file) fs.unlinkSync(req.file.path);
         return res.status(404).json({ message: "Product not found" });
       }
 
@@ -311,6 +347,7 @@ router.put(
           [industry.id, name, id]
         );
         if (dupCheck.rows.length > 0) {
+          if (req.file) fs.unlinkSync(req.file.path);
           return res.status(409).json({
             message: "Another product with this name already exists.",
             duplicate: true,
@@ -319,16 +356,28 @@ router.put(
         }
       }
 
+      // If new image uploaded, delete old one
+      let imageUrl = undefined;
+      if (req.file) {
+        imageUrl = `/uploads/products/${req.file.filename}`;
+        const oldUrl = check.rows[0].image_url;
+        if (oldUrl) {
+          const oldPath = path.join(__dirname, "../../", oldUrl);
+          if (fs.existsSync(oldPath)) { try { fs.unlinkSync(oldPath); } catch {} }
+        }
+      }
+
       const result = await pool.query(
         `UPDATE products
-         SET name = COALESCE($1, name),
+         SET name        = COALESCE($1, name),
              description = COALESCE($2, description),
-             price = COALESCE($3, price),
-             unit = COALESCE($4, unit),
-             category = COALESCE($5, category),
-             is_available = COALESCE($6, is_available),
-             updated_at = NOW()
-         WHERE id = $7
+             price       = COALESCE($3, price),
+             unit        = COALESCE($4, unit),
+             category    = COALESCE($5, category),
+             is_available= COALESCE($6, is_available),
+             image_url   = COALESCE($7, image_url),
+             updated_at  = NOW()
+         WHERE id = $8
          RETURNING *`,
         [
           name || null,
@@ -337,11 +386,13 @@ router.put(
           unit || null,
           category || null,
           is_available !== undefined ? is_available : null,
+          imageUrl || null,
           id,
         ]
       );
       res.json(result.rows[0]);
     } catch (error) {
+      if (req.file) { try { fs.unlinkSync(req.file.path); } catch {} }
       console.error("Update product error:", error);
       res.status(500).json({ message: "Server error" });
     }

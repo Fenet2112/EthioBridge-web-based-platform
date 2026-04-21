@@ -39,6 +39,9 @@ function Industry() {
     name: "", description: "", price: "", unit: "unit", category: ""
   });
   const [productNameError, setProductNameError] = useState("");
+  const [productImage, setProductImage] = useState(null);       // File object
+  const [productImagePreview, setProductImagePreview] = useState(null); // base64 preview
+  const productImageRef = useRef(null);
 
   // Purchase requests state
   const [purchaseRequests, setPurchaseRequests] = useState([]);
@@ -707,22 +710,28 @@ function Industry() {
 
   const handleProductSubmit = async (e) => {
     e.preventDefault();
-    if (productNameError) return; // block if inline error is showing
+    if (productNameError) return;
 
     const token = localStorage.getItem("token");
-    const url = editingProduct 
+    const url = editingProduct
       ? `${API_BASE_URL}/api/products/${editingProduct.id}`
       : `${API_BASE_URL}/api/products`;
     const method = editingProduct ? "PUT" : "POST";
 
     try {
+      // Always use FormData so we can attach the image file
+      const formData = new FormData();
+      formData.append("name",        productForm.name);
+      formData.append("category",    productForm.category);
+      formData.append("price",       productForm.price);
+      formData.append("unit",        productForm.unit);
+      formData.append("description", productForm.description);
+      if (productImage) formData.append("image", productImage);
+
       const res = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(productForm)
+        headers: { Authorization: `Bearer ${token}` }, // NO Content-Type — let browser set multipart boundary
+        body: formData,
       });
       
       if (res.status === 402) {
@@ -764,6 +773,9 @@ function Industry() {
       setEditingProduct(null);
       setProductNameError("");
       setProductForm({ name: "", description: "", price: "", unit: "unit", category: "" });
+      setProductImage(null);
+      setProductImagePreview(null);
+      if (productImageRef.current) productImageRef.current.value = "";
     } catch (err) {
       alert(err.message);
     }
@@ -778,6 +790,9 @@ function Industry() {
       unit: product.unit || "unit",
       category: product.category || ""
     });
+    setProductImage(null);
+    setProductImagePreview(product.image_url ? `${API_BASE_URL}${product.image_url}` : null);
+    if (productImageRef.current) productImageRef.current.value = "";
     setProductNameError("");
     setShowProductForm(true);
   };
@@ -1391,6 +1406,53 @@ function Industry() {
               <div className="product-form-card">
                 <h3>{editingProduct ? "Edit Product" : "Add New Product"}</h3>
                 <form onSubmit={handleProductSubmit}>
+                  {/* ── Product Image ── */}
+                  <div className="form-group">
+                    <label>Product Image <span style={{ color: "#9ca3af", fontWeight: 400 }}>(JPG/PNG/WebP, max 2 MB)</span></label>
+                    <div className="product-img-upload-wrap">
+                      {productImagePreview ? (
+                        <div className="product-img-preview-box">
+                          <img src={productImagePreview} alt="Preview" className="product-img-preview" />
+                          <button
+                            type="button"
+                            className="product-img-remove"
+                            onClick={() => {
+                              setProductImage(null);
+                              setProductImagePreview(null);
+                              if (productImageRef.current) productImageRef.current.value = "";
+                            }}
+                          >✕ Remove</button>
+                        </div>
+                      ) : (
+                        <label className="product-img-placeholder" htmlFor="product-image-input">
+                          <span className="product-img-icon">📷</span>
+                          <span>Click to upload image</span>
+                          <span style={{ fontSize: "0.75rem", color: "#9ca3af" }}>Optional</span>
+                        </label>
+                      )}
+                      <input
+                        id="product-image-input"
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        ref={productImageRef}
+                        style={{ display: "none" }}
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (!file) return;
+                          if (file.size > 2 * 1024 * 1024) {
+                            alert("Image must be smaller than 2 MB");
+                            e.target.value = "";
+                            return;
+                          }
+                          setProductImage(file);
+                          const reader = new FileReader();
+                          reader.onloadend = () => setProductImagePreview(reader.result);
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </div>
+                  </div>
+
                   <div className="form-row">
                     <div className="form-group">
                       <label>Product Name *</label>
@@ -1465,7 +1527,11 @@ function Industry() {
                     />
                   </div>
                   <div className="form-actions">
-                    <button type="button" className="cancel-btn" onClick={() => setShowProductForm(false)}>
+                    <button type="button" className="cancel-btn" onClick={() => {
+                      setShowProductForm(false);
+                      setProductImage(null);
+                      setProductImagePreview(null);
+                    }}>
                       Cancel
                     </button>
                     <button type="submit" className="save-btn" disabled={!!productNameError}>
@@ -1483,15 +1549,31 @@ function Industry() {
               <div className="products-grid">
                 {products.map(product => (
                   <div key={product.id} className="product-item-card">
-                    <h4>{product.name}</h4>
-                    <p className="product-category">{product.category}</p>
-                    {product.description && <p className="product-desc">{product.description}</p>}
-                    <div className="product-price">
-                      {product.price ? `${product.price.toLocaleString()} / ${product.unit}` : "Price on request"}
+                    {/* Product image */}
+                    <div className="product-item-img-wrap">
+                      {product.image_url ? (
+                        <img
+                          src={`${API_BASE_URL}${product.image_url}`}
+                          alt={product.name}
+                          className="product-item-img"
+                          onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
+                        />
+                      ) : null}
+                      <div className="product-item-img-placeholder" style={{ display: product.image_url ? "none" : "flex" }}>
+                        📦
+                      </div>
                     </div>
-                    <div className="product-actions">
-                      <button onClick={() => handleEditProduct(product)}>Edit</button>
-                      <button className="delete-btn" onClick={() => handleDeleteProduct(product.id)}>Delete</button>
+                    <div className="product-item-body">
+                      <h4>{product.name}</h4>
+                      <p className="product-category">{product.category}</p>
+                      {product.description && <p className="product-desc">{product.description}</p>}
+                      <div className="product-price">
+                        {product.price ? `${Number(product.price).toLocaleString()} ETB / ${product.unit}` : "Price on request"}
+                      </div>
+                      <div className="product-actions">
+                        <button onClick={() => handleEditProduct(product)}>Edit</button>
+                        <button className="delete-btn" onClick={() => handleDeleteProduct(product.id)}>Delete</button>
+                      </div>
                     </div>
                   </div>
                 ))}
