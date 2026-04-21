@@ -48,13 +48,14 @@ export default function TransactionHistory({ role = "stakeholder", tok }) {
 
   const getToken = () => tok ? tok() : localStorage.getItem("token");
 
-  const endpoint = role === "stakeholder"
-    ? `${API}/api/purchases/my-requests`
-    : role === "industry"
-    ? `${API}/api/purchases/industry-requests`
-    : `${API}/api/admin/transactions`;
-
   const load = useCallback(async (p = 1) => {
+    // Compute endpoint inside the callback so it always uses the current role prop
+    const ep = role === "stakeholder"
+      ? `${API}/api/purchases/my-requests`
+      : role === "industry"
+      ? `${API}/api/purchases/industry-requests`
+      : `${API}/api/admin/transactions`;
+
     setLoading(true); setError("");
     try {
       const params = new URLSearchParams({ page: p, limit: 50 });
@@ -62,7 +63,7 @@ export default function TransactionHistory({ role = "stakeholder", tok }) {
       if (dateFrom)     params.set("dateFrom", dateFrom);
       if (dateTo)       params.set("dateTo", dateTo);
 
-      const res = await fetch(`${endpoint}?${params}`, {
+      const res = await fetch(`${ep}?${params}`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       if (!res.ok) throw new Error((await res.json()).message || "Failed to load");
@@ -74,7 +75,7 @@ export default function TransactionHistory({ role = "stakeholder", tok }) {
       setHasMore(rows.length === 50);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
-  }, [endpoint, statusFilter, dateFrom, dateTo]); // eslint-disable-line
+  }, [role, statusFilter, dateFrom, dateTo]); // eslint-disable-line
 
   useEffect(() => { setPage(1); load(1); }, [load]);
 
