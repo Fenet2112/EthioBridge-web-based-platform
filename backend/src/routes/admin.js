@@ -124,7 +124,6 @@ router.get('/users/all', requireAdminAuth, async (req, res) => {
     let query = `
       SELECT
         u.id, u.email, u.role, u.status, u.email_verified, u.created_at,
-        u.last_login_at, u.login_count,
         COALESCE(i.company_name, s.organization_name) AS display_name,
         i.sector,
         s.organization_type,
@@ -179,7 +178,7 @@ router.get('/users/all', requireAdminAuth, async (req, res) => {
       whereAdded = true;
     }
 
-    query += ` GROUP BY u.id, u.email, u.role, u.status, u.email_verified, u.created_at, u.last_login_at, u.login_count, i.company_name, s.organization_name, i.sector, s.organization_type`;
+    query += ` GROUP BY u.id, u.email, u.role, u.status, u.email_verified, u.created_at, i.company_name, s.organization_name, i.sector, s.organization_type`;
 
     // HAVING conditions for aggregate counts
     const havingConditions = [];
@@ -206,7 +205,7 @@ router.get('/users/all', requireAdminAuth, async (req, res) => {
     // Sorting
     const allowedSortColumns = [
       "u.created_at", "u.email", "u.role", "u.status",
-      "display_name", "product_count", "request_count", "login_count"
+      "display_name", "product_count", "request_count"
     ];
     const sortColumn = allowedSortColumns.includes(sortBy) ? sortBy : "u.created_at";
     const sortDirection = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
@@ -346,7 +345,6 @@ router.get('/users/:id/details', requireAdminAuth, async (req, res) => {
     const result = await pool.query(`
       SELECT
         u.id, u.email, u.role, u.status, u.email_verified, u.created_at,
-        u.last_login_at, u.login_count,
         u.ban_reason, u.suspended_until,
         i.company_name, i.sector, i.location AS industry_location,
         i.description AS industry_description, i.phone AS industry_phone,
