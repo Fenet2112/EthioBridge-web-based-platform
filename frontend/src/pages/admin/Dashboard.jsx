@@ -8,7 +8,7 @@ import AnalyticsView from "../views/AnalyticsView";
 import ActivityLogsView, { logAction } from "../views/ActivityLogsView";
 import NotificationsView from "../views/NotificationsView";
 import Settings from "./Settings";
-import Testimonials from "./Testimonials";
+import AdminTestimonials from "./Testimonials";
 import ContactMessages from "./ContactMessages";
 import { 
   FaChartBar, 
@@ -382,7 +382,7 @@ function Dashboard() {
           {view === "home"       && <DashboardHome tok={tok} />}
           {view === "industries" && <IndustriesView tok={tok} />}
           {view === "products"   && <ProductsView tok={tok} />}
-          {view === "testimonials" && <Testimonials />}
+          {view === "testimonials" && <AdminTestimonials />}
           {view === "messages"   && <ContactMessages />}
           {view === "analytics"  && <AnalyticsView tok={tok} />}
           {view === "logs"       && <ActivityLogsView />}
