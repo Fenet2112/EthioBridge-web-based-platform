@@ -128,7 +128,8 @@ function Dashboard() {
       const res = await fetch(ep, { headers: { Authorization: `Bearer ${tok()}` } });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      setUsers(data);
+      // Handle both plain array and paginated {users:[]} response
+      setUsers(Array.isArray(data) ? data : (data.users || []));
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
