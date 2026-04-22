@@ -42,13 +42,18 @@ router.get('/approved', async (req, res) => {
         role,
         message,
         rating,
-        approved_at as created_at
+        COALESCE(approved_at, created_at) AS created_at
       FROM testimonials
       WHERE status = 'approved'
-      ORDER BY approved_at DESC
+        AND name IS NOT NULL
+        AND TRIM(name) <> ''
+        AND message IS NOT NULL
+        AND TRIM(message) <> ''
+      ORDER BY COALESCE(approved_at, created_at) DESC
       LIMIT 20
     `);
     
+    console.log(`[Testimonials] Returning ${result.rows.length} approved testimonials`);
     res.json(result.rows);
   } catch (error) {
     console.error('[Testimonials] Error fetching approved testimonials:', error);
