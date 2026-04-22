@@ -180,10 +180,11 @@ router.patch('/admin/:id/status', authenticateAdmin, async (req, res) => {
       SET 
         status = $1,
         approved_by = $2,
-        approved_at = CASE WHEN $1 = 'approved' THEN CURRENT_TIMESTAMP ELSE NULL END
-      WHERE id = $3
+        approved_at = CASE WHEN $3 = 'approved' THEN CURRENT_TIMESTAMP ELSE NULL END,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $4
       RETURNING id, name, role, message, rating, status, approved_at
-    `, [status, adminId === 0 ? null : adminId, id]);
+    `, [status, adminId === 0 ? null : adminId, status, id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Testimonial not found' });
