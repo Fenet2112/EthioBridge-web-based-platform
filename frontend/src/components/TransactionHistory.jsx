@@ -33,7 +33,7 @@ function SortIcon({ col, sort }) {
 const fmtETB = (v) => v ? `${Number(v).toLocaleString()} ETB` : "—";
 const fmtDate = (d) => new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 
-export default function TransactionHistory({ role = "stakeholder", tok }) {
+export default function TransactionHistory({ role = "stakeholder", tok, onMessage }) {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState("");
@@ -232,6 +232,7 @@ export default function TransactionHistory({ role = "stakeholder", tok }) {
                   Date <SortIcon col="created_at" sort={sort} />
                 </th>
                 <th>Details</th>
+                {role === "industry" && onMessage && <th>Action</th>}
               </tr>
             </thead>
             <tbody>
@@ -270,6 +271,17 @@ export default function TransactionHistory({ role = "stakeholder", tok }) {
                       <FaEye />
                     </button>
                   </td>
+                  {role === "industry" && onMessage && (
+                    <td>
+                      <button
+                        className="th-msg-btn"
+                        title="Message stakeholder"
+                        onClick={() => onMessage(t.stakeholder_id)}
+                      >
+                        💬 Message
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

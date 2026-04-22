@@ -950,7 +950,14 @@ function Industry() {
         {activeSection !== "dashboard" && (
           <div className="content-header">
             <h1>{menuItems.find(item => item.id === activeSection)?.label || "Dashboard"}</h1>
-            <p>Manage your business profile and operations</p>
+            <p>
+              {activeSection === "requests"  ? "All purchase requests from stakeholders for your products" :
+               activeSection === "products"  ? "Manage and update your product catalog" :
+               activeSection === "profile"   ? "Update your company information and profile" :
+               activeSection === "messages"  ? "Communicate directly with your stakeholders" :
+               activeSection === "analytics" ? "Track your business performance and insights" :
+               "Manage your business profile and operations"}
+            </p>
           </div>
         )}
 
@@ -1587,11 +1594,7 @@ function Industry() {
         {/* Purchase Requests / Transaction History Section */}
         {canAccessOtherSections && activeSection === "requests" && (
           <div className="requests-section">
-            <div style={{ marginBottom: 24 }}>
-              <h2 style={{ marginBottom: 6 }}>Orders &amp; Sales History</h2>
-              <p style={{ color: "var(--text-muted)", fontSize: 14 }}>All purchase requests from stakeholders for your products</p>
-            </div>
-            <TransactionHistory role="industry" />
+            <TransactionHistory role="industry" onMessage={(stakeholderId) => openConversationWithStakeholder(stakeholderId)} />
           </div>
         )}
         {/* Messages Section */}

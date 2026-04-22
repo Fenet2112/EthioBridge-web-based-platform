@@ -123,3 +123,25 @@
   .th-summary-row { gap: 6px; }
   .th-summary-pill { padding: 8px 12px; min-width: 60px; }
 }
+
+/* ── Message button ── */
+.th-msg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #0a5c2f;
+  background: #fff;
+  color: #0a5c2f;
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .2s;
+  font-family: inherit;
+}
+.th-msg-btn:hover {
+  background: #0a5c2f;
+  color: #fff;
+}
