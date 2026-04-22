@@ -766,3 +766,14 @@
     text-align: center;
   }
 }
+
+/* Business role badge */
+.business-role-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #e8f5e9;
+  color: #0a5c2f;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}

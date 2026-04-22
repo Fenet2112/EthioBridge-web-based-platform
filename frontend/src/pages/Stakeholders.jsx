@@ -413,6 +413,12 @@ function Stakeholders() {
                   <div className="company-meta">
                     <span className="material-icon">factory</span>
                     <span>{industry.sector}</span>
+                    {industry.business_role && (
+                      <>
+                        <span className="dot">•</span>
+                        <span className="business-role-badge">{industry.business_role}</span>
+                      </>
+                    )}
                     <span className="dot">•</span>
                     <span className="material-icon">location_on</span>
                     <span>{industry.location}</span>

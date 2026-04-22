@@ -83,6 +83,7 @@ function Industry() {
   const [profile, setProfile] = useState({
     companyName: "",
     industryType: "",
+    businessRole: "",
     location: "",
     phone: "",
     email: "",
@@ -90,9 +91,13 @@ function Industry() {
     description: "",
     licenseNumber: "",
     logoPreview: null,
-    latitude: "",
-    longitude: "",
+    latitude: null,
+    longitude: null,
   });
+
+  // GPS detection state
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState(""); // "detected" | "denied" | ""
 
   const [isEditing, setIsEditing] = useState(true);
   // Check auth and profile status on load
@@ -130,6 +135,7 @@ function Industry() {
           setProfile({
             companyName: data.profile.company_name || "",
             industryType: data.profile.sector || "",
+            businessRole: data.profile.business_role || "",
             location: data.profile.location || "",
             phone: data.profile.phone || "",
             email: userData.email || "",
@@ -139,6 +145,8 @@ function Industry() {
             logoPreview: data.profile.profile_picture
               ? imageUrl(data.profile.profile_picture)
               : null,
+            latitude: data.profile.latitude || null,
+            longitude: data.profile.longitude || null,
           });
           
           // If profile exists and is approved, show view mode
@@ -636,11 +644,12 @@ function Industry() {
           user_id: userData.id,
           company_name: profile.companyName,
           sector: profile.industryType,
+          business_role: profile.businessRole || null,
           location: profile.location,
           description: profile.description,
           phone: profile.phone,
           website: profile.website,
-          established_year: null, // Add this field to the form if needed
+          established_year: null,
           latitude: profile.latitude || null,
           longitude: profile.longitude || null
         })
@@ -686,6 +695,32 @@ function Industry() {
 
   const handleEditClick = () => {
     setIsEditing(true);
+  };
+
+  // ── GPS location detection ──
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      setGpsStatus("denied");
+      return;
+    }
+    setGpsLoading(true);
+    setGpsStatus("");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setProfile(prev => ({
+          ...prev,
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        }));
+        setGpsLoading(false);
+        setGpsStatus("detected");
+      },
+      () => {
+        setGpsLoading(false);
+        setGpsStatus("denied");
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
   };
 
   const canAccessOtherSections = profileStatus === "approved";
@@ -910,7 +945,7 @@ function Industry() {
           )}
           <div className="sidebar-profile-info">
             <h4>{profile.companyName || "Your Company"}</h4>
-            <p>{profile.industryType || "Industry"}</p>
+            <p>{profile.businessRole ? `${profile.businessRole} · ` : ""}{profile.industryType || "Industry"}</p>
           </div>
         </div>
 
@@ -1162,36 +1197,68 @@ function Industry() {
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label htmlFor="industryType">Industry Type *</label>
-                    <select
-                      id="industryType"
-                      name="industryType"
-                      value={profile.industryType}
-                      onChange={handleProfileChange}
-                      required
-                    >
-                      <option value="">Select type</option>
-                      <option>Cement Manufacturer</option>
-                      <option>Steel & Metal Producer</option>
-                      <option>Construction Materials Supplier</option>
-                      <option>Electrical & Lighting</option>
-                      <option>Plumbing & Sanitary</option>
-                      <option>Machinery & Equipment</option>
-                      <option>Other</option>
-                    </select>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="industryType">Industry Type *</label>
+                      <select id="industryType" name="industryType" value={profile.industryType} onChange={handleProfileChange} required>
+                        <option value="">Select type</option>
+                        <option>Cement Manufacturer</option>
+                        <option>Steel &amp; Metal Producer</option>
+                        <option>Construction Materials Supplier</option>
+                        <option>Electrical &amp; Lighting</option>
+                        <option>Plumbing &amp; Sanitary</option>
+                        <option>Machinery &amp; Equipment</option>
+                        <option>Other</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="businessRole">Business Role *</label>
+                      <select id="businessRole" name="businessRole" value={profile.businessRole} onChange={handleProfileChange} required>
+                        <option value="">Select role</option>
+                        <option value="Supplier">Supplier</option>
+                        <option value="Manufacturer">Manufacturer</option>
+                        <option value="Producer">Producer</option>
+                        <option value="Distributor">Distributor</option>
+                        <option value="Contractor">Contractor</option>
+                      </select>
+                    </div>
                   </div>
 
+                  {/* Location with GPS */}
                   <div className="form-group">
-                    <label htmlFor="location">Location *</label>
+                    <label htmlFor="location">Location / City *</label>
                     <input
                       type="text"
                       id="location"
                       name="location"
                       value={profile.location}
                       onChange={handleProfileChange}
+                      placeholder="e.g. Addis Ababa, Bole"
                       required
                     />
+                  </div>
+
+                  {/* GPS coordinates — auto-detected, not manually entered */}
+                  <div className="form-group">
+                    <label>GPS Coordinates <span style={{ color: "var(--text-muted)", fontWeight: 400, fontSize: "0.85rem" }}>(for map display)</span></label>
+                    <div className="gps-row">
+                      <button type="button" className="gps-btn" onClick={detectLocation} disabled={gpsLoading}>
+                        {gpsLoading ? "⏳ Detecting..." : "📍 Use My Location"}
+                      </button>
+                      {gpsStatus === "detected" && profile.latitude && (
+                        <span className="gps-ok">
+                          ✅ {Number(profile.latitude).toFixed(4)}, {Number(profile.longitude).toFixed(4)}
+                        </span>
+                      )}
+                      {gpsStatus === "denied" && (
+                        <span className="gps-denied">⚠️ Location access denied — map pin won't be shown</span>
+                      )}
+                      {!gpsStatus && profile.latitude && (
+                        <span className="gps-ok">
+                          📍 {Number(profile.latitude).toFixed(4)}, {Number(profile.longitude).toFixed(4)}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="form-row">
@@ -1307,7 +1374,7 @@ function Industry() {
                   )}
                   <div className="profile-title">
                     <h2>{profile.companyName || "Company Name"}</h2>
-                    <p className="industry-type">{profile.industryType || "Industry Type"}</p>
+                    <p className="industry-type">{profile.industryType || "Industry Type"}{profile.businessRole ? ` · ${profile.businessRole}` : ""}</p>
                   </div>
                   <button className="edit-btn" onClick={handleEditClick}>
                     Edit Profile

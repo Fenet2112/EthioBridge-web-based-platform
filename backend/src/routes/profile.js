@@ -52,7 +52,7 @@ router.get("/me", authenticateToken, async (req, res) => {
       query = `
         SELECT
           i.id, i.username, i.full_name, i.bio, i.profile_picture,
-          i.company_name, i.sector, i.location,
+          i.company_name, i.sector, i.business_role, i.location,
           i.phone, i.website, i.description, i.established_year,
           u.email, u.status, u.created_at
         FROM industries i
