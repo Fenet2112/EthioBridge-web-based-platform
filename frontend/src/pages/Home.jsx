@@ -47,7 +47,7 @@ function Home() {
     );
     document.querySelectorAll(".animate-on-scroll").forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [testimonials]); // re-run when testimonials load so new cards get observed
 
   // Fetch approved testimonials
   useEffect(() => {
@@ -416,7 +416,7 @@ function Home() {
         ) : (
           <div className="testimonials-grid">
             {testimonials.map((testimonial, i) => (
-              <div className="testimonial-card animate-on-scroll" key={testimonial.id} style={{ animationDelay: `${i * 0.1}s` }}>
+              <div className="testimonial-card" key={testimonial.id} style={{ animationDelay: `${i * 0.1}s` }}>
                 <div className="testimonial-quote-icon-small">
                   <FaQuoteLeft />
                 </div>
