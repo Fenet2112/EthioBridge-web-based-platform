@@ -58,9 +58,11 @@ router.post("/signup", async (req, res) => {
 
     const newUser = await pool.query(
       `INSERT INTO users (email, password, role, status, email_verified, verification_token, verification_token_expires)
-       VALUES ($1, $2, $3, 'incomplete', FALSE, $4, $5)
+       VALUES ($1, $2, $3, $4, FALSE, $5, $6)
        RETURNING id, email, role, status`,
-      [email, hashedPassword, role, verificationToken, tokenExpires]
+      [email, hashedPassword, role,
+       role === 'stakeholder' ? 'approved' : 'incomplete',  // stakeholders get immediate access
+       verificationToken, tokenExpires]
     );
 
     // Send emails asynchronously (don't block response)
@@ -266,26 +268,16 @@ router.post("/profile/stakeholder", uploadStakeholderID.single("id_document"), a
       [user_id, organization_name, organization_type, location, description || null, phone || null, contact_person || null, idDocUrl, idDocType]
     );
 
-    // Only set status to pending if user is currently incomplete
-    // Don't reset approved users back to pending when they edit their profile
+    // Stakeholders are approved on signup — profile completion just saves data
+    // Status only changes if somehow still 'incomplete' (legacy accounts)
     const currentStatus = userResult.rows[0].status;
     if (currentStatus === 'incomplete') {
-      // Run through the approval workflow
-      const { processStakeholderApproval } = require('../services/approvalWorkflow');
-      await pool.query("UPDATE users SET status = 'pending' WHERE id = $1", [user_id]);
-      const { newStatus, reason } = await processStakeholderApproval(parseInt(user_id));
-      console.log(`[Auth] Stakeholder ${user_id} workflow result: ${newStatus} — ${reason}`);
-      const finalStatus = newStatus || 'pending';
-      const msg = finalStatus === 'approved'
-        ? 'Stakeholder profile approved automatically.'
-        : finalStatus === 'rejected'
-        ? `Stakeholder profile rejected: ${reason}`
-        : 'Stakeholder profile submitted. Awaiting admin approval.';
-      return res.json({ message: msg, status: finalStatus, reason });
+      await pool.query("UPDATE users SET status = 'approved' WHERE id = $1", [user_id]);
     }
 
     res.json({ 
-      message: "Stakeholder profile updated successfully."
+      message: "Stakeholder profile updated successfully.",
+      status: currentStatus === 'incomplete' ? 'approved' : currentStatus
     });
   } catch (error) {
     console.error("Stakeholder profile CRASH:", error.message);

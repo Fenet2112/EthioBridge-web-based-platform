@@ -103,12 +103,6 @@ function StakeholderProfile() {
     const userData = JSON.parse(localStorage.getItem("user") || "{}");
     if (!userData?.id) { setError("Session expired. Please log in again."); navigate("/login"); return; }
 
-    // Require ID on first submission only if no existing ID
-    if (profileStatus === "incomplete" && !idFile && !existingIdUrl) {
-      setError("Please upload a valid ID document before submitting.");
-      return;
-    }
-
     setLoading(true);
     try {
       const token   = localStorage.getItem("token");
@@ -125,15 +119,14 @@ function StakeholderProfile() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || `Error ${res.status}`);
 
-      if (profileStatus === "incomplete") {
-        userData.status = "pending";
+      // Stakeholders are already approved — profile save just updates data
+      // Update localStorage with fresh status from response
+      if (data.status) {
+        userData.status = data.status;
         localStorage.setItem("user", JSON.stringify(userData));
-        // Refresh page to show updated status
-        window.location.reload();
-      } else {
-        // Refresh page to show updated profile
-        window.location.reload();
       }
+      // Refresh page to show updated profile
+      window.location.reload();
     } catch (err) {
       setError(err.message || "An unexpected error occurred.");
     } finally {
@@ -152,7 +145,7 @@ function StakeholderProfile() {
           <div className="profile-icon">🤝</div>
           <h1>
             {isEditing
-              ? (profileStatus === "incomplete" ? "Complete Your Stakeholder Profile" : "Edit Your Stakeholder Profile")
+              ? "Edit Your Stakeholder Profile"
               : "Your Stakeholder Profile"}
           </h1>
           <p>
@@ -241,11 +234,8 @@ function StakeholderProfile() {
             <div className="sp-id-header">
               <span className="sp-id-icon">🪪</span>
               <div>
-                <h3>
-                  Identity Document
-                  {profileStatus === "incomplete" && <span className="sp-req"> *</span>}
-                </h3>
-                <p>Upload a valid ID for verification. Required before your application can be approved.</p>
+                <h3>Identity Document</h3>
+                <p>Upload a valid ID for verification. Required when submitting purchase requests.</p>
               </div>
             </div>
 
@@ -334,7 +324,7 @@ function StakeholderProfile() {
             ) : (
               <>
                 <button type="submit" className="sp-btn-submit" disabled={loading}>
-                  {loading ? "Saving..." : profileStatus === "incomplete" ? "Submit Application →" : "Save Changes"}
+                  {loading ? "Saving..." : "Save Profile"}
                 </button>
                 {profileStatus !== "incomplete" && (
                   <button
