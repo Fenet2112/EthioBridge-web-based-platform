@@ -38,7 +38,7 @@ function Industry() {
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState({
-    name: "", description: "", price: "", unit: "unit", category: ""
+    name: "", description: "", price: "", unit: "unit", category: "", discount_percentage: ""
   });
   const [productNameError, setProductNameError] = useState("");
   const [productImage, setProductImage] = useState(null);       // File object
@@ -809,7 +809,7 @@ function Industry() {
       setShowProductForm(false);
       setEditingProduct(null);
       setProductNameError("");
-      setProductForm({ name: "", description: "", price: "", unit: "unit", category: "" });
+      setProductForm({ name: "", description: "", price: "", unit: "unit", category: "", discount_percentage: "" });
       setProductImage(null);
       setProductImagePreview(null);
       if (productImageRef.current) productImageRef.current.value = "";
@@ -825,7 +825,8 @@ function Industry() {
       description: product.description || "",
       price: product.price || "",
       unit: product.unit || "unit",
-      category: product.category || ""
+      category: product.category || "",
+      discount_percentage: product.discount_percentage || ""
     });
     setProductImage(null);
     setProductImagePreview(product.image_url ? imageUrl(product.image_url) : null);
@@ -1602,6 +1603,30 @@ function Industry() {
                       rows="3"
                     />
                   </div>
+
+                  {/* Discount */}
+                  <div className="form-group">
+                    <label>Discount % <span style={{ color: "#9ca3af", fontWeight: 400, fontSize: "0.82rem" }}>Optional (0–100)</span></label>
+                    <input
+                      type="number"
+                      name="discount_percentage"
+                      value={productForm.discount_percentage}
+                      onChange={handleProductFormChange}
+                      min="0"
+                      max="100"
+                      step="1"
+                      placeholder="e.g. 20 for 20% off"
+                    />
+                    {productForm.discount_percentage > 0 && productForm.price > 0 && (
+                      <small className="discount-preview">
+                        Original: {Number(productForm.price).toLocaleString()} ETB →{" "}
+                        <strong style={{ color: "#dc2626" }}>
+                          {(productForm.price * (1 - productForm.discount_percentage / 100)).toFixed(2)} ETB
+                        </strong>{" "}
+                        after {productForm.discount_percentage}% off
+                      </small>
+                    )}
+                  </div>
                   <div className="form-actions">
                     <button type="button" className="cancel-btn" onClick={() => {
                       setShowProductForm(false);
@@ -1640,11 +1665,26 @@ function Industry() {
                       </div>
                     </div>
                     <div className="product-item-body">
+                      <div className="product-item-badges">
+                        {product.is_new && <span className="badge-new">🆕 New</span>}
+                        {product.is_popular && <span className="badge-popular">🔥 Popular</span>}
+                        {product.discount_percentage > 0 && (
+                          <span className="badge-discount">-{product.discount_percentage}% OFF</span>
+                        )}
+                      </div>
                       <h4>{product.name}</h4>
                       <p className="product-category">{product.category}</p>
                       {product.description && <p className="product-desc">{product.description}</p>}
                       <div className="product-price">
-                        {product.price ? `${Number(product.price).toLocaleString()} ETB / ${product.unit}` : "Price on request"}
+                        {product.discount_percentage > 0 ? (
+                          <>
+                            <span className="price-original">{Number(product.price).toLocaleString()} ETB</span>
+                            <span className="price-discounted">{Number(product.discounted_price).toLocaleString()} ETB</span>
+                            <span className="price-unit">/ {product.unit}</span>
+                          </>
+                        ) : (
+                          product.price ? `${Number(product.price).toLocaleString()} ETB / ${product.unit}` : "Price on request"
+                        )}
                       </div>
                       <div className="product-actions">
                         <button onClick={() => handleEditProduct(product)}>Edit</button>

@@ -47,7 +47,12 @@ router.get("/products/all", async (req, res) => {
     let query = `
       SELECT
         p.id, p.name, p.description, p.price, p.unit, p.category,
-        p.image_url, p.is_available, p.created_at,
+        p.image_url, p.is_available, p.created_at, p.discount_percentage,
+        CASE WHEN p.discount_percentage IS NOT NULL AND p.discount_percentage > 0
+          THEN ROUND(p.price * (1 - p.discount_percentage / 100.0), 2)
+          ELSE p.price END AS discounted_price,
+        (NOW() - p.created_at) < INTERVAL '7 days' AS is_new,
+        p.request_count > 5 AS is_popular,
         i.company_name, i.id as industry_id, i.location as industry_location,
         i.sector as industry_sector
       FROM products p
@@ -196,7 +201,14 @@ router.get(
       }
 
       const result = await pool.query(
-        `SELECT id, name, description, price, unit, category, image_url, is_available, created_at, updated_at
+        `SELECT id, name, description, price, unit, category, image_url, is_available,
+                discount_percentage,
+                CASE WHEN discount_percentage IS NOT NULL AND discount_percentage > 0
+                  THEN ROUND(price * (1 - discount_percentage / 100.0), 2)
+                  ELSE price END AS discounted_price,
+                (NOW() - created_at) < INTERVAL '7 days' AS is_new,
+                request_count > 5 AS is_popular,
+                created_at, updated_at
          FROM products WHERE industry_id = $1 ORDER BY category, name`,
         [industry.id]
       );
@@ -218,11 +230,20 @@ router.post(
   requireApproved,
   uploadProductImage.single("image"),
   async (req, res) => {
-    const { name, description, price, unit, category } = req.body;
+    const { name, description, price, unit, category, discount_percentage } = req.body;
 
     if (!name) {
       if (req.file) fs.unlinkSync(req.file.path);
       return res.status(400).json({ message: "Product name is required" });
+    }
+
+    // Validate discount
+    if (discount_percentage !== undefined && discount_percentage !== null && discount_percentage !== "") {
+      const d = parseFloat(discount_percentage);
+      if (isNaN(d) || d < 0 || d > 100) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        return res.status(400).json({ message: "Discount must be between 0 and 100" });
+      }
     }
 
     try {
@@ -270,8 +291,8 @@ router.post(
       const imageUrl = req.file ? getFileUrl(req, "products") : null;
 
       const result = await pool.query(
-        `INSERT INTO products (industry_id, name, description, price, unit, category, image_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO products (industry_id, name, description, price, unit, category, image_url, discount_percentage)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
         [
           industry.id,
@@ -281,6 +302,8 @@ router.post(
           unit || "unit",
           category || null,
           imageUrl,
+          (discount_percentage !== undefined && discount_percentage !== "" && discount_percentage !== null)
+            ? parseFloat(discount_percentage) : null,
         ]
       );
       res.status(201).json(result.rows[0]);
@@ -303,7 +326,7 @@ router.put(
   uploadProductImage.single("image"),
   async (req, res) => {
     const { id } = req.params;
-    const { name, description, price, unit, category, is_available } = req.body;
+    const { name, description, price, unit, category, is_available, discount_percentage } = req.body;
 
     try {
       const industry = await getIndustryForUser(req.user.id);
@@ -348,15 +371,16 @@ router.put(
 
       const result = await pool.query(
         `UPDATE products
-         SET name        = COALESCE($1, name),
-             description = COALESCE($2, description),
-             price       = COALESCE($3, price),
-             unit        = COALESCE($4, unit),
-             category    = COALESCE($5, category),
-             is_available= COALESCE($6, is_available),
-             image_url   = COALESCE($7, image_url),
-             updated_at  = NOW()
-         WHERE id = $8
+         SET name              = COALESCE($1, name),
+             description       = COALESCE($2, description),
+             price             = COALESCE($3, price),
+             unit              = COALESCE($4, unit),
+             category          = COALESCE($5, category),
+             is_available      = COALESCE($6, is_available),
+             image_url         = COALESCE($7, image_url),
+             discount_percentage = $8,
+             updated_at        = NOW()
+         WHERE id = $9
          RETURNING *`,
         [
           name || null,
@@ -366,6 +390,8 @@ router.put(
           category || null,
           is_available !== undefined ? is_available : null,
           imageUrl || null,
+          (discount_percentage !== undefined && discount_percentage !== "" && discount_percentage !== null)
+            ? parseFloat(discount_percentage) : null,
           id,
         ]
       );

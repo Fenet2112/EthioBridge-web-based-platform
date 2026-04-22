@@ -93,6 +93,9 @@ app.use('/api/contact', contactRoutes);
 const notificationRoutes = require('./src/routes/notifications');
 app.use('/api/industry/notifications', notificationRoutes);
 
+const stakeholderNotificationRoutes = require('./src/routes/stakeholderNotifications');
+app.use('/api/stakeholder/notifications', stakeholderNotificationRoutes);
+
 const statsRoutes = require('./src/routes/stats');
 app.use('/api/stats', statsRoutes);
 

@@ -481,3 +481,23 @@
   .form-row { grid-template-columns: 1fr; }
   .buy-modal { padding: 24px 20px; }
 }
+
+/* ── Product badges & discount ── */
+.product-card-img-wrap {
+  position: relative;
+}
+.product-card-badges {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.badge-new    { background: #10b981; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.68rem; font-weight: 700; }
+.badge-popular{ background: #f59e0b; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.68rem; font-weight: 700; }
+.badge-discount{ background: #dc2626; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.68rem; font-weight: 700; }
+
+.product-price-wrap { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.price-original  { text-decoration: line-through; color: #9ca3af; font-size: 0.82rem; }
+.price-discounted{ color: #dc2626; font-weight: 800; font-size: 1rem; }

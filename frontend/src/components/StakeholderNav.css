@@ -269,3 +269,111 @@
   margin-bottom: 4px;
 }
 .sk-drawer-home:hover { background: var(--bg-hover); color: var(--text); }
+
+/* ── Notification Bell ── */
+.sk-notif-wrap {
+  position: relative;
+}
+
+.sk-notif-btn {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: #374151;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s;
+}
+.sk-notif-btn:hover { background: rgba(10, 92, 47, 0.08); color: #0a5c2f; }
+
+.sk-notif-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  background: #dc2626;
+  color: #fff;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sk-notif-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  max-height: 420px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 600;
+}
+
+.sk-notif-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #f3f4f6;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #1f2937;
+}
+
+.sk-notif-mark-all {
+  background: none;
+  border: none;
+  color: #0a5c2f;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sk-notif-mark-all:hover { text-decoration: underline; }
+
+.sk-notif-list { padding: 4px 0; }
+
+.sk-notif-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f9fafb;
+  transition: background 0.15s;
+}
+.sk-notif-item:last-child { border-bottom: none; }
+.sk-notif-item:hover { background: #f9fafb; }
+.sk-notif-item.unread { background: #f0fdf4; }
+.sk-notif-item.unread:hover { background: #dcfce7; }
+
+.sk-notif-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #1f2937;
+  margin-bottom: 3px;
+}
+.sk-notif-msg {
+  font-size: 0.78rem;
+  color: #6b7280;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+.sk-notif-time {
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+.sk-notif-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}

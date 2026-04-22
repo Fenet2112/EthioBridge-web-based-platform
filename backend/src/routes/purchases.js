@@ -440,7 +440,7 @@ router.patch("/admin/purchases/:id/approve", requireAdminAuth, async (req, res) 
     // Send approval email to stakeholder (non-fatal)
     try {
       const emailRes = await pool.query(
-        `SELECT u.email, pr.product_id, p.name AS product_name, i.company_name
+        `SELECT u.id AS stakeholder_user_id, u.email, p.name AS product_name, i.company_name
          FROM purchase_requests pr
          JOIN stakeholders s ON s.id = pr.stakeholder_id
          JOIN users u ON u.id = s.user_id
@@ -449,11 +449,17 @@ router.patch("/admin/purchases/:id/approve", requireAdminAuth, async (req, res) 
          WHERE pr.id = $1`, [id]
       );
       if (emailRes.rows.length > 0) {
-        const { email, product_name, company_name } = emailRes.rows[0];
+        const { stakeholder_user_id, email, product_name, company_name } = emailRes.rows[0];
         await sendPurchaseApprovedEmail(email, product_name, company_name);
+        // Notify stakeholder
+        await createNotification(pool, stakeholder_user_id,
+          'Purchase Request Approved',
+          `Your request for "${product_name}" from ${company_name} has been approved. You can now message the industry.`,
+          'approval', parseInt(id)
+        );
       }
     } catch (emailErr) {
-      console.error("Purchase approval email failed (non-fatal):", emailErr.message);
+      console.error("Purchase approval email/notif failed (non-fatal):", emailErr.message);
     }
 
     res.json({ message: "Purchase request approved and stakeholder verified", request });  } catch (error) {
@@ -479,7 +485,7 @@ router.patch("/admin/purchases/:id/reject", requireAdminAuth, async (req, res) =
     // Send rejection email to stakeholder (non-fatal)
     try {
       const emailRes = await pool.query(
-        `SELECT u.email, p.name AS product_name, i.company_name
+        `SELECT u.id AS stakeholder_user_id, u.email, p.name AS product_name, i.company_name
          FROM purchase_requests pr
          JOIN stakeholders s ON s.id = pr.stakeholder_id
          JOIN users u ON u.id = s.user_id
@@ -488,11 +494,16 @@ router.patch("/admin/purchases/:id/reject", requireAdminAuth, async (req, res) =
          WHERE pr.id = $1`, [id]
       );
       if (emailRes.rows.length > 0) {
-        const { email, product_name, company_name } = emailRes.rows[0];
+        const { stakeholder_user_id, email, product_name, company_name } = emailRes.rows[0];
         await sendPurchaseRejectedEmail(email, product_name, company_name, admin_notes);
+        await createNotification(pool, stakeholder_user_id,
+          'Purchase Request Rejected',
+          `Your request for "${product_name}" from ${company_name} was not approved. Reason: ${admin_notes}`,
+          'approval', parseInt(id)
+        );
       }
     } catch (emailErr) {
-      console.error("Purchase rejection email failed (non-fatal):", emailErr.message);
+      console.error("Purchase rejection email/notif failed (non-fatal):", emailErr.message);
     }
 
     res.json({ message: "Purchase request rejected", request: result.rows[0] });

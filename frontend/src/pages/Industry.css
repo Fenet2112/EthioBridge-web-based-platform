@@ -1479,3 +1479,60 @@
   font-size: 0.82rem;
   color: #d97706;
 }
+
+/* ── Product badges & discount ── */
+.product-item-badges {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.badge-new {
+  background: #10b981;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.badge-popular {
+  background: #f59e0b;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.badge-discount {
+  background: #dc2626;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.price-original {
+  text-decoration: line-through;
+  color: #9ca3af;
+  font-size: 0.82rem;
+  margin-right: 6px;
+}
+.price-discounted {
+  color: #dc2626;
+  font-weight: 800;
+  font-size: 1rem;
+}
+.price-unit {
+  color: #6b7280;
+  font-size: 0.78rem;
+  margin-left: 3px;
+}
+
+.discount-preview {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: #6b7280;
+}
