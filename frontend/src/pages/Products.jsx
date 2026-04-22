@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import FilterPanel from '../components/FilterPanel';
+import GlobalNav from '../components/GlobalNav';
 import './Products.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -157,10 +158,10 @@ function Products() {
 
   return (
     <div className="products-page">
+      <GlobalNav />
       {/* Header */}
       <header className="products-header">
         <div className="header-content">
-          <button className="back-btn" onClick={() => navigate('/')}>← Back to Home</button>
           <div>
             <h1>All Products</h1>
             <p className="results-summary">

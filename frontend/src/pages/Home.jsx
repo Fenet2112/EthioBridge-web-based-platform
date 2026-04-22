@@ -9,6 +9,7 @@ import {
 import Logo from "../components/Logo";
 import DarkModeToggle from "../components/DarkModeToggle";
 import FeedbackForm from "../components/FeedbackForm";
+import GlobalNav from "../components/GlobalNav";
 import "./Home.css";
 
 function Home() {
@@ -162,28 +163,8 @@ function Home() {
     <div className="home">
 
       {/* ── NAVBAR ── */}
-      <nav className="navbar">
-        <div className="logo">
-          <Logo size={40} color="#1d522d" />
-          <span className="logo-text">EthioBridge</span>
-        </div>
+      <GlobalNav />
 
-        <ul className="nav-links">
-          <li><Link to="/">Home</Link></li>
-          <li><Link to="/products">Products</Link></li>
-          <li><Link to="/explore">Explore Map</Link></li>
-          <li><a href="#services">Services</a></li>
-          <li><a href="#about">About</a></li>
-          <li><Link to="/help">Help</Link></li>
-          <li><a href="#contact">Contact</a></li>
-        </ul>
-
-        <div className="nav-actions">
-          <DarkModeToggle />
-          <Link to="/login" className="nav-login">Log In</Link>
-          <Link to="/signup" className="nav-signup">Get Started</Link>
-        </div>
-      </nav>
 
       {/* ── HERO ── */}
       <section

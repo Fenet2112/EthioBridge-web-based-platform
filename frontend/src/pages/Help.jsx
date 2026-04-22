@@ -19,8 +19,7 @@ import {
   FaCheckCircle,
   FaChevronRight
 } from 'react-icons/fa';
-import Logo from '../components/Logo';
-import DarkModeToggle from '../components/DarkModeToggle';
+import GlobalNav from '../components/GlobalNav';
 import './Help.css';
 
 function Help() {
@@ -261,26 +260,7 @@ function Help() {
 
   return (
     <div className="help-center">
-      {/* Navigation */}
-      <nav className="help-nav">
-        <div className="help-nav-content">
-          <Link to="/" className="help-logo">
-            <Logo size={32} color="#0a5c2f" />
-            <span>EthioBridge</span>
-          </Link>
-          <div className="help-nav-links">
-            <a href="#categories">Categories</a>
-            <a href="#faq">FAQ</a>
-            <a href="#contact">Contact</a>
-          </div>
-          <div className="help-nav-actions">
-            <DarkModeToggle />
-            <Link to="/" className="help-home-btn">
-              <FaHome /> Home
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <GlobalNav />
 
       {/* Hero Section */}
       <section className="help-hero">

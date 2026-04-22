@@ -13,8 +13,7 @@ import {
   FaLocationArrow,
   FaSort
 } from 'react-icons/fa';
-import Logo from '../components/Logo';
-import DarkModeToggle from '../components/DarkModeToggle';
+import GlobalNav from '../components/GlobalNav';
 import FilterPanel from '../components/FilterPanel';
 import { getUserLocation, addDistanceToIndustries, sortIndustriesByDistance, formatDistance } from '../utils/distance';
 import './Explore.css';
@@ -253,21 +252,7 @@ function Explore() {
 
   return (
     <div className="explore-page">
-      {/* Navigation */}
-      <nav className="explore-nav">
-        <div className="explore-nav-content">
-          <Link to="/" className="explore-logo">
-            <Logo size={32} color="#0a5c2f" />
-            <span>EthioBridge</span>
-          </Link>
-          <div className="explore-nav-actions">
-            <DarkModeToggle />
-            <Link to="/" className="explore-home-btn">
-              <FaHome /> Home
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <GlobalNav />
 
       {/* Header */}
       <div className="explore-header">
