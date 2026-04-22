@@ -20,6 +20,7 @@ import {
   FaChevronRight
 } from 'react-icons/fa';
 import GlobalNav from '../components/GlobalNav';
+import Logo from '../components/Logo';
 import './Help.css';
 
 function Help() {
