@@ -7,6 +7,7 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { FaSearch, FaFilter, FaDownload, FaSync, FaEye, FaTimes, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { imageUrl } from "../utils/imageUrl";
 import "./TransactionHistory.css";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -240,7 +241,7 @@ export default function TransactionHistory({ role = "stakeholder", tok }) {
                   <td>
                     <div className="th-product-cell">
                       {t.product_image && (
-                        <img src={`${API}${t.product_image}`} alt="" className="th-product-thumb" onError={e => e.target.style.display = "none"} />
+                        <img src={imageUrl(t.product_image)} alt="" className="th-product-thumb" onError={e => e.target.style.display = "none"} />
                       )}
                       <div>
                         <div className="th-product-name">{t.product_name}</div>

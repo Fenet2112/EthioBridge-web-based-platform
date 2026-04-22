@@ -6,8 +6,10 @@ import './Products.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
+import { imageUrl } from "../utils/imageUrl";
+
 const getProductImage = (product) => {
-  if (product.image_url) return `${API_BASE_URL}${product.image_url}`;
+  if (product.image_url) return imageUrl(product.image_url);
   const n = (product.name || '').toLowerCase();
   const c = (product.category || '').toLowerCase();
   if (n.includes('cement') || c.includes('cement')) return 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=500&h=500&fit=crop';

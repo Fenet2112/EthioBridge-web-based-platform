@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa";
 import SubscriptionModal from "../components/SubscriptionModal";
 import TransactionHistory from "../components/TransactionHistory";
+import { imageUrl } from "../utils/imageUrl";
 import "./Industry.css";
 import "./IndustryDarkMode.css";
 import "./IndustryMessages.css";
@@ -136,7 +137,7 @@ function Industry() {
             description: data.profile.description || "",
             licenseNumber: "",
             logoPreview: data.profile.profile_picture
-              ? `${API_BASE_URL}${data.profile.profile_picture}`
+              ? imageUrl(data.profile.profile_picture)
               : null,
           });
           
@@ -610,7 +611,7 @@ function Industry() {
       // Replace the base64 preview with the persisted server URL
       setProfile(prev => ({
         ...prev,
-        logoPreview: `${API_BASE_URL}${data.profile_picture}`,
+        logoPreview: imageUrl(data.profile_picture),
       }));
     } catch (err) {
       console.error("Logo upload failed:", err.message);
@@ -792,7 +793,7 @@ function Industry() {
       category: product.category || ""
     });
     setProductImage(null);
-    setProductImagePreview(product.image_url ? `${API_BASE_URL}${product.image_url}` : null);
+    setProductImagePreview(product.image_url ? imageUrl(product.image_url) : null);
     if (productImageRef.current) productImageRef.current.value = "";
     setProductNameError("");
     setShowProductForm(true);
@@ -1554,7 +1555,7 @@ function Industry() {
                     <div className="product-item-img-wrap">
                       {product.image_url ? (
                         <img
-                          src={`${API_BASE_URL}${product.image_url}`}
+                          src={imageUrl(product.image_url)}
                           alt={product.name}
                           className="product-item-img"
                           onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
@@ -1822,3 +1823,4 @@ function AnalyticsSection({ subStatus, onUpgrade }) {
 }
 
 export default Industry;
+

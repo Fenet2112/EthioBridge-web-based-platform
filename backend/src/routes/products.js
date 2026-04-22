@@ -3,32 +3,14 @@ const router = express.Router();
 const pool = require("../config/db");
 const { authenticateToken, requireRole, requireApproved } = require("../middleware/auth");
 const { resolveSubType } = require("./subscription");
-const multer = require("multer");
+const { createUpload, getFileUrl, deleteFile } = require("../utils/cloudinaryUpload");
 const path = require("path");
 const fs = require("fs");
 
 const FREE_PRODUCT_LIMIT = 5;
 
-// ── Multer for product images ──
-const productImgDir = "uploads/products";
-if (!fs.existsSync(productImgDir)) fs.mkdirSync(productImgDir, { recursive: true });
-
-const productStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, productImgDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `product_${req.user?.id || "x"}_${Date.now()}${ext}`);
-  },
-});
-const uploadProductImage = multer({
-  storage: productStorage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB
-  fileFilter: (req, file, cb) => {
-    const ok = /jpeg|jpg|png|webp/.test(path.extname(file.originalname).toLowerCase()) &&
-               /image\/(jpeg|jpg|png|webp)/.test(file.mimetype);
-    ok ? cb(null, true) : cb(new Error("Only JPG, PNG, or WebP images are allowed (max 2 MB)"));
-  },
-});
+// ── Product image upload (Cloudinary or local fallback) ──
+const uploadProductImage = createUpload("products", "products", 2);
 
 // Helper: verify the requesting user owns the industry resource
 async function getIndustryForUser(userId) {
@@ -285,7 +267,7 @@ router.post(
         });
       }
 
-      const imageUrl = req.file ? `/uploads/products/${req.file.filename}` : null;
+      const imageUrl = req.file ? getFileUrl(req, "products") : null;
 
       const result = await pool.query(
         `INSERT INTO products (industry_id, name, description, price, unit, category, image_url)
@@ -359,12 +341,9 @@ router.put(
       // If new image uploaded, delete old one
       let imageUrl = undefined;
       if (req.file) {
-        imageUrl = `/uploads/products/${req.file.filename}`;
+        imageUrl = getFileUrl(req, "products");
         const oldUrl = check.rows[0].image_url;
-        if (oldUrl) {
-          const oldPath = path.join(__dirname, "../../", oldUrl);
-          if (fs.existsSync(oldPath)) { try { fs.unlinkSync(oldPath); } catch {} }
-        }
+        if (oldUrl) await deleteFile(oldUrl);
       }
 
       const result = await pool.query(

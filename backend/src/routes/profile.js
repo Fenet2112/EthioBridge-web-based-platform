@@ -2,42 +2,12 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
 const { authenticateToken } = require("../middleware/auth");
-const multer = require("multer");
+const { createUpload, getFileUrl, deleteFile } = require("../utils/cloudinaryUpload");
 const path = require("path");
 const fs = require("fs");
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, "../../uploads/profiles");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, "profile-" + uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error("Only image files are allowed!"));
-    }
-  },
-});
+// Profile picture upload (Cloudinary or local fallback)
+const upload = createUpload("profiles", "profiles", 5);
 
 // ── GET STAKEHOLDER STATUS (for checking approval status) ──
 router.get("/stakeholder/status", authenticateToken, async (req, res) => {
@@ -198,7 +168,7 @@ router.post("/me/picture", authenticateToken, upload.single("profile_picture"), 
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    const profilePictureUrl = `/uploads/profiles/${req.file.filename}`;
+    const profilePictureUrl = getFileUrl(req, "profiles");
     let table;
 
     if (req.user.role === "stakeholder") {
@@ -238,10 +208,7 @@ router.post("/me/picture", authenticateToken, upload.single("profile_picture"), 
 
     // Delete old profile picture file if it exists
     if (oldPicResult.rows.length > 0 && oldPicResult.rows[0].profile_picture) {
-      const oldFilePath = path.join(__dirname, "../..", oldPicResult.rows[0].profile_picture);
-      if (fs.existsSync(oldFilePath)) {
-        fs.unlinkSync(oldFilePath);
-      }
+      await deleteFile(oldPicResult.rows[0].profile_picture);
     }
 
     res.json({
@@ -274,12 +241,7 @@ router.delete("/me/picture", authenticateToken, async (req, res) => {
     );
 
     if (result.rows.length > 0 && result.rows[0].profile_picture) {
-      const filePath = path.join(__dirname, "../..", result.rows[0].profile_picture);
-      
-      // Delete file if it exists
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
+      await deleteFile(result.rows[0].profile_picture);
 
       // Remove from database
       await pool.query(
