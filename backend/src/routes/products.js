@@ -288,7 +288,7 @@ router.post(
         });
       }
 
-      const imageUrl = req.file ? getFileUrl(req, "products") : null;
+      const imageUrl = req.file ? await getFileUrl(req, "products") : null;
 
       const result = await pool.query(
         `INSERT INTO products (industry_id, name, description, price, unit, category, image_url, discount_percentage)
@@ -364,7 +364,7 @@ router.put(
       // If new image uploaded, delete old one
       let imageUrl = undefined;
       if (req.file) {
-        imageUrl = getFileUrl(req, "products");
+        imageUrl = await getFileUrl(req, "products");
         const oldUrl = check.rows[0].image_url;
         if (oldUrl) await deleteFile(oldUrl);
       }

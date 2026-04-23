@@ -168,7 +168,7 @@ router.post("/me/picture", authenticateToken, upload.single("profile_picture"), 
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    const profilePictureUrl = getFileUrl(req, "profiles");
+    const profilePictureUrl = await getFileUrl(req, "profiles");
     let table;
 
     if (req.user.role === "stakeholder") {
