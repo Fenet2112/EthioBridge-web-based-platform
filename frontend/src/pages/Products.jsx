@@ -60,7 +60,6 @@ function Products() {
   const [currentFilters, setCurrentFilters] = useState({});
   const [totalResults, setTotalResults] = useState(0);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, hasNext: false, hasPrev: false });
-
   const { cart, totalItems, totalPrice, addToCart, updateQty, removeItem, clearCart } = useCart();
 
   // Fetch products with filters
@@ -79,10 +78,10 @@ function Products() {
       if (filters.is_available !== undefined) params.append('is_available', filters.is_available);
       if (filters.location) params.append('location', filters.location);
       if (filters.industry_id) params.append('industry_id', filters.industry_id);
+      if (filters.business_role) params.append('business_role', filters.business_role);
       if (filters.search) params.append('search', filters.search);
       if (filters.sortBy) params.append('sortBy', filters.sortBy);
       if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
-
       const res = await fetch(`${API_BASE_URL}/api/products/all?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch products');
       const data = await res.json();
@@ -234,11 +233,12 @@ function Products() {
                       <div className="product-badges">
                         {product.is_new && <span className="badge badge-new">New</span>}
                         {product.is_featured && <span className="badge badge-top">Top</span>}
+                        {product.discount_percentage > 0 && <span className="badge badge-discount">-{product.discount_percentage}%</span>}
                         {!product.is_available && <span className="badge badge-out">Out of Stock</span>}
                       </div>
                       <div className="product-actions">
                         <button className="action-btn" title="Wishlist">♡</button>
-                        <button className="action-btn" title="Quick View">👁</button>
+                        <button className="action-btn" title="Quick View" onClick={() => navigate(`/industry/${product.industry_id}`)}>👁</button>
                       </div>
                     </div>
 
@@ -247,9 +247,16 @@ function Products() {
                       <h3 className="product-name">{product.name}</h3>
                       {product.description && <p className="product-description">{product.description}</p>}
                       <div className="product-price">
-                        <span className="price-amount">
-                          {product.price ? `${Number(product.price).toLocaleString()} ETB` : 'Price on request'}
-                        </span>
+                        {product.discount_percentage > 0 ? (
+                          <>
+                            <span className="price-original">{Number(product.price).toLocaleString()} ETB</span>
+                            <span className="price-amount price-discounted">{Number(product.discounted_price || product.price * (1 - product.discount_percentage / 100)).toLocaleString()} ETB</span>
+                          </>
+                        ) : (
+                          <span className="price-amount">
+                            {product.price ? `${Number(product.price).toLocaleString()} ETB` : 'Price on request'}
+                          </span>
+                        )}
                         {product.unit && product.unit !== 'unit' && (
                           <span className="price-unit">/ {product.unit}</span>
                         )}
@@ -257,6 +264,7 @@ function Products() {
                       <div className="product-owner">
                         <span className="owner-label">Sold by:</span>
                         <span className="owner-name">{product.company_name || 'Unknown'}</span>
+                        {product.business_role && <span className="owner-role">{product.business_role}</span>}
                       </div>
                       <button
                         className={`add-to-cart-btn ${addedId === product.id ? 'added' : ''} ${!product.is_available ? 'disabled' : ''}`}

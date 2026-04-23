@@ -740,3 +740,41 @@
   background: #dc2626;
   color: white;
 }
+
+/* ── Always show sidebar on desktop ── */
+@media (min-width: 1025px) {
+  .products-sidebar { display: block !important; }
+  .filter-toggle { display: none; }
+}
+
+/* ── Discount pricing ── */
+.price-original {
+  text-decoration: line-through;
+  color: #9ca3af;
+  font-size: 0.82rem;
+  margin-right: 6px;
+}
+.price-discounted {
+  color: #dc2626 !important;
+}
+.badge-discount {
+  background: #dc2626;
+  color: white;
+}
+
+/* ── Business role badge on card ── */
+.owner-role {
+  background: #e8f5e9;
+  color: #0a5c2f;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+/* ── Popular badge ── */
+.badge-popular {
+  background: #f59e0b;
+  color: white;
+}

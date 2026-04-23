@@ -34,6 +34,7 @@ router.get("/products/all", async (req, res) => {
       is_available,
       location,
       industry_id,
+      business_role,
       search,
       // Sorting
       sortBy = "created_at",
