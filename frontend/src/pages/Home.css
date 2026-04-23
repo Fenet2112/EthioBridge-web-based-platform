@@ -1586,3 +1586,10 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ── Anchor scroll offset — sections appear at top, not behind navbar ── */
+#services,
+#about,
+#contact {
+  scroll-margin-top: 72px; /* navbar height (68px) + 4px breathing room */
+}

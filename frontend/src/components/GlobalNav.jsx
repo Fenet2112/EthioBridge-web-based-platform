@@ -3,6 +3,24 @@ import Logo from "./Logo";
 import DarkModeToggle from "./DarkModeToggle";
 import "./GlobalNav.css";
 
+/**
+ * Scroll to a section so it appears at the TOP of the viewport,
+ * offset by the navbar height (68px) so it isn't hidden behind it.
+ */
+function scrollToSection(e, sectionId) {
+  e.preventDefault();
+  const el = document.getElementById(sectionId);
+  if (!el) return;
+
+  const navHeight = 68; // matches .global-nav height in CSS
+  const top = el.getBoundingClientRect().top + window.scrollY - navHeight;
+
+  window.scrollTo({ top, behavior: "smooth" });
+
+  // Update URL hash without triggering default jump
+  window.history.replaceState(null, "", `#${sectionId}`);
+}
+
 export default function GlobalNav() {
   const location = useLocation();
   const isHome = location.pathname === "/";
@@ -20,12 +38,26 @@ export default function GlobalNav() {
         <li><Link to="/explore">Explore Map</Link></li>
         {isHome && (
           <>
-            <li><a href="#services">Services</a></li>
-            <li><a href="#about">About</a></li>
+            <li>
+              <a href="#services" onClick={(e) => scrollToSection(e, "services")}>
+                Services
+              </a>
+            </li>
+            <li>
+              <a href="#about" onClick={(e) => scrollToSection(e, "about")}>
+                About
+              </a>
+            </li>
           </>
         )}
         <li><Link to="/help">Help</Link></li>
-        {isHome && <li><a href="#contact">Contact</a></li>}
+        {isHome && (
+          <li>
+            <a href="#contact" onClick={(e) => scrollToSection(e, "contact")}>
+              Contact
+            </a>
+          </li>
+        )}
       </ul>
 
       <div className="global-nav-actions">
