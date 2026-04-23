@@ -104,7 +104,7 @@ router.get("/", authenticateToken, async (req, res) => {
       SELECT
         i.id, i.user_id, i.company_name, i.sector, i.location,
         i.description, i.phone, i.website, i.established_year,
-        i.latitude, i.longitude, i.created_at,
+        i.latitude, i.longitude, i.created_at, i.profile_picture,
         COUNT(DISTINCT p.id) AS product_count
       FROM industries i
       JOIN users u ON u.id = i.user_id
@@ -128,7 +128,7 @@ router.get("/", authenticateToken, async (req, res) => {
       queryParams.push(`%${search}%`, `%${search}%`);
     }
 
-    query += ` GROUP BY i.id, i.user_id, i.company_name, i.sector, i.location, i.description, i.phone, i.website, i.established_year, i.latitude, i.longitude, i.created_at`;
+    query += ` GROUP BY i.id, i.user_id, i.company_name, i.sector, i.location, i.description, i.phone, i.website, i.established_year, i.latitude, i.longitude, i.created_at, i.profile_picture`;
 
     if (minProducts) {
       query += ` HAVING COUNT(DISTINCT p.id) >= $${n++}`;

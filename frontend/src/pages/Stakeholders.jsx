@@ -5,6 +5,7 @@ import StakeholderNav from "../components/StakeholderNav";
 import SubscriptionModal from "../components/SubscriptionModal";
 import RecommendWidget from "../components/RecommendWidget";
 import { getUserLocation, addDistanceToIndustries, sortIndustriesByDistance, formatDistance } from '../utils/distance';
+import { imageUrl } from '../utils/imageUrl';
 import "./Stakeholders.css";
 import "./StakeholdersDarkMode.css";
 
@@ -397,7 +398,21 @@ function Stakeholders() {
             {filteredIndustries.map((industry) => (
               <div key={industry.id} className="company-card">
                 <div className="card-top">
-                  <div className="company-logo">
+                  {industry.profile_picture ? (
+                    <img
+                      src={imageUrl(industry.profile_picture)}
+                      alt={industry.company_name}
+                      className="company-cover-img"
+                      onError={e => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    className="company-logo"
+                    style={{ display: industry.profile_picture ? 'none' : 'flex' }}
+                  >
                     {industry.company_name?.charAt(0) || "?"}
                   </div>
                   <span className="badge-verified">Verified</span>
