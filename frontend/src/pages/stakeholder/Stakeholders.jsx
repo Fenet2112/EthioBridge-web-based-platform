@@ -29,7 +29,6 @@ function Stakeholders() {
   // Messaging state
   const [messages, setMessages] = useState([]);
   const [currentMessage, setCurrentMessage] = useState("");
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedIndustry, setSelectedIndustry] = useState(null);
@@ -40,13 +39,6 @@ function Stakeholders() {
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
-  const [PickerClass, setPickerClass] = useState(null);
-
-  useEffect(() => {
-    import("emoji-mart").then((module) => {
-      setPickerClass(() => module.Picker);
-    });
-  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -309,7 +301,11 @@ function Stakeholders() {
 
   return (
     <div className="modern-stakeholder-page">
-      <StakeholderNav showSidebar={false} />
+      <StakeholderNav 
+        userLocation={userLocation}
+        locationLoading={locationLoading}
+        requestUserLocation={requestUserLocation}
+      />
 
       {/* Hero Section */}
       <section className="hero-section">
@@ -462,12 +458,9 @@ function Stakeholders() {
                           View Details
                         </button>
                         <button 
-                          className="btn-message"
+                          className="btn-primary"
                           onClick={() => openMessageSidebar(industry)}
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                          </svg>
                           Message
                         </button>
                       </div>
@@ -499,7 +492,10 @@ function Stakeholders() {
             <p>{selectedIndustry?.sector || "Construction Partner"}</p>
           </div>
           <button className="close-chat" onClick={() => setMenuOpen(false)}>
-            <span className="material-icon">close</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
           </button>
         </div>
 
@@ -514,7 +510,11 @@ function Stakeholders() {
                   <img src={msg.file} alt={msg.fileName} className="chat-image" />
                 ) : (
                   <div className="file-attachment">
-                    📎 {msg.fileName}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                      <polyline points="13 2 13 9 20 9"/>
+                    </svg>
+                    {msg.fileName}
                   </div>
                 )
               ) : (
@@ -527,13 +527,6 @@ function Stakeholders() {
         </div>
 
         <div className="chat-input-area">
-          <button
-            className="icon-btn"
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-          >
-            😊
-          </button>
-
           <input
             type="file"
             ref={fileInputRef}
@@ -544,12 +537,19 @@ function Stakeholders() {
           <button
             className="icon-btn"
             onClick={() => fileInputRef.current.click()}
+            title="Attach file"
           >
-            📎
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+            </svg>
           </button>
 
           {selectedFile && (
             <span className="file-preview">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                <polyline points="13 2 13 9 20 9"/>
+              </svg>
               {selectedFile.name.length > 20
                 ? selectedFile.name.substring(0, 17) + "..."
                 : selectedFile.name}
@@ -575,26 +575,13 @@ function Stakeholders() {
             onClick={sendMessage}
             className="send-btn"
             disabled={!currentMessage.trim() && !selectedFile}
+            title="Send message"
           >
-            <span className="material-icon">send</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
           </button>
-
-          {showEmojiPicker && PickerClass && (
-            <div className="emoji-picker-wrapper">
-              <PickerClass
-                onSelect={(emoji) => {
-                  setCurrentMessage((prev) => prev + emoji.native);
-                  setShowEmojiPicker(false);
-                }}
-                set="apple"
-                theme="light"
-                showPreview={false}
-                showSkinTones={false}
-                emojiSize={22}
-                perLine={9}
-              />
-            </div>
-          )}
         </div>
       </div>
 

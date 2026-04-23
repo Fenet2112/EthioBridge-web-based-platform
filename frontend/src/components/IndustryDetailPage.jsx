@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import SubscriptionModal from "../../components/SubscriptionModal";
-import IDVerificationModal from "../../components/IDVerificationModal";
-import { API_BASE_URL } from "../../utils/api";
+import SubscriptionModal from "./SubscriptionModal";
+import IDVerificationModal from "./IDVerificationModal";
+import { API_BASE_URL } from "../utils/api";
 import "./IndustryDetailPage.css";
 
 function IndustryDetailPage() {
@@ -157,43 +157,20 @@ function IndustryDetailPage() {
         {!subStatus.is_subscribed && (
           <div className="free-usage-badge">
             {subStatus.free_requests_used >= 1
-              ? <span className="used">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                  </svg>
-                  Free request used — <button onClick={() => setShowSubModal(true)}>Subscribe</button>
-                </span>
-              : <span className="available">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                    <polyline points="22 4 12 14.01 9 11.01"/>
-                  </svg>
-                  1 free request available
-                </span>
+              ? <span className="used">🔒 Free request used — <button onClick={() => setShowSubModal(true)}>Subscribe</button></span>
+              : <span className="available">✓ 1 free request available</span>
             }
           </div>
         )}
         {subStatus.is_subscribed && (
-          <div className="free-usage-badge subscribed">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-            Subscribed
-          </div>
+          <div className="free-usage-badge subscribed">⭐ Subscribed</div>
         )}
       </div>
 
       {needsSessionRefresh && (
         <div className="session-banner">
           <div>
-            <strong>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
-              </svg>
-              Your account has been approved!
-            </strong>
+            <strong>🎉 Your account has been approved!</strong>
             <p>Please log out and log back in to refresh your session.</p>
           </div>
           <button onClick={() => { localStorage.clear(); navigate('/login'); }}>Log Out</button>
@@ -204,43 +181,28 @@ function IndustryDetailPage() {
       <section className="industry-profile-section">
         <div className="profile-hero">
           <div className="profile-avatar-large">
-            {industry.company_name?.charAt(0) || "I"}
+            {industry.company_name?.charAt(0) || "🏭"}
           </div>
           <div className="profile-hero-info">
             <h1>{industry.company_name}</h1>
             <span className="sector-badge">{industry.sector}</span>
           </div>
-          <button className="message-industry-btn" onClick={() => navigate(`/stakeholders`)}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-            Message
-          </button>
         </div>
 
         <div className="profile-details-grid">
           <div className="detail-chip">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-              <circle cx="12" cy="10" r="3"/>
-            </svg>
+            <span>📍</span>
             <span className={isBlurred ? "blurred-text" : ""}>{isBlurred ? "Addis Ababa, Ethiopia" : industry.location}</span>
           </div>
           {industry.phone && (
             <div className="detail-chip">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-              </svg>
+              <span>📞</span>
               <span className={isBlurred ? "blurred-text" : ""}>{isBlurred ? "+251 9XX XXX XXX" : industry.phone}</span>
             </div>
           )}
           {industry.website && (
             <div className="detail-chip">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="2" y1="12" x2="22" y2="12"/>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-              </svg>
+              <span>🌐</span>
               {isBlurred
                 ? <span className="blurred-text">www.example.com</span>
                 : <a href={industry.website} target="_blank" rel="noopener noreferrer">{industry.website}</a>
@@ -249,12 +211,7 @@ function IndustryDetailPage() {
           )}
           {industry.established_year && (
             <div className="detail-chip">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
+              <span>📅</span>
               <span>Est. {industry.established_year}</span>
             </div>
           )}
@@ -262,11 +219,7 @@ function IndustryDetailPage() {
 
         {isBlurred && (
           <div className="blur-notice">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-            Contact details are hidden. <button onClick={() => setShowSubModal(true)}>Subscribe to reveal</button>
+            🔒 Contact details are hidden. <button onClick={() => setShowSubModal(true)}>Subscribe to reveal</button>
           </div>
         )}
 
@@ -301,15 +254,7 @@ function IndustryDetailPage() {
                       </span>
                     )}
                     <button className="buy-btn" onClick={() => handleBuyClick(product)}>
-                      {isBlurred ? (
-                        <>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                          </svg>
-                          Subscribe to Buy
-                        </>
-                      ) : "Request Purchase"}
+                      {isBlurred ? "🔒 Subscribe to Buy" : "Request Purchase"}
                     </button>
                   </div>
                 </div>
@@ -378,29 +323,15 @@ function BuyModal({ product, onClose, onSubmit }) {
       <div className="buy-modal" onClick={(e) => e.stopPropagation()}>
         <button className="close-modal" onClick={onClose}>✕</button>
         <h2>Request Purchase</h2>
-        <p className="modal-product-name">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-          </svg>
-          <strong>{product?.name}</strong>
-        </p>
+        <p className="modal-product-name">📦 <strong>{product?.name}</strong></p>
 
         {isApproved ? (
           <div className="modal-notice info">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-            Your verified profile will be sent to the industry automatically.
+            ✓ Your verified profile will be sent to the industry automatically.
           </div>
         ) : (
           <div className="modal-notice warning">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            Please fill in your details. This request will be reviewed by admin.
+            ⚠️ Please fill in your details. This request will be reviewed by admin.
           </div>
         )}
 
