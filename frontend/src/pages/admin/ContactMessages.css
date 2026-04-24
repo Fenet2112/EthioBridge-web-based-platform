@@ -464,25 +464,34 @@
 
 .action-btn {
   display: inline-flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 16px;
+  gap: 7px;
+  padding: 9px 18px;
   border: 1.5px solid transparent;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.18s ease;
   text-decoration: none;
   white-space: nowrap;
-  line-height: 1.4;
-  min-width: 0;
+  line-height: 1;
+  box-sizing: border-box;
 }
 
 .action-btn svg {
-  font-size: 0.8rem;
+  display: inline-block;
+  width: 13px;
+  height: 13px;
   flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.action-btn span {
+  display: inline-block;
+  line-height: 1;
 }
 
 /* In Progress */
