@@ -277,11 +277,35 @@ server.listen(PORT, () => {
   pool.query('SELECT NOW()', (err, res) => {
     if (err) {
       console.error('❌ Database connection failed:', err.message);
-      console.error('Server will continue running but database operations will fail');
     } else {
       console.log('✅ Database connected successfully');
     }
   });
+
+  // Ensure Supabase Storage buckets exist
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const { createClient } = require('@supabase/supabase-js');
+    const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false }
+    });
+    const buckets = ['product-images', 'profile-images', 'id-documents'];
+    buckets.forEach(async (bucket) => {
+      try {
+        const { data: existing } = await sb.storage.getBucket(bucket);
+        if (!existing) {
+          const { error } = await sb.storage.createBucket(bucket, { public: true });
+          if (error) console.error(`[Storage] Failed to create bucket ${bucket}:`, error.message);
+          else console.log(`[Storage] ✅ Created bucket: ${bucket}`);
+        } else {
+          console.log(`[Storage] ✅ Bucket exists: ${bucket}`);
+        }
+      } catch (e) {
+        console.error(`[Storage] Bucket check failed for ${bucket}:`, e.message);
+      }
+    });
+  } else {
+    console.warn('[Storage] ⚠️  SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set — profile photos will use local disk (not persistent on Render)');
+  }
 });
 
 // Set keep-alive timeout (important for cloud deployments)
