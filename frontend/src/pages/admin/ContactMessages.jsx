@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  FaEnvelope, FaEnvelopeOpen, FaReply, FaArchive, FaFilter, 
-  FaPhone, FaUser, FaClock, FaCheckCircle, FaTimesCircle, FaPaperPlane,
-  FaExclamationTriangle, FaCheck, FaHourglassHalf
+  FaEnvelope, FaEnvelopeOpen, FaReply, FaFilter, 
+  FaPhone, FaUser, FaClock, FaCheckCircle, FaPaperPlane,
+  FaExclamationTriangle, FaCheck, FaHourglassHalf, FaRedoAlt,
+  FaSpinner, FaTicketAlt
 } from 'react-icons/fa';
 import './ContactMessages.css';
 
@@ -409,44 +410,62 @@ function ContactMessages() {
               )}
             </div>
             <div className="message-modal-actions">
-              {selectedMessage.status === 'pending' && (
-                <button 
-                  className="action-btn in-progress"
-                  onClick={() => updateMessageStatus(selectedMessage.id, 'in_progress', 'normal')}
+              <div className="actions-left">
+                {selectedMessage.status === 'pending' && (
+                  <button
+                    className="action-btn btn-in-progress"
+                    onClick={() => updateMessageStatus(selectedMessage.id, 'in_progress', 'normal')}
+                  >
+                    <FaClock />
+                    <span>Mark In Progress</span>
+                  </button>
+                )}
+                {selectedMessage.status === 'in_progress' && (
+                  <button
+                    className="action-btn btn-pending"
+                    onClick={() => updateMessageStatus(selectedMessage.id, 'pending')}
+                  >
+                    <FaHourglassHalf />
+                    <span>Back to Pending</span>
+                  </button>
+                )}
+                {selectedMessage.status !== 'resolved' && (
+                  <button
+                    className="action-btn btn-resolve"
+                    onClick={() => updateMessageStatus(selectedMessage.id, 'resolved')}
+                  >
+                    <FaCheckCircle />
+                    <span>Mark Resolved</span>
+                  </button>
+                )}
+                {selectedMessage.status === 'resolved' && (
+                  <button
+                    className="action-btn btn-reopen"
+                    onClick={() => updateMessageStatus(selectedMessage.id, 'pending')}
+                  >
+                    <FaRedoAlt />
+                    <span>Reopen Ticket</span>
+                  </button>
+                )}
+              </div>
+              <div className="actions-right">
+                <a
+                  href={`mailto:${selectedMessage.email}?subject=Re: Your support request #${selectedMessage.id}`}
+                  className="action-btn btn-email"
                 >
-                  <FaClock /> Mark In Progress
-                </button>
-              )}
-              {selectedMessage.status !== 'resolved' && (
-                <button 
-                  className="action-btn reply"
-                  onClick={() => setShowReplyModal(true)}
-                >
-                  <FaPaperPlane /> Send Reply
-                </button>
-              )}
-              {selectedMessage.status !== 'resolved' && (
-                <button 
-                  className="action-btn resolve"
-                  onClick={() => updateMessageStatus(selectedMessage.id, 'resolved')}
-                >
-                  <FaCheckCircle /> Mark Resolved
-                </button>
-              )}
-              {selectedMessage.status === 'resolved' && (
-                <button 
-                  className="action-btn pending"
-                  onClick={() => updateMessageStatus(selectedMessage.id, 'pending')}
-                >
-                  <FaHourglassHalf /> Reopen Ticket
-                </button>
-              )}
-              <a 
-                href={`mailto:${selectedMessage.email}?subject=Re: Your support request #${selectedMessage.id}`}
-                className="action-btn email"
-              >
-                <FaEnvelope /> Reply via Email
-              </a>
+                  <FaEnvelope />
+                  <span>Email User</span>
+                </a>
+                {selectedMessage.status !== 'resolved' && (
+                  <button
+                    className="action-btn btn-reply"
+                    onClick={() => setShowReplyModal(true)}
+                  >
+                    <FaPaperPlane />
+                    <span>Send Reply</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

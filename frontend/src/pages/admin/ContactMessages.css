@@ -437,78 +437,126 @@
 
 .message-modal-actions {
   display: flex;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
   gap: 12px;
-  padding: 24px;
+  padding: 20px 24px;
   border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border-radius: 0 0 16px 16px;
+  flex-wrap: wrap;
+}
+
+.actions-left {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.actions-right {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .action-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
+  gap: 7px;
+  padding: 9px 18px;
   border: none;
   border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 0.88rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.18s ease;
   text-decoration: none;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
-.action-btn.in-progress {
+.action-btn svg {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+/* In Progress */
+.action-btn.btn-in-progress {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1.5px solid #bfdbfe;
+}
+.action-btn.btn-in-progress:hover {
   background: #dbeafe;
-  color: #1e40af;
+  border-color: #93c5fd;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(29, 78, 216, 0.15);
 }
 
-.action-btn.in-progress:hover {
-  background: #bfdbfe;
+/* Back to Pending */
+.action-btn.btn-pending {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1.5px solid #fde68a;
+}
+.action-btn.btn-pending:hover {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(180, 83, 9, 0.15);
 }
 
-.action-btn.reply {
+/* Resolve */
+.action-btn.btn-resolve {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1.5px solid #bbf7d0;
+}
+.action-btn.btn-resolve:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(21, 128, 61, 0.15);
+}
+
+/* Reopen */
+.action-btn.btn-reopen {
+  background: #faf5ff;
+  color: #7c3aed;
+  border: 1.5px solid #ddd6fe;
+}
+.action-btn.btn-reopen:hover {
+  background: #ede9fe;
+  border-color: #c4b5fd;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(124, 58, 237, 0.15);
+}
+
+/* Email */
+.action-btn.btn-email {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border: 1.5px solid #ddd6fe;
+}
+.action-btn.btn-email:hover {
+  background: #ede9fe;
+  border-color: #c4b5fd;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(109, 40, 217, 0.15);
+}
+
+/* Send Reply — primary CTA */
+.action-btn.btn-reply {
   background: var(--primary-color);
   color: white;
+  border: 1.5px solid var(--primary-color);
+  padding: 9px 22px;
 }
-
-.action-btn.reply:hover {
+.action-btn.btn-reply:hover {
   background: var(--primary-hover);
-}
-
-.action-btn.resolve {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.action-btn.resolve:hover {
-  background: #a7f3d0;
-}
-
-.action-btn.pending {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.action-btn.pending:hover {
-  background: #fde68a;
-}
-
-.action-btn.archive {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.action-btn.archive:hover {
-  background: #d1d5db;
-}
-
-.action-btn.email {
-  background: #8b5cf6;
-  color: white;
-}
-
-.action-btn.email:hover {
-  background: #7c3aed;
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(10, 92, 47, 0.3);
 }
 
 /* Reply Modal */
@@ -687,6 +735,13 @@
   }
 
   .message-modal-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .actions-left,
+  .actions-right {
+    width: 100%;
     flex-direction: column;
   }
 
