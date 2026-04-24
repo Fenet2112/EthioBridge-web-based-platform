@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { imageUrl } from '../utils/imageUrl';
 import './ProfileDropdown.css';
 import DarkModeToggle from './DarkModeToggle';
 
@@ -157,7 +158,7 @@ function ProfileDropdown() {
     return '?';
   };
 
-  const profilePicUrl = previewUrl || (profile?.profile_picture ? `${API_BASE_URL}${profile.profile_picture}` : null);
+  const profilePicUrl = previewUrl || imageUrl(profile?.profile_picture);
 
   return (
     <div className="profile-dropdown-container" ref={dropdownRef}>
@@ -166,10 +167,14 @@ function ProfileDropdown() {
         onClick={() => setIsOpen(!isOpen)}
       >
         {profilePicUrl ? (
-          <img src={profilePicUrl} alt="Profile" className="profile-avatar" />
-        ) : (
-          <div className="profile-avatar-placeholder">{getInitials()}</div>
-        )}
+          <img
+            src={profilePicUrl}
+            alt="Profile"
+            className="profile-avatar"
+            onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+          />
+        ) : null}
+        <div className="profile-avatar-placeholder" style={{ display: profilePicUrl ? 'none' : 'flex' }}>{getInitials()}</div>
         <span className="dropdown-arrow">▼</span>
       </button>
 
@@ -179,10 +184,14 @@ function ProfileDropdown() {
             <>
               <div className="dropdown-header">
                 {profilePicUrl ? (
-                  <img src={profilePicUrl} alt="Profile" className="dropdown-avatar" />
-                ) : (
-                  <div className="dropdown-avatar-placeholder">{getInitials()}</div>
-                )}
+                  <img
+                    src={profilePicUrl}
+                    alt="Profile"
+                    className="dropdown-avatar"
+                    onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                  />
+                ) : null}
+                <div className="dropdown-avatar-placeholder" style={{ display: profilePicUrl ? 'none' : 'flex' }}>{getInitials()}</div>
                 <div className="dropdown-user-info">
                   <h3>{profile?.full_name || 'Set your name'}</h3>
                   <p>@{profile?.username || 'username'}</p>
@@ -253,10 +262,14 @@ function ProfileDropdown() {
               <div className="edit-avatar-section">
                 <div className="edit-avatar-wrap">
                   {profilePicUrl ? (
-                    <img src={profilePicUrl} alt="Profile" className="edit-avatar" />
-                  ) : (
-                    <div className="edit-avatar-placeholder">{getInitials()}</div>
-                  )}
+                    <img
+                      src={profilePicUrl}
+                      alt="Profile"
+                      className="edit-avatar"
+                      onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                    />
+                  ) : null}
+                  <div className="edit-avatar-placeholder" style={{ display: profilePicUrl ? 'none' : 'flex' }}>{getInitials()}</div>
                   {photoUploading && (
                     <div className="edit-avatar-uploading">
                       <div className="edit-upload-spinner"></div>

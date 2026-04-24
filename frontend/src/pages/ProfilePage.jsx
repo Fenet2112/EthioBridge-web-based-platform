@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { imageUrl } from '../utils/imageUrl';
 import StakeholderNav from '../components/StakeholderNav';
 import './ProfilePage.css';
 
@@ -110,7 +111,7 @@ function ProfilePage() {
     <div className="pp-page"><div className="pp-not-found">Profile not found</div></div>
   );
 
-  const avatarSrc = profile.profile_picture ? `${API_BASE_URL}${profile.profile_picture}` : null;
+  const avatarSrc = imageUrl(profile.profile_picture);
   const initials = (profile.full_name || profile.username || '?').charAt(0).toUpperCase();
 
   return (
