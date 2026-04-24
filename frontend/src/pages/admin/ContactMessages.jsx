@@ -15,6 +15,7 @@ function ContactMessages() {
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const [notifyUser, setNotifyUser] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -124,7 +125,7 @@ function ContactMessages() {
           'Authorization': `Bearer ${adminToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ reply: replyText, notifyUser: true })
+        body: JSON.stringify({ reply: replyText, notifyUser: notifyUser })
       });
 
       if (response.ok) {
@@ -491,30 +492,33 @@ function ContactMessages() {
                 />
               </div>
               <div className="reply-options">
-                <label>
-                  <input type="checkbox" defaultChecked /> 
-                  Send email notification to user
+                <label className="reply-notify-label">
+                  <input
+                    type="checkbox"
+                    className="reply-notify-checkbox"
+                    checked={notifyUser}
+                    onChange={(e) => setNotifyUser(e.target.checked)}
+                  />
+                  <span>Send email notification to user</span>
                 </label>
               </div>
             </div>
             <div className="reply-modal-actions">
-              <button 
+              <button
                 className="cancel-btn"
                 onClick={() => setShowReplyModal(false)}
                 disabled={sendingReply}
               >
                 Cancel
               </button>
-              <button 
-                className="send-btn"
+              <button
+                className="send-reply-btn"
                 onClick={sendReply}
                 disabled={sendingReply || !replyText.trim()}
               >
-                {sendingReply ? (
-                  <>Sending...</>
-                ) : (
-                  <><FaPaperPlane /> Send Reply</>
-                )}
+                <span className="btn-inner">
+                  {sendingReply ? 'Sending...' : <><FaPaperPlane /> Send Reply</>}
+                </span>
               </button>
             </div>
           </div>
