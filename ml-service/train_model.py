@@ -24,6 +24,7 @@ import sys
 import time
 import numpy as np
 import pickle
+from typing import Optional, List, Dict, Tuple
 from sklearn.neighbors import NearestNeighbors
 from sklearn.decomposition import TruncatedSVD
 from sklearn.metrics.pairwise import cosine_similarity
@@ -103,7 +104,7 @@ def fetch_users():
     """)
 
 # ── 2. Popularity scores ───────────────────────────────────────────────────────
-def compute_popularity(interactions: list[dict], key: str) -> dict:
+def compute_popularity(interactions: List[Dict], key: str) -> dict:
     counts = {}
     for r in interactions:
         k = r.get(key)
@@ -295,3 +296,4 @@ def train():
 
 if __name__ == "__main__":
     train()
+

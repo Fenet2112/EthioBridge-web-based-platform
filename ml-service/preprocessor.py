@@ -17,6 +17,7 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 import pickle
 import os
+from typing import Optional, List, Dict, Tuple
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 CATEGORIES = [
@@ -55,7 +56,7 @@ class DataPreprocessor:
     # ── Cleaning ──────────────────────────────────────────────────────────────
 
     @staticmethod
-    def clean_products(products: list[dict]) -> list[dict]:
+    def clean_products(products: List[Dict]) -> List[Dict]:
         """Remove duplicates and fill missing values."""
         seen_ids = set()
         cleaned  = []
@@ -73,7 +74,7 @@ class DataPreprocessor:
         return cleaned
 
     @staticmethod
-    def clean_interactions(interactions: list[dict]) -> list[dict]:
+    def clean_interactions(interactions: List[Dict]) -> List[Dict]:
         """Remove duplicate (user_id, product_id) pairs."""
         seen = set()
         cleaned = []
@@ -97,7 +98,7 @@ class DataPreprocessor:
             result.append(encoder.transform([v_clean])[0])
         return np.array(result, dtype=float)
 
-    def fit(self, products: list[dict]):
+    def fit(self, products: List[Dict]):
         """Fit encoders on the full product catalogue."""
         cats   = [p["category"]      for p in products] + CATEGORIES
         sects  = [p["sector"]        for p in products] + SECTORS
@@ -148,7 +149,7 @@ class DataPreprocessor:
             [cat_enc / n_cats, sect_enc / n_sects, role_enc / n_roles, price_norm],
         ]).astype(float)
 
-    def build_product_matrix(self, products: list[dict]) -> tuple[np.ndarray, list]:
+    def build_product_matrix(self, products: List[Dict]) -> Tuple[np.ndarray, list]:
         """Returns (feature_matrix, product_ids)."""
         if not self._fitted:
             self.fit(products)
@@ -161,7 +162,7 @@ class DataPreprocessor:
     def user_preference_vector(
         self,
         user_id: int,
-        interactions: list[dict],
+        interactions: List[Dict],
         product_lookup: dict,
     ) -> np.ndarray:
         """
@@ -203,8 +204,8 @@ class DataPreprocessor:
 
     @staticmethod
     def build_interaction_matrix(
-        interactions: list[dict],
-    ) -> tuple[np.ndarray | None, list, list]:
+        interactions: List[Dict],
+    ) -> Tuple[Optional[np.ndarray], list, list]:
         """
         Build a binary user × product interaction matrix.
         Returns (matrix, all_user_ids, all_product_ids).
@@ -235,3 +236,4 @@ class DataPreprocessor:
         import pickle
         with open(path, "rb") as f:
             return pickle.load(f)
+

@@ -21,6 +21,7 @@ import numpy as np
 import pickle
 import os
 import threading
+from typing import Optional, List, Dict
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../backend/.env"))
@@ -37,10 +38,10 @@ app.add_middleware(
 )
 
 # ── Global model state ─────────────────────────────────────────────────────────
-_model: dict | None = None
+_model: Optional[dict] = None
 _model_lock = threading.Lock()
 
-def get_model() -> dict | None:
+def get_model() -> Optional[dict]:
     return _model
 
 @app.on_event("startup")
@@ -77,7 +78,7 @@ def query(sql, params=None):
         conn.close()
 
 # ── Live data helpers ──────────────────────────────────────────────────────────
-def user_product_interactions(user_id: int) -> list[dict]:
+def user_product_interactions(user_id: int) -> List[Dict]:
     return query("""
         SELECT s.user_id, pr.product_id
         FROM purchase_requests pr
@@ -124,7 +125,7 @@ def cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.dot(a, b) / denom) if denom > 0 else 0.0
 
 # ── Collaborative boost via KNN ────────────────────────────────────────────────
-def knn_collaborative_boost(user_id: int, model: dict, interactions: list[dict]) -> dict:
+def knn_collaborative_boost(user_id: int, model: dict, interactions: List[Dict]) -> dict:
     """
     Find similar users via KNN, return {product_id: boost_score}.
     Uses the pre-trained interaction matrix row for the user.
@@ -503,3 +504,4 @@ def health():
         "trained_at":      model.get("trained_at") if model else None,
         "hit_rate_at_10":  model.get("hit_rate_at_10") if model else None,
     }
+
