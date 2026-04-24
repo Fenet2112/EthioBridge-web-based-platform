@@ -437,37 +437,29 @@
 
 .message-modal-actions {
   display: flex;
-  flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   padding: 16px 24px;
   border-top: 1px solid var(--border-color);
   background: var(--bg-secondary);
   border-radius: 0 0 16px 16px;
-  flex-wrap: wrap;
 }
 
 .actions-left {
   display: flex;
-  flex-direction: row;
-  gap: 10px;
   flex-wrap: wrap;
+  gap: 10px;
   flex: 1;
 }
 
 .actions-right {
   display: flex;
-  flex-direction: row;
-  gap: 10px;
   flex-wrap: wrap;
+  gap: 10px;
 }
 
 .action-btn {
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
   padding: 9px 18px;
   border: 1.5px solid transparent;
   border-radius: 8px;
@@ -477,21 +469,23 @@
   transition: all 0.18s ease;
   text-decoration: none;
   white-space: nowrap;
-  line-height: 1;
   box-sizing: border-box;
+  background: none;
 }
 
-.action-btn svg {
+.btn-inner {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.btn-inner svg {
   display: inline-block;
   width: 13px;
   height: 13px;
   flex-shrink: 0;
-  vertical-align: middle;
-}
-
-.action-btn span {
-  display: inline-block;
-  line-height: 1;
 }
 
 /* In Progress */
@@ -749,16 +743,22 @@
 
   .message-modal-actions {
     flex-direction: column;
-    gap: 10px;
+    align-items: stretch;
+    gap: 8px;
   }
 
   .actions-left,
   .actions-right {
     width: 100%;
+    flex-direction: column;
   }
 
   .action-btn {
     width: 100%;
+    text-align: center;
+  }
+
+  .btn-inner {
     justify-content: center;
   }
 

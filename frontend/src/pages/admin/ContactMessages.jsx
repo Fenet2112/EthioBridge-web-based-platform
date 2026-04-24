@@ -416,8 +416,7 @@ function ContactMessages() {
                     className="action-btn btn-in-progress"
                     onClick={() => updateMessageStatus(selectedMessage.id, 'in_progress', 'normal')}
                   >
-                    <FaClock />
-                    <span>Mark In Progress</span>
+                    <span className="btn-inner"><FaClock /> Mark In Progress</span>
                   </button>
                 )}
                 {selectedMessage.status === 'in_progress' && (
@@ -425,8 +424,7 @@ function ContactMessages() {
                     className="action-btn btn-pending"
                     onClick={() => updateMessageStatus(selectedMessage.id, 'pending')}
                   >
-                    <FaHourglassHalf />
-                    <span>Back to Pending</span>
+                    <span className="btn-inner"><FaHourglassHalf /> Back to Pending</span>
                   </button>
                 )}
                 {selectedMessage.status !== 'resolved' && (
@@ -434,8 +432,7 @@ function ContactMessages() {
                     className="action-btn btn-resolve"
                     onClick={() => updateMessageStatus(selectedMessage.id, 'resolved')}
                   >
-                    <FaCheckCircle />
-                    <span>Mark Resolved</span>
+                    <span className="btn-inner"><FaCheckCircle /> Mark Resolved</span>
                   </button>
                 )}
                 {selectedMessage.status === 'resolved' && (
@@ -443,8 +440,7 @@ function ContactMessages() {
                     className="action-btn btn-reopen"
                     onClick={() => updateMessageStatus(selectedMessage.id, 'pending')}
                   >
-                    <FaRedoAlt />
-                    <span>Reopen Ticket</span>
+                    <span className="btn-inner"><FaRedoAlt /> Reopen Ticket</span>
                   </button>
                 )}
               </div>
@@ -453,16 +449,14 @@ function ContactMessages() {
                   href={`mailto:${selectedMessage.email}?subject=Re: Your support request #${selectedMessage.id}`}
                   className="action-btn btn-email"
                 >
-                  <FaEnvelope />
-                  <span>Email User</span>
+                  <span className="btn-inner"><FaEnvelope /> Email User</span>
                 </a>
                 {selectedMessage.status !== 'resolved' && (
                   <button
                     className="action-btn btn-reply"
                     onClick={() => setShowReplyModal(true)}
                   >
-                    <FaPaperPlane />
-                    <span>Send Reply</span>
+                    <span className="btn-inner"><FaPaperPlane /> Send Reply</span>
                   </button>
                 )}
               </div>
