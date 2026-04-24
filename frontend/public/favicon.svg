@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="32" fill="#0a5c2f"/>
+  <!-- Bridge arch -->
+  <path d="M10 42 Q32 14 54 42" stroke="#4ade80" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- Bridge deck -->
+  <line x1="8" y1="42" x2="56" y2="42" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Left pillar -->
+  <line x1="18" y1="42" x2="18" y2="52" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  <!-- Right pillar -->
+  <line x1="46" y1="42" x2="46" y2="52" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  <!-- Suspension cables left -->
+  <line x1="32" y1="18" x2="18" y2="42" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
+  <!-- Suspension cables right -->
+  <line x1="32" y1="18" x2="46" y2="42" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
+  <!-- Center tower -->
+  <line x1="32" y1="14" x2="32" y2="42" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+  <!-- Tower crossbar -->
+  <line x1="27" y1="22" x2="37" y2="22" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
