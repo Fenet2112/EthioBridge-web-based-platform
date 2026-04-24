@@ -40,10 +40,8 @@ router.post('/submit', async (req, res) => {
 
     if (!firstName || !lastName || !email || !message)
       return res.status(400).json({ message: 'First name, last name, email, and message are required' });
-
     if (!source || !['contact', 'help'].includes(source))
       return res.status(400).json({ message: 'Invalid source. Must be "contact" or "help"' });
-
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       return res.status(400).json({ message: 'Invalid email format' });
 
@@ -61,30 +59,27 @@ router.post('/submit', async (req, res) => {
 
     const saved = result.rows[0];
 
-    // Email admin
     try {
       const srcLabel = source === 'contact' ? 'Contact Us' : 'Help Center';
-      await sendEmail(ADMIN_EMAIL, `New ${srcLabel} Message from ${firstName} ${lastName}`, `
-        <h2>New ${srcLabel} Message</h2>
-        <p><strong>From:</strong> ${firstName} ${lastName} &lt;${email}&gt;</p>
-        ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ''}
-        ${role  ? `<p><strong>Role:</strong> ${role}</p>`   : ''}
-        ${userId? `<p><strong>User ID:</strong> ${userId}</p>` : ''}
-        <h3>Message:</h3>
-        <p style="background:#f5f5f5;padding:15px;border-left:4px solid #0a5c2f;">${message.replace(/\n/g,'<br>')}</p>
-        <p style="color:#666;font-size:0.9em;">Message ID: ${saved.id}</p>
-      `);
+      await sendEmail(ADMIN_EMAIL, `New ${srcLabel} Message from ${firstName} ${lastName}`,
+        `<h2>New ${srcLabel} Message</h2>
+         <p><strong>From:</strong> ${firstName} ${lastName} &lt;${email}&gt;</p>
+         ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ''}
+         ${role  ? `<p><strong>Role:</strong> ${role}</p>`   : ''}
+         <h3>Message:</h3>
+         <p style="background:#f5f5f5;padding:15px;border-left:4px solid #0a5c2f;">${message.replace(/\n/g,'<br>')}</p>
+         <p style="color:#666;font-size:0.9em;">Message ID: ${saved.id}</p>`
+      );
     } catch (e) { console.error('[Contact] Admin email failed:', e.message); }
 
-    // Confirmation to user
     try {
-      await sendEmail(email, 'We received your message - EthioBridge', `
-        <h2>Thank you for contacting us!</h2>
-        <p>Dear ${firstName},</p>
-        <p>We received your message and will respond within 24-48 hours.</p>
-        <p><strong>Reference:</strong> #${saved.id}</p>
-        <p>Best regards,<br>The EthioBridge Team</p>
-      `);
+      await sendEmail(email, 'We received your message - EthioBridge',
+        `<h2>Thank you for contacting us!</h2>
+         <p>Dear ${firstName},</p>
+         <p>We received your message and will respond within 24-48 hours.</p>
+         <p><strong>Reference:</strong> #${saved.id}</p>
+         <p>Best regards,<br>The EthioBridge Team</p>`
+      );
     } catch (e) { console.error('[Contact] Confirmation email failed:', e.message); }
 
     res.status(201).json({
@@ -98,7 +93,7 @@ router.post('/submit', async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════
-// USER: GET SUPPORT THREAD (chat-formatted, marks as read)
+// USER: GET SUPPORT THREAD (chat-formatted, marks replies as read)
 // ══════════════════════════════════════════════════════
 router.get('/my-support', authenticateToken, async (req, res) => {
   try {
@@ -112,9 +107,10 @@ router.get('/my-support', authenticateToken, async (req, res) => {
       ORDER BY created_at ASC
     `, [userId]);
 
+    console.log(`[Contact] my-support: found ${result.rows.length} tickets for user ${userId}`);
+
     const thread = [];
     for (const ticket of result.rows) {
-      // User's original message
       thread.push({
         id:           'user-' + ticket.id,
         ticket_id:    ticket.id,
@@ -126,7 +122,6 @@ router.get('/my-support', authenticateToken, async (req, res) => {
         status_label: getStatusLabel(ticket.status),
         created_at:   ticket.created_at
       });
-      // Admin reply (if exists)
       if (ticket.admin_reply) {
         thread.push({
           id:           'admin-' + ticket.id,
@@ -142,10 +137,11 @@ router.get('/my-support', authenticateToken, async (req, res) => {
       }
     }
 
-    // Count unread before marking as read
+    console.log(`[Contact] my-support: built thread with ${thread.length} entries`);
+
     const unreadReplies = result.rows.filter(t => t.admin_reply && !t.user_notified).length;
 
-    // Mark all replied tickets as seen (user_notified = true)
+    // Mark as seen when user fetches
     if (unreadReplies > 0) {
       await pool.query(`
         UPDATE contact_messages
@@ -176,10 +172,12 @@ router.get('/my-messages', authenticateToken, async (req, res) => {
              FROM contact_messages WHERE user_id = $1`;
 
     if (status && ['pending','in_progress','replied','resolved'].includes(status)) {
-      params.push(status); q += ` AND status = $${params.length}`;
+      params.push(status);
+      q += ` AND status = $${params.length}`;
     }
     if (source && ['contact','help'].includes(source)) {
-      params.push(source); q += ` AND source = $${params.length}`;
+      params.push(source);
+      q += ` AND source = $${params.length}`;
     }
     q += ' ORDER BY created_at DESC';
 
@@ -197,15 +195,13 @@ router.get('/my-messages', authenticateToken, async (req, res) => {
 // ══════════════════════════════════════════════════════
 router.get('/my-messages/:id', authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
     const result = await pool.query(`
       SELECT id, first_name, last_name, email, phone, role,
              subject, message, admin_reply, source, status, priority,
              user_id, created_at, updated_at, read_at, replied_at, user_notified
       FROM contact_messages
       WHERE id = $1 AND (user_id = $2 OR user_id IS NULL)
-    `, [id, userId]);
+    `, [req.params.id, req.user.id]);
     if (!result.rows.length) return res.status(404).json({ message: 'Message not found' });
     res.json({ ...result.rows[0], status_label: getStatusLabel(result.rows[0].status) });
   } catch (error) {
@@ -222,36 +218,41 @@ router.get('/admin/messages', requireAdminAuth, async (req, res) => {
     const { status, source, priority, limit = 50, offset = 0 } = req.query;
 
     const params = [];
-    let q = `SELECT id, first_name, last_name, email, phone, role,
-               subject, message, admin_reply, source, status, priority,
-               user_id, created_at, updated_at, read_at, replied_at, user_notified, notified_at
-             FROM contact_messages WHERE 1=1`;
+    let conditions = '';
 
     if (status && ['pending','in_progress','replied','resolved'].includes(status)) {
-      params.push(status); q += ` AND status = $${params.length}`;
+      params.push(status);
+      conditions += ` AND status = $${params.length}`;
     }
     if (source && ['contact','help'].includes(source)) {
-      params.push(source); q += ` AND source = $${params.length}`;
+      params.push(source);
+      conditions += ` AND source = $${params.length}`;
     }
     if (priority && ['low','normal','high','urgent'].includes(priority)) {
-      params.push(priority); q += ` AND priority = $${params.length}`;
+      params.push(priority);
+      conditions += ` AND priority = $${params.length}`;
     }
 
-    // Count query (before adding LIMIT/OFFSET)
+    // Count
     const countResult = await pool.query(
-      `SELECT COUNT(*) as total FROM contact_messages WHERE 1=1` +
-      (params.length ? params.map((_, i) => {
-        if (status && i === 0) return ` AND status = $${i+1}`;
-        if (source && ((status ? i===1 : i===0))) return ` AND source = $${i+1}`;
-        return ` AND priority = $${i+1}`;
-      }).join('') : ''),
+      `SELECT COUNT(*) as total FROM contact_messages WHERE 1=1${conditions}`,
       params
     );
 
-    params.push(parseInt(limit), parseInt(offset));
-    q += ` ORDER BY CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'normal' THEN 3 WHEN 'low' THEN 4 END, created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`;
+    // Data with pagination
+    const dataParams = [...params, parseInt(limit), parseInt(offset)];
+    const result = await pool.query(`
+      SELECT id, first_name, last_name, email, phone, role,
+             subject, message, admin_reply, source, status, priority,
+             user_id, created_at, updated_at, read_at, replied_at, user_notified, notified_at
+      FROM contact_messages
+      WHERE 1=1${conditions}
+      ORDER BY
+        CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'normal' THEN 3 WHEN 'low' THEN 4 ELSE 5 END,
+        created_at DESC
+      LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length}
+    `, dataParams);
 
-    const result = await pool.query(q, params);
     const messages = result.rows.map(m => ({ ...m, status_label: getStatusLabel(m.status) }));
 
     res.json({
@@ -262,7 +263,7 @@ router.get('/admin/messages', requireAdminAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('[Contact] admin/messages error:', error);
-    res.status(500).json({ message: 'Failed to fetch messages' });
+    res.status(500).json({ message: 'Failed to fetch messages', error: error.message });
   }
 });
 
@@ -303,26 +304,30 @@ router.post('/admin/messages/:id/reply', requireAdminAuth, async (req, res) => {
     if (!orig.rows.length) return res.status(404).json({ message: 'Message not found' });
     const user = orig.rows[0];
 
-    // Save reply + update status
+    // Save reply — user_notified = false means "unread by user"
     const result = await pool.query(`
       UPDATE contact_messages
-      SET admin_reply = $1, status = 'replied', replied_at = NOW(), updated_at = NOW()
-      WHERE id = $2 RETURNING *
+      SET admin_reply   = $1,
+          status        = 'replied',
+          replied_at    = NOW(),
+          updated_at    = NOW(),
+          user_notified = false
+      WHERE id = $2
+      RETURNING *
     `, [reply.trim(), id]);
 
     const updated = result.rows[0];
-    console.log('[Contact] Admin replied to ticket:', id);
+    console.log('[Contact] Admin replied to ticket:', id, '| user_id:', user.user_id);
 
-    // In-app notification
+    // In-app notification for logged-in users
     if (user.user_id) {
       try {
         await pool.query(`
           INSERT INTO notifications (user_id, type, title, message, reference_id, reference_type)
-          VALUES ($1, 'support_reply', 'Support Reply Received',
-                 $2, $3, 'support_ticket')
+          VALUES ($1, 'support_reply', 'Support Reply Received', $2, $3, 'support_ticket')
         `, [
           user.user_id,
-          `Admin replied to your support request #${id}. Tap to view.`,
+          `Admin replied to your support request #${id}. Open Messages → Support to view.`,
           id
         ]);
         console.log('[Contact] In-app notification created for user:', user.user_id);
@@ -332,23 +337,19 @@ router.post('/admin/messages/:id/reply', requireAdminAuth, async (req, res) => {
     // Email notification
     if (notifyUser && user.email) {
       try {
-        await sendEmail(user.email, 'Your support request has been answered - EthioBridge', `
-          <h2>Your Support Request Has Been Answered</h2>
-          <p>Dear ${user.first_name},</p>
-          <div style="background:#f5f5f5;padding:16px;border-left:4px solid #0a5c2f;margin:16px 0;">
-            <strong>Your Message:</strong><br>${updated.message}
-          </div>
-          <div style="background:#e8f5e9;padding:16px;border-left:4px solid #16a34a;margin:16px 0;">
-            <strong>Admin Reply:</strong><br>${reply.replace(/\n/g,'<br>')}
-          </div>
-          <p>Log in to view the full conversation in your Messages → Support section.</p>
-          <p>Best regards,<br>The EthioBridge Team</p>
-          <p style="color:#666;font-size:0.85em;">Reference: #${id}</p>
-        `);
-        await pool.query(
-          'UPDATE contact_messages SET user_notified = false, notified_at = NOW() WHERE id = $1', [id]
+        await sendEmail(user.email, 'Your support request has been answered - EthioBridge',
+          `<h2>Your Support Request Has Been Answered</h2>
+           <p>Dear ${user.first_name},</p>
+           <div style="background:#f5f5f5;padding:16px;border-left:4px solid #0a5c2f;margin:16px 0;">
+             <strong>Your Message:</strong><br>${updated.message}
+           </div>
+           <div style="background:#e8f5e9;padding:16px;border-left:4px solid #16a34a;margin:16px 0;">
+             <strong>Admin Reply:</strong><br>${reply.replace(/\n/g,'<br>')}
+           </div>
+           <p>Log in and go to <strong>Messages → Support</strong> to view the full conversation.</p>
+           <p>Best regards,<br>The EthioBridge Team</p>
+           <p style="color:#666;font-size:0.85em;">Reference: #${id}</p>`
         );
-        // user_notified = false means "new unread reply" — will be set true when user views it
         console.log('[Contact] Reply email sent to:', user.email);
       } catch (e) { console.error('[Contact] Reply email failed:', e.message); }
     }
@@ -380,7 +381,8 @@ router.patch('/admin/messages/:id/status', requireAdminAuth, async (req, res) =>
     if (status === 'in_progress') sets.push('read_at = COALESCE(read_at, NOW())');
 
     if (priority && ['low','normal','high','urgent'].includes(priority)) {
-      params.push(priority); sets.push(`priority = $${params.length}`);
+      params.push(priority);
+      sets.push(`priority = $${params.length}`);
     }
 
     params.push(id);
@@ -390,7 +392,10 @@ router.patch('/admin/messages/:id/status', requireAdminAuth, async (req, res) =>
     );
 
     if (!result.rows.length) return res.status(404).json({ message: 'Message not found' });
-    res.json({ message: 'Status updated', data: { ...result.rows[0], status_label: getStatusLabel(result.rows[0].status) } });
+    res.json({
+      message: 'Status updated',
+      data: { ...result.rows[0], status_label: getStatusLabel(result.rows[0].status) }
+    });
   } catch (error) {
     console.error('[Contact] Status update error:', error);
     res.status(500).json({ message: 'Failed to update status' });

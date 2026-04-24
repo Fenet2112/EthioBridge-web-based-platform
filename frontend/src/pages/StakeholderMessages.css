@@ -522,3 +522,28 @@
 .support-footer-note a:hover {
   text-decoration: underline;
 }
+
+/* ── Support reply bubble ── */
+.message-bubble.support-reply {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-left: 4px solid #16a34a;
+}
+
+/* ── Refresh button ── */
+.support-refresh-btn {
+  margin-left: auto;
+  padding: 6px 14px;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1.5px solid #bbf7d0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.support-refresh-btn:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+}
