@@ -397,3 +397,128 @@
 .message-bubble.received .attachment-link:hover {
   background: rgba(255,255,255,0.4);
 }
+
+/* ── Messages Tabs ── */
+.messages-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--border-color, #e5e7eb);
+  margin-bottom: 8px;
+}
+
+.messages-tab {
+  flex: 1;
+  padding: 12px 8px;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: color 0.2s;
+}
+
+.messages-tab.active {
+  color: #0a5c2f;
+  border-bottom: 2px solid #0a5c2f;
+  margin-bottom: -2px;
+}
+
+.messages-tab:hover {
+  color: #0a5c2f;
+}
+
+.tab-badge {
+  background: #dc2626;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* ── Support sidebar item ── */
+.support-sidebar-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(10, 92, 47, 0.06);
+  border-left: 3px solid #0a5c2f;
+  cursor: default;
+}
+
+.support-avatar {
+  background: linear-gradient(135deg, #0a5c2f, #16a34a) !important;
+  font-size: 1.1rem;
+}
+
+/* ── Support thread messages ── */
+.support-sender-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0a5c2f;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.support-subject {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 4px;
+  font-style: italic;
+}
+
+.support-status-pill {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.support-status-pill.status-pending   { background: #fef3c7; color: #92400e; }
+.support-status-pill.status-in_progress { background: #dbeafe; color: #1e40af; }
+.support-status-pill.status-replied   { background: #d1fae5; color: #065f46; }
+.support-status-pill.status-resolved  { background: #e5e7eb; color: #374151; }
+
+.support-avatar-header {
+  background: linear-gradient(135deg, #0a5c2f, #16a34a);
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+/* ── Support footer note ── */
+.support-footer-note {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+  background: #f9fafb;
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+.support-footer-note a {
+  color: #0a5c2f;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.support-footer-note a:hover {
+  text-decoration: underline;
+}

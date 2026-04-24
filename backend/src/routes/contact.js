@@ -194,6 +194,57 @@ router.get('/my-messages', authenticateToken, async (req, res) => {
   }
 });
 
+// ── GET SUPPORT THREAD (formatted as chat for the messages page) ──
+router.get('/my-support', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await pool.query(
+      `SELECT id, first_name, last_name, subject, message, admin_reply,
+              source, status, priority, created_at, replied_at, user_notified
+       FROM contact_messages
+       WHERE user_id = $1
+       ORDER BY created_at ASC`,
+      [userId]
+    );
+
+    const thread = [];
+    for (const ticket of result.rows) {
+      thread.push({
+        id: 'user-' + ticket.id,
+        ticket_id: ticket.id,
+        sender: 'user',
+        content: ticket.message,
+        subject: ticket.subject,
+        source: ticket.source,
+        status: ticket.status,
+        status_label: getStatusLabel(ticket.status),
+        created_at: ticket.created_at
+      });
+      if (ticket.admin_reply) {
+        thread.push({
+          id: 'admin-' + ticket.id,
+          ticket_id: ticket.id,
+          sender: 'admin',
+          content: ticket.admin_reply,
+          subject: 'Re: ' + ticket.subject,
+          source: ticket.source,
+          status: ticket.status,
+          status_label: getStatusLabel(ticket.status),
+          created_at: ticket.replied_at || ticket.created_at
+        });
+      }
+    }
+
+    const unreadReplies = result.rows.filter(t => t.admin_reply && !t.user_notified).length;
+    res.json({ thread, total: result.rows.length, unread_replies: unreadReplies });
+
+  } catch (error) {
+    console.error('[Contact] Error fetching support thread:', error);
+    res.status(500).json({ message: 'Failed to fetch support messages' });
+  }
+});
+
 // ── GET SINGLE MESSAGE BY ID (Authenticated User) ──
 router.get('/my-messages/:id', authenticateToken, async (req, res) => {
   try {
