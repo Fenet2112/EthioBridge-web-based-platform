@@ -437,10 +437,10 @@
 
 .message-modal-actions {
   display: flex;
-  justify-content: space-between;
+  flex-direction: row;
   align-items: center;
-  gap: 12px;
-  padding: 20px 24px;
+  gap: 10px;
+  padding: 16px 24px;
   border-top: 1px solid var(--border-color);
   background: var(--bg-secondary);
   border-radius: 0 0 16px 16px;
@@ -449,12 +449,15 @@
 
 .actions-left {
   display: flex;
+  flex-direction: row;
   gap: 10px;
   flex-wrap: wrap;
+  flex: 1;
 }
 
 .actions-right {
   display: flex;
+  flex-direction: row;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -462,21 +465,23 @@
 .action-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 18px;
-  border: none;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1.5px solid transparent;
   border-radius: 8px;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.18s ease;
   text-decoration: none;
-  letter-spacing: 0.01em;
   white-space: nowrap;
+  line-height: 1.4;
+  min-width: 0;
 }
 
 .action-btn svg {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   flex-shrink: 0;
 }
 
@@ -484,7 +489,7 @@
 .action-btn.btn-in-progress {
   background: #eff6ff;
   color: #1d4ed8;
-  border: 1.5px solid #bfdbfe;
+  border-color: #bfdbfe;
 }
 .action-btn.btn-in-progress:hover {
   background: #dbeafe;
@@ -497,7 +502,7 @@
 .action-btn.btn-pending {
   background: #fffbeb;
   color: #b45309;
-  border: 1.5px solid #fde68a;
+  border-color: #fde68a;
 }
 .action-btn.btn-pending:hover {
   background: #fef3c7;
@@ -510,7 +515,7 @@
 .action-btn.btn-resolve {
   background: #f0fdf4;
   color: #15803d;
-  border: 1.5px solid #bbf7d0;
+  border-color: #bbf7d0;
 }
 .action-btn.btn-resolve:hover {
   background: #dcfce7;
@@ -523,7 +528,7 @@
 .action-btn.btn-reopen {
   background: #faf5ff;
   color: #7c3aed;
-  border: 1.5px solid #ddd6fe;
+  border-color: #ddd6fe;
 }
 .action-btn.btn-reopen:hover {
   background: #ede9fe;
@@ -536,7 +541,7 @@
 .action-btn.btn-email {
   background: #f5f3ff;
   color: #6d28d9;
-  border: 1.5px solid #ddd6fe;
+  border-color: #ddd6fe;
 }
 .action-btn.btn-email:hover {
   background: #ede9fe;
@@ -549,8 +554,7 @@
 .action-btn.btn-reply {
   background: var(--primary-color);
   color: white;
-  border: 1.5px solid var(--primary-color);
-  padding: 9px 22px;
+  border-color: var(--primary-color);
 }
 .action-btn.btn-reply:hover {
   background: var(--primary-hover);
@@ -742,7 +746,6 @@
   .actions-left,
   .actions-right {
     width: 100%;
-    flex-direction: column;
   }
 
   .action-btn {
