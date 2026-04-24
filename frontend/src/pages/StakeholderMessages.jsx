@@ -27,6 +27,7 @@ function StakeholderMessages() {
   const [supportUnread, setSupportUnread] = useState(0);
   const [supportLoading, setSupportLoading] = useState(false);
   const supportEndRef = useRef(null);
+  const supportPollRef = useRef(null);
 
   // Check authentication and approval status
   useEffect(() => {
@@ -47,7 +48,13 @@ function StakeholderMessages() {
     setLoading(false);
     loadConversations();
     loadSupportThread();
-  }, [navigate]);
+
+    // Poll support thread every 15s for new admin replies
+    supportPollRef.current = setInterval(() => {
+      loadSupportThread(true); // silent = don't show spinner
+    }, 15000);
+
+    return () => clearInterval(supportPollRef.current);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -115,10 +122,10 @@ function StakeholderMessages() {
     }
   };
 
-  const loadSupportThread = async () => {
+  const loadSupportThread = async (silent = false) => {
     const token = localStorage.getItem("token");
     if (!token) return;
-    setSupportLoading(true);
+    if (!silent) setSupportLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/contact/my-support`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -131,7 +138,7 @@ function StakeholderMessages() {
     } catch (error) {
       console.error("Failed to load support thread:", error);
     } finally {
-      setSupportLoading(false);
+      if (!silent) setSupportLoading(false);
     }
   };
 
@@ -255,7 +262,7 @@ function StakeholderMessages() {
             </button>
             <button
               className={`messages-tab ${activeTab === "support" ? "active" : ""}`}
-              onClick={() => { setActiveTab("support"); loadSupportThread(); }}
+              onClick={() => { setActiveTab("support"); loadSupportThread(); setSupportUnread(0); }}
             >
               Support
               {supportUnread > 0 && <span className="tab-badge">{supportUnread}</span>}
