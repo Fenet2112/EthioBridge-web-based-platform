@@ -3,8 +3,10 @@
 ═══════════════════════════════════════════════════════ */
 
 .global-nav {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -171,7 +173,7 @@
   /* Hide desktop links by default on mobile */
   .global-nav-links {
     display: none;
-    position: absolute;
+    position: fixed;
     top: 68px;
     left: 0;
     right: 0;
