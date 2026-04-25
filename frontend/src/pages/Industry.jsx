@@ -1707,14 +1707,20 @@ function Industry() {
         {/* Messages Section */}
         {canAccessOtherSections && activeSection === "messages" && (
           <div className="messages-section">
-            <h2>Communicate with Stakeholders {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}</h2>
-            
+            <div className="messages-section-header">
+              <h2>
+                <FaComments />
+                Stakeholder Messages
+                {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}
+              </h2>
+            </div>
+
             <div className="messages-container">
               {/* Conversations List */}
               <div className="conversations-list">
                 <h3>Conversations</h3>
                 {conversations.length === 0 ? (
-                  <p className="no-conversations">No conversations yet. Stakeholders will appear here when they message you.</p>
+                  <p className="no-conversations">No conversations yet.<br />Stakeholders will appear here when they message you.</p>
                 ) : (
                   conversations.map(conv => (
                     <div
@@ -1748,14 +1754,14 @@ function Industry() {
                         <div className="stakeholder-avatar">{selectedConversation.organization_name?.charAt(0) || 'S'}</div>
                         <div>
                           <h3>{selectedConversation.organization_name}</h3>
-                          <p>{selectedConversation.organization_type}</p>
+                          <p>{selectedConversation.organization_type || 'Stakeholder'}</p>
                         </div>
                       </div>
                     </div>
 
                     <div className="messages-list">
                       {messagesLoading ? (
-                        <p>Loading messages...</p>
+                        <p className="no-messages">Loading messages...</p>
                       ) : messages.length === 0 ? (
                         <p className="no-messages">No messages yet. Start the conversation!</p>
                       ) : (
@@ -1800,9 +1806,9 @@ function Industry() {
                           style={{ display: 'none' }}
                           accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
                         />
-                        <button 
-                          type="button" 
-                          onClick={() => fileInputRef.current?.click()} 
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
                           className="attach-btn"
                           title="Attach file"
                         >
@@ -1815,7 +1821,11 @@ function Industry() {
                           onChange={(e) => setNewMessage(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                         />
-                        <button onClick={sendMessage} disabled={!newMessage.trim() && !selectedFile}>
+                        <button
+                          className="send-message-btn"
+                          onClick={sendMessage}
+                          disabled={!newMessage.trim() && !selectedFile}
+                        >
                           Send
                         </button>
                       </div>
