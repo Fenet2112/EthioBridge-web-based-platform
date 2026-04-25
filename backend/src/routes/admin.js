@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const { sendApprovalEmail, sendRejectionEmail, sendSuspensionEmail } = require('../utils/sendEmail');
@@ -534,7 +534,7 @@ router.get('/industries', requireAdminAuth, async (req, res) => {
       JOIN users u ON u.id = i.user_id
       LEFT JOIN products p ON p.industry_id = i.id
       LEFT JOIN purchase_requests pr ON pr.industry_id = i.id
-      WHERE u.status = 'approved'
+      WHERE 1=1
     `;
 
     const queryParams = [];
@@ -654,7 +654,7 @@ router.get('/products', requireAdminAuth, async (req, res) => {
       JOIN industries i ON i.id = p.industry_id
       JOIN users u ON u.id = i.user_id
       LEFT JOIN purchase_requests pr ON pr.product_id = p.id
-      WHERE u.status = 'approved'
+      WHERE 1=1
     `;
 
     const queryParams = [];

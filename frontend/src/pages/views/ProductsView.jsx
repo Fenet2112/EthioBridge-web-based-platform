@@ -15,7 +15,9 @@ export default function ProductsView({ tok }) {
     try {
       const res = await fetch(`${API}/api/admin/products`, { headers: { Authorization: `Bearer ${tok()}` } });
       const data = await res.json();
-      setProducts(Array.isArray(data) ? data : []);
+      // Backend returns { products: [...], pagination: {...} }
+      const list = Array.isArray(data) ? data : (data.products || []);
+      setProducts(list);
     } catch { setProducts([]); }
     finally { setLoading(false); }
   };
