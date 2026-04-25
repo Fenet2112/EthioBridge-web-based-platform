@@ -75,6 +75,7 @@ const messageRoutes = require("./routes/messages.js");
 const subscriptionRoutes = require("./routes/subscription.js");
 const profileRoutes = require("./routes/profile.js");
 const contactRoutes = require("./routes/contact.js");
+const notificationRoutes = require("./routes/notifications.js");
 
 app.use("/api", authRoutes);
 app.use("/api/admin", adminRoutes);
@@ -85,6 +86,7 @@ app.use("/api", messageRoutes);
 app.use("/api", subscriptionRoutes);
 app.use("/api", profileRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/industry/notifications", notificationRoutes);
 
 // Test routes
 app.get("/", (req, res) => {
