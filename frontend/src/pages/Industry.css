@@ -1847,3 +1847,357 @@
   border: 2px dashed var(--border);
   border-radius: 14px;
 }
+
+/* ═══════════════════════════════════════════════════════
+   ANALYTICS SECTION  (.an-*)
+═══════════════════════════════════════════════════════ */
+
+.an-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ── Loading / error ── */
+.an-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 70px 0;
+  gap: 14px;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.an-spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #0a5c2f;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.an-error {
+  padding: 40px;
+  text-align: center;
+  color: #dc2626;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.an-empty {
+  color: #9ca3af;
+  text-align: center;
+  padding: 20px 0;
+  font-size: 0.875rem;
+}
+
+/* ── Header ── */
+.an-header { margin-bottom: 4px; }
+
+.an-title {
+  margin: 0 0 4px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.4px;
+}
+
+[data-theme="dark"] .an-title { color: var(--text); }
+
+.an-subtitle {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* ── Stat cards ── */
+.an-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.an-stat-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px 18px;
+  border: 1px solid #e5e7eb;
+  border-top: 3px solid transparent; /* color set inline */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.an-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.09);
+}
+
+[data-theme="dark"] .an-stat-card {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+.an-stat-icon {
+  font-size: 1.6rem;
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+.an-stat-value {
+  font-size: 2.1rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -1px;
+  /* color set inline per card */
+}
+
+.an-stat-label {
+  font-size: 0.72rem;
+  color: #6b7280;
+  margin-top: 5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Charts row ── */
+.an-charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .an-charts-row { grid-template-columns: 1fr; }
+}
+
+/* ── Chart card ── */
+.an-chart-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px 24px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .an-chart-card {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+.an-chart-title {
+  margin: 0 0 18px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+[data-theme="dark"] .an-chart-title { color: var(--text-muted); }
+
+/* ── Bar chart ── */
+.an-bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.an-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.an-bar-label {
+  width: 88px;
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: right;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .an-bar-label { color: var(--text-muted); }
+
+.an-bar-track {
+  flex: 1;
+  background: #f3f4f6;
+  border-radius: 6px;
+  height: 22px;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .an-bar-track { background: var(--bg-input); }
+
+.an-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.an-bar-val {
+  width: 28px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #374151;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .an-bar-val { color: var(--text); }
+
+/* ── Donut chart ── */
+.an-donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.an-donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 100px;
+}
+
+.an-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+
+.an-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.an-legend-label {
+  color: #374151;
+  text-transform: capitalize;
+  flex: 1;
+}
+
+[data-theme="dark"] .an-legend-label { color: var(--text); }
+
+.an-legend-val {
+  color: #9ca3af;
+  font-weight: 700;
+}
+
+/* ── Revenue banner ── */
+.an-revenue-card {
+  background: linear-gradient(135deg, #0a5c2f 0%, #16a34a 60%, #064020 100%);
+  border-radius: 14px;
+  padding: 26px 30px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.an-revenue-card::before {
+  content: "";
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  top: -80px;
+  right: -40px;
+}
+
+.an-revenue-label {
+  font-size: 0.78rem;
+  opacity: 0.8;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.an-revenue-value {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.an-revenue-icon {
+  font-size: 3rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Premium upsell ── */
+.an-upsell {
+  background: #f9fafb;
+  border: 1.5px dashed #d1d5db;
+  border-radius: 14px;
+  padding: 28px 24px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+
+.an-upsell:hover { border-color: #0a5c2f; }
+
+[data-theme="dark"] .an-upsell {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+.an-upsell-icon {
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+}
+
+.an-upsell-title {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+[data-theme="dark"] .an-upsell-title { color: var(--text); }
+
+.an-upsell-desc {
+  margin: 0 0 18px;
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  max-width: 380px;
+  margin-inline: auto;
+}
+
+.an-upsell-btn {
+  background: #0a5c2f;
+  color: #fff;
+  border: none;
+  padding: 11px 28px;
+  border-radius: 9px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.an-upsell-btn:hover {
+  background: #064e27;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(10, 92, 47, 0.3);
+}
