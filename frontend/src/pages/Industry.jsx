@@ -1866,75 +1866,190 @@ function Industry() {
 }
 
 function AnalyticsSection({ subStatus, onUpgrade }) {
-  const [analytics, setAnalytics] = useState(null);
+  const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch(`${API_BASE_URL}/api/subscription/analytics`, {
+    fetch(`${API_BASE_URL}/api/industry/analytics`, {
       headers: { Authorization: `Bearer ${token}` }
-    }).then(r => r.json()).then(setAnalytics).catch(() => {}).finally(() => setLoading(false));
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(setData)
+      .catch(() => setError("Failed to load analytics"))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={{ padding: "40px", textAlign: "center", color: "#999" }}>Loading analytics...</div>;
+  if (loading) return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "60px 0", gap: 12, color: "#9ca3af" }}>
+      <div style={{ width: 36, height: 36, border: "3px solid #e5e7eb", borderTopColor: "#0a5c2f", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <span>Loading analytics...</span>
+    </div>
+  );
 
+  if (error) return (
+    <div style={{ padding: "40px", textAlign: "center", color: "#dc2626" }}>{error}</div>
+  );
+
+  const s = data?.summary || {};
   const isPremium = subStatus?.is_subscribed;
 
+  // Pie chart colours
+  const STATUS_COLORS = {
+    pending:   "#f59e0b",
+    approved:  "#0a5c2f",
+    rejected:  "#dc2626",
+    completed: "#3b82f6",
+  };
+
+  // Simple SVG bar chart
+  const BarChart = ({ items, color = "#0a5c2f" }) => {
+    if (!items?.length) return <div style={{ color: "#9ca3af", textAlign: "center", padding: "20px" }}>No data yet</div>;
+    const max = Math.max(...items.map(i => Number(i.requests || i.count || 0)), 1);
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {items.map((item, i) => {
+          const val = Number(item.requests || item.count || 0);
+          const pct = (val / max) * 100;
+          return (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 90, fontSize: "0.75rem", color: "#6b7280", textAlign: "right", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {item.product || item.status || item.day}
+              </div>
+              <div style={{ flex: 1, background: "#f3f4f6", borderRadius: 6, height: 22, overflow: "hidden" }}>
+                <div style={{ width: `${pct}%`, background: color, height: "100%", borderRadius: 6, transition: "width 0.6s ease", minWidth: val > 0 ? 4 : 0 }} />
+              </div>
+              <div style={{ width: 28, fontSize: "0.78rem", fontWeight: 700, color: "#374151", textAlign: "right", flexShrink: 0 }}>{val}</div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Simple SVG donut chart
+  const DonutChart = ({ items }) => {
+    if (!items?.length) return <div style={{ color: "#9ca3af", textAlign: "center", padding: "20px" }}>No data yet</div>;
+    const total = items.reduce((s, i) => s + Number(i.count), 0);
+    if (total === 0) return <div style={{ color: "#9ca3af", textAlign: "center", padding: "20px" }}>No requests yet</div>;
+    let offset = 0;
+    const r = 40, cx = 60, cy = 60, stroke = 18;
+    const circ = 2 * Math.PI * r;
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+        <svg width={120} height={120} viewBox="0 0 120 120">
+          {items.map((item, i) => {
+            const pct = Number(item.count) / total;
+            const dash = pct * circ;
+            const el = (
+              <circle key={i} cx={cx} cy={cy} r={r}
+                fill="none"
+                stroke={STATUS_COLORS[item.status] || "#9ca3af"}
+                strokeWidth={stroke}
+                strokeDasharray={`${dash} ${circ - dash}`}
+                strokeDashoffset={-offset * circ}
+                style={{ transition: "stroke-dasharray 0.6s ease" }}
+              />
+            );
+            offset += pct;
+            return el;
+          })}
+          <text x={cx} y={cy + 5} textAnchor="middle" fontSize={14} fontWeight={700} fill="#111827">{total}</text>
+        </svg>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {items.map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: "0.8rem" }}>
+              <div style={{ width: 10, height: 10, borderRadius: 2, background: STATUS_COLORS[item.status] || "#9ca3af", flexShrink: 0 }} />
+              <span style={{ color: "#374151", textTransform: "capitalize" }}>{item.status}</span>
+              <span style={{ color: "#9ca3af", marginLeft: "auto" }}>{item.count}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const statCards = [
+    { label: "Total Requests",      value: s.total_requests     || 0, color: "#0a5c2f",  icon: "📋" },
+    { label: "Pending",             value: s.pending            || 0, color: "#f59e0b",  icon: "⏳" },
+    { label: "Approved",            value: s.approved           || 0, color: "#16a34a",  icon: "✅" },
+    { label: "Stakeholders",        value: s.unique_stakeholders|| 0, color: "#3b82f6",  icon: "🤝" },
+  ];
+
   return (
-    <div style={{ padding: "0 0 40px" }}>
-      <div style={{ marginBottom: "28px" }}>
-        <h2 style={{ margin: "0 0 6px", fontSize: "1.4rem", fontWeight: 800, color: "#0d1b2a" }}>Analytics</h2>
-        <p style={{ margin: 0, color: "#777", fontSize: "0.9rem" }}>
-          {isPremium ? "Full analytics — Premium plan" : "Basic analytics — Upgrade for full insights"}
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {/* Header */}
+      <div>
+        <h2 style={{ margin: "0 0 4px", fontSize: "1.4rem", fontWeight: 800, color: "#111827" }}>Analytics</h2>
+        <p style={{ margin: 0, color: "#6b7280", fontSize: "0.875rem" }}>
+          Business performance overview — last 30 days
         </p>
       </div>
 
-      {/* Basic stat always visible */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px", marginBottom: "28px" }}>
-        <div style={{ background: "white", borderRadius: "16px", padding: "24px", border: "1px solid #f0f0f0", textAlign: "center" }}>
-          <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "#667eea" }}>{analytics?.total_profile_views || 0}</div>
-          <div style={{ fontSize: "0.85rem", color: "#888", marginTop: "6px" }}>Profile Views</div>
-        </div>
-
-        {isPremium ? (
-          <>
-            <div style={{ background: "white", borderRadius: "16px", padding: "24px", border: "1px solid #f0f0f0", textAlign: "center" }}>
-              <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "#0a5c2f" }}>{analytics?.total_product_clicks || 0}</div>
-              <div style={{ fontSize: "0.85rem", color: "#888", marginTop: "6px" }}>Product Clicks</div>
-            </div>
-            <div style={{ background: "white", borderRadius: "16px", padding: "24px", border: "1px solid #f0f0f0", textAlign: "center" }}>
-              <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "#f59e0b" }}>{analytics?.total_purchase_requests || 0}</div>
-              <div style={{ fontSize: "0.85rem", color: "#888", marginTop: "6px" }}>Purchase Requests</div>
-            </div>
-          </>
-        ) : (
-          <>
-            {["Product Clicks", "Purchase Requests"].map(label => (
-              <div key={label} style={{ background: "#f8f9fc", borderRadius: "16px", padding: "24px", border: "2px dashed #e0e0e0", textAlign: "center", position: "relative" }}>
-                <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "#ccc", filter: "blur(4px)" }}>42</div>
-                <div style={{ fontSize: "0.85rem", color: "#bbb", marginTop: "6px" }}>{label}</div>
-                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "6px" }}>
-                  <span style={{ fontSize: "1.2rem" }}>🔒</span>
-                  <span style={{ fontSize: "0.75rem", color: "#888", fontWeight: 600 }}>Premium Only</span>
-                </div>
-              </div>
-            ))}
-          </>
-        )}
+      {/* Stat cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 14 }}>
+        {statCards.map(c => (
+          <div key={c.label} style={{ background: "#fff", borderRadius: 14, padding: "20px 18px", border: "1px solid #e5e7eb", boxShadow: "0 2px 8px rgba(0,0,0,0.04)", textAlign: "center", borderTop: `3px solid ${c.color}` }}>
+            <div style={{ fontSize: "1.5rem", marginBottom: 6 }}>{c.icon}</div>
+            <div style={{ fontSize: "2rem", fontWeight: 900, color: c.color, lineHeight: 1 }}>{c.value}</div>
+            <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: 4, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>{c.label}</div>
+          </div>
+        ))}
       </div>
 
+      {/* Charts row */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+
+        {/* Product performance */}
+        <div style={{ background: "#fff", borderRadius: 14, padding: "20px 22px", border: "1px solid #e5e7eb", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: "0.9rem", fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            📦 Product Performance
+          </h3>
+          <BarChart items={data?.byProduct} color="#0a5c2f" />
+        </div>
+
+        {/* Status distribution */}
+        <div style={{ background: "#fff", borderRadius: 14, padding: "20px 22px", border: "1px solid #e5e7eb", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: "0.9rem", fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            🥧 Request Status
+          </h3>
+          <DonutChart items={data?.byStatus} />
+        </div>
+      </div>
+
+      {/* Requests over time */}
+      <div style={{ background: "#fff", borderRadius: 14, padding: "20px 22px", border: "1px solid #e5e7eb", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+        <h3 style={{ margin: "0 0 16px", fontSize: "0.9rem", fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          📈 Requests Over Last 30 Days
+        </h3>
+        <BarChart items={data?.overTime?.map(d => ({ product: d.day, requests: d.count }))} color="#3b82f6" />
+      </div>
+
+      {/* Revenue card */}
+      <div style={{ background: "linear-gradient(135deg, #0a5c2f, #16a34a)", borderRadius: 14, padding: "24px 28px", color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <div style={{ fontSize: "0.8rem", opacity: 0.8, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>Estimated Revenue (Approved + Completed)</div>
+          <div style={{ fontSize: "2rem", fontWeight: 900, letterSpacing: "-1px" }}>
+            {Number(s.total_revenue || 0).toLocaleString()} ETB
+          </div>
+        </div>
+        <div style={{ fontSize: "3rem" }}>💰</div>
+      </div>
+
+      {/* Premium upsell — only if not premium */}
       {!isPremium && (
-        <div style={{ background: "linear-gradient(135deg, #667eea15, #764ba215)", border: "2px solid #667eea30", borderRadius: "16px", padding: "28px", textAlign: "center" }}>
-          <div style={{ fontSize: "2rem", marginBottom: "10px" }}>📊</div>
-          <h3 style={{ margin: "0 0 8px", color: "#0d1b2a", fontSize: "1.1rem" }}>Unlock Full Analytics</h3>
-          <p style={{ margin: "0 0 20px", color: "#777", fontSize: "0.9rem" }}>
-            See product clicks, interested stakeholders, and 30-day activity trends with Premium.
+        <div style={{ background: "#f9fafb", border: "1.5px dashed #d1d5db", borderRadius: 14, padding: "24px", textAlign: "center" }}>
+          <div style={{ fontSize: "1.5rem", marginBottom: 8 }}>⭐</div>
+          <h3 style={{ margin: "0 0 6px", fontSize: "1rem", color: "#111827" }}>Unlock Advanced Insights</h3>
+          <p style={{ margin: "0 0 16px", color: "#6b7280", fontSize: "0.875rem" }}>
+            AI-powered forecasting, stakeholder profiles, and detailed 90-day reports.
           </p>
           <button
             onClick={onUpgrade}
-            style={{ background: "linear-gradient(135deg, #667eea, #764ba2)", color: "white", border: "none", padding: "12px 28px", borderRadius: "10px", fontWeight: 700, cursor: "pointer", fontSize: "0.95rem" }}
+            style={{ background: "#0a5c2f", color: "#fff", border: "none", padding: "10px 24px", borderRadius: 9, fontWeight: 700, cursor: "pointer", fontSize: "0.9rem" }}
           >
-            ⭐ Upgrade to Premium
+            Upgrade to Premium
           </button>
         </div>
       )}
