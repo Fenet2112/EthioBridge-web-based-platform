@@ -22,9 +22,12 @@
 }
 
 .back-btn {
-  background: white;
-  border: 2px solid #e8e8e8;
-  color: #555;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #0a5c2f;
+  border: none;
+  color: #fff;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -34,7 +37,11 @@
   font-family: 'Inter', sans-serif;
 }
 
-.back-btn:hover { border-color: #0a5c2f; color: #0a5c2f; background: #f0faf4; }
+.back-btn:hover {
+  background: #064e27;
+  transform: translateX(-2px);
+  box-shadow: 0 4px 12px rgba(10, 92, 47, 0.25);
+}
 
 .free-usage-badge {
   font-size: 0.85rem;
