@@ -1718,6 +1718,14 @@ function Industry() {
             <div className="messages-container">
               {/* Conversations List */}
               <div className="conversations-list">
+                {/* Search */}
+                <div className="conv-search-wrap">
+                  <input
+                    className="conv-search-input"
+                    type="text"
+                    placeholder="Search conversations..."
+                  />
+                </div>
                 <h3>Conversations</h3>
                 {conversations.length === 0 ? (
                   <p className="no-conversations">No conversations yet.<br />Stakeholders will appear here when they message you.</p>
@@ -1725,6 +1733,9 @@ function Industry() {
                   conversations.map(conv => {
                     const displayName = conv.contact_person || conv.organization_name || 'Unknown';
                     const initials = displayName.charAt(0).toUpperCase();
+                    const lastTime = conv.last_message_at
+                      ? new Date(conv.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : '';
                     return (
                       <div
                         key={conv.id}
@@ -1734,12 +1745,17 @@ function Industry() {
                         <div className="conv-avatar">{initials}</div>
                         <div className="conv-info">
                           <h4>{displayName}</h4>
-                          <p className="conv-org">{conv.organization_name}</p>
+                          {conv.organization_name && conv.contact_person && (
+                            <p className="conv-org">{conv.organization_name}</p>
+                          )}
                           <p className="last-message">{conv.last_message || 'No messages yet'}</p>
                         </div>
-                        {conv.unread_count > 0 && (
-                          <span className="unread-count">{conv.unread_count}</span>
-                        )}
+                        <div className="conv-meta">
+                          {lastTime && <span className="conv-time">{lastTime}</span>}
+                          {conv.unread_count > 0 && (
+                            <span className="unread-count">{conv.unread_count}</span>
+                          )}
+                        </div>
                       </div>
                     );
                   })
@@ -1838,7 +1854,7 @@ function Industry() {
                         </button>
                         <input
                           type="text"
-                          placeholder="Type your message..."
+                          placeholder="Type a message..."
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
@@ -1847,8 +1863,9 @@ function Industry() {
                           className="send-message-btn"
                           onClick={sendMessage}
                           disabled={!newMessage.trim() && !selectedFile}
+                          title="Send"
                         >
-                          Send
+                          <FaPaperPlane />
                         </button>
                       </div>
                     </div>
