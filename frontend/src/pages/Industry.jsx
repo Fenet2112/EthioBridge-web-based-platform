@@ -1864,8 +1864,9 @@ function Industry() {
                           onClick={sendMessage}
                           disabled={!newMessage.trim() && !selectedFile}
                           title="Send"
+                          style={{ color: '#ffffff' }}
                         >
-                          <FaPaperPlane />
+                          <FaPaperPlane style={{ color: '#ffffff', fill: '#ffffff' }} />
                         </button>
                       </div>
                     </div>

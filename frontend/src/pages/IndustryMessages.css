@@ -300,9 +300,9 @@
   padding: 18px 16px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
   min-height: 0;
-  background: #e5ddd5;  /* WhatsApp-style warm background */
+  background: #dfe7ec;
 }
 
 .no-messages {
@@ -315,7 +315,8 @@
 /* ── Message bubbles ── */
 .message-bubble {
   max-width: 65%;
-  margin-bottom: 2px;
+  display: flex;
+  flex-direction: column;
   animation: msg-in 0.15s ease;
 }
 
@@ -324,8 +325,8 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.message-bubble.sent     { margin-left: auto; }
-.message-bubble.received { margin-right: auto; }
+.message-bubble.sent     { margin-left: auto; align-items: flex-end; }
+.message-bubble.received { margin-right: auto; align-items: flex-start; }
 
 /* Sender name above received bubble */
 .msg-sender-name {
@@ -337,35 +338,33 @@
 }
 
 .message-content {
-  padding: 10px 14px;
-  border-radius: 18px;
+  padding: 8px 12px;
+  border-radius: 12px;
   word-wrap: break-word;
-  line-height: 1.55;
+  line-height: 1.5;
   font-size: 0.88rem;
 }
 
-/* Sent — green bubble, right */
+/* Sent — green bubble */
 .message-bubble.sent .message-content {
   background: #0a5c2f;
-  color: #fff;
-  border-bottom-right-radius: 4px;
-  box-shadow: 0 1px 4px rgba(10, 92, 47, 0.2);
+  color: #ffffff;
+  border-bottom-right-radius: 3px;
 }
 
-/* Received — white card, left */
+/* Received — white bubble */
 .message-bubble.received .message-content {
-  background: #fff;
+  background: #ffffff;
   color: #111827;
-  border: 1px solid #e5e7eb;
-  border-bottom-left-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  border-bottom-left-radius: 3px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
-/* Timestamp */
+/* Timestamp — OUTSIDE the bubble */
 .message-time {
   font-size: 0.67rem;
-  color: #9ca3af;
-  margin-top: 4px;
+  color: #8a9ba8;
+  margin-top: 3px;
   padding: 0 4px;
 }
 
@@ -485,23 +484,23 @@
 
 .send-message-btn {
   background: #0a5c2f;
-  color: #ffffff !important;
+  color: #ffffff;
   border: none;
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 1rem;
   cursor: pointer;
   flex-shrink: 0;
   transition: all 0.15s;
 }
-.send-message-btn svg {
-  color: #ffffff !important;
-  fill: #ffffff !important;
+.send-message-btn * {
+  color: #ffffff;
+  fill: #ffffff;
 }
 .send-message-btn:hover:not(:disabled) {
   background: #064e27;
@@ -512,6 +511,10 @@
   background: #d1d5db;
   cursor: not-allowed;
   transform: none;
+}
+.send-message-btn:disabled * {
+  color: #9ca3af;
+  fill: #9ca3af;
 }
 
 /* ── Scrollbars ── */
