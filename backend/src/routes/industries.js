@@ -174,7 +174,7 @@ router.get("/", authenticateToken, async (req, res) => {
 });
 
 // ========================================
-// GET SINGLE INDUSTRY DETAIL + PRODUCTS
+// GET SINGLE INDUSTRY DETAIL + PRODUCTS + TRUST METRICS
 // ========================================
 router.get("/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
@@ -182,7 +182,9 @@ router.get("/:id", authenticateToken, async (req, res) => {
     const industryResult = await pool.query(`
       SELECT i.id, i.user_id, i.company_name, i.sector, i.location,
              i.description, i.phone, i.website, i.established_year,
-             i.latitude, i.longitude, i.created_at
+             i.latitude, i.longitude, i.created_at, i.profile_picture,
+             COALESCE(i.business_role, 'other') AS business_role,
+             u.status
       FROM industries i
       JOIN users u ON u.id = i.user_id
       WHERE i.id = $1 AND u.status = 'approved'
@@ -192,16 +194,84 @@ router.get("/:id", authenticateToken, async (req, res) => {
       return res.status(404).json({ message: "Industry not found" });
     }
 
-    const productsResult = await pool.query(`
-      SELECT id, name, description, price, unit, category, image_url, is_available, created_at
-      FROM products
-      WHERE industry_id = $1 AND is_available = true
-      ORDER BY category, name
-    `, [id]);
+    const industry = industryResult.rows[0];
+
+    // ── Trust metrics ──────────────────────────────────────────────────────
+    const [metricsResult, testimonialsResult, productsResult] = await Promise.all([
+
+      // Success rate + avg response time
+      pool.query(`
+        SELECT
+          COUNT(*)                                                        AS total,
+          COUNT(*) FILTER (WHERE status IN ('approved','completed'))      AS successful,
+          COUNT(*) FILTER (WHERE status = 'rejected')                     AS rejected,
+          ROUND(
+            AVG(
+              EXTRACT(EPOCH FROM (updated_at - created_at)) / 3600.0
+            ) FILTER (WHERE status IN ('approved','rejected','completed'))
+          )                                                               AS avg_response_hours
+        FROM purchase_requests
+        WHERE industry_id = $1
+      `, [id]),
+
+      // Approved testimonials linked to this industry
+      pool.query(`
+        SELECT t.name, t.rating, t.message AS comment, t.created_at
+        FROM testimonials t
+        WHERE t.industry_id = $1 AND t.status = 'approved'
+        ORDER BY t.created_at DESC
+        LIMIT 10
+      `, [id]),
+
+      // Products
+      pool.query(`
+        SELECT id, name, description, price, unit, category,
+               image_url, is_available, created_at,
+               discount_percentage,
+               CASE WHEN created_at > NOW() - INTERVAL '30 days' THEN true ELSE false END AS is_new
+        FROM products
+        WHERE industry_id = $1 AND is_available = true
+        ORDER BY category, name
+      `, [id]),
+    ]);
+
+    const m = metricsResult.rows[0];
+    const total      = parseInt(m.total) || 0;
+    const successful = parseInt(m.successful) || 0;
+    const successRate = total > 0 ? Math.round((successful / total) * 100) : null;
+
+    const avgHours = m.avg_response_hours ? parseInt(m.avg_response_hours) : null;
+    let avgResponseTime = null;
+    if (avgHours !== null) {
+      if (avgHours < 1)        avgResponseTime = "Under 1 hour";
+      else if (avgHours < 24)  avgResponseTime = `${avgHours} hour${avgHours !== 1 ? 's' : ''}`;
+      else {
+        const days = Math.round(avgHours / 24);
+        avgResponseTime = `${days} day${days !== 1 ? 's' : ''}`;
+      }
+    }
+
+    // Verified = admin approved (status = 'approved')
+    const isVerified = industry.status === 'approved';
+
+    // Average rating from testimonials
+    const reviews = testimonialsResult.rows;
+    const avgRating = reviews.length > 0
+      ? Math.round((reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length) * 10) / 10
+      : null;
 
     res.json({
-      industry: industryResult.rows[0],
+      industry: {
+        ...industry,
+        is_verified:       isVerified,
+        success_rate:      successRate,
+        total_requests:    total,
+        avg_response_time: avgResponseTime,
+        avg_rating:        avgRating,
+        review_count:      reviews.length,
+      },
       products: productsResult.rows,
+      reviews,
     });
   } catch (error) {
     console.error("[Industries] GET /:id error:", error.message);

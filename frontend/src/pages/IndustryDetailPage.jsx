@@ -11,6 +11,7 @@ function IndustryDetailPage() {
   const navigate = useNavigate();
   const [industry, setIndustry] = useState(null);
   const [products, setProducts] = useState([]);
+  const [reviews, setReviews]   = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showBuyModal, setShowBuyModal] = useState(false);
@@ -62,6 +63,7 @@ function IndustryDetailPage() {
         if (!res.ok) throw new Error(data.message || "Failed to fetch industry details");
         setIndustry(data.industry);
         setProducts(data.products);
+        setReviews(data.reviews || []);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -231,6 +233,93 @@ function IndustryDetailPage() {
           </div>
         )}
       </section>
+
+      {/* Trust Metrics */}
+      <section className="trust-metrics-section">
+        <div className="trust-metrics-grid">
+
+          {/* Verification */}
+          <div className={`trust-card ${industry.is_verified ? 'trust-verified' : 'trust-unverified'}`}>
+            <div className="trust-card-icon">{industry.is_verified ? '✅' : '⚠️'}</div>
+            <div className="trust-card-label">Verification</div>
+            <div className="trust-card-value">{industry.is_verified ? 'Verified Industry' : 'Not Verified'}</div>
+          </div>
+
+          {/* Success Rate */}
+          <div className="trust-card">
+            <div className="trust-card-icon">📈</div>
+            <div className="trust-card-label">Success Rate</div>
+            {industry.success_rate !== null ? (
+              <>
+                <div className="trust-card-value">{industry.success_rate}%</div>
+                <div className="trust-progress-bar">
+                  <div className="trust-progress-fill" style={{ width: `${industry.success_rate}%` }} />
+                </div>
+                <div className="trust-card-sub">{industry.total_requests} total requests</div>
+              </>
+            ) : (
+              <div className="trust-card-value trust-no-data">No data yet</div>
+            )}
+          </div>
+
+          {/* Response Speed */}
+          <div className="trust-card">
+            <div className="trust-card-icon">⚡</div>
+            <div className="trust-card-label">Avg Response Time</div>
+            <div className="trust-card-value">
+              {industry.avg_response_time || <span className="trust-no-data">No data yet</span>}
+            </div>
+          </div>
+
+          {/* Rating */}
+          <div className="trust-card">
+            <div className="trust-card-icon">⭐</div>
+            <div className="trust-card-label">Rating</div>
+            {industry.avg_rating !== null ? (
+              <>
+                <div className="trust-card-value">{industry.avg_rating} / 5</div>
+                <div className="trust-stars">
+                  {[1,2,3,4,5].map(s => (
+                    <span key={s} className={s <= Math.round(industry.avg_rating) ? 'star-filled' : 'star-empty'}>★</span>
+                  ))}
+                </div>
+                <div className="trust-card-sub">{industry.review_count} review{industry.review_count !== 1 ? 's' : ''}</div>
+              </>
+            ) : (
+              <div className="trust-card-value trust-no-data">No reviews yet</div>
+            )}
+          </div>
+
+        </div>
+      </section>
+
+      {/* Reviews */}
+      {reviews.length > 0 && (
+        <section className="reviews-section">
+          <h2>Customer Reviews</h2>
+          <div className="reviews-list">
+            {reviews.map((r, i) => (
+              <div key={i} className="review-card">
+                <div className="review-header">
+                  <div className="review-avatar">{r.name?.charAt(0)?.toUpperCase() || '?'}</div>
+                  <div className="review-meta">
+                    <div className="review-name">{r.name || 'Anonymous'}</div>
+                    <div className="review-date">{new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                  </div>
+                  {r.rating && (
+                    <div className="review-stars">
+                      {[1,2,3,4,5].map(s => (
+                        <span key={s} className={s <= r.rating ? 'star-filled' : 'star-empty'}>★</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {r.comment && <p className="review-comment">{r.comment}</p>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Products */}
       <section className="products-section">
