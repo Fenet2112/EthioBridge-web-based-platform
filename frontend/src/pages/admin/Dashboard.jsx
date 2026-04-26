@@ -325,9 +325,6 @@ function Dashboard() {
 
   return (
     <div className={`admin-dashboard${darkMode ? " dark-mode" : ""}`}>
-      <Link to="/" className="home-icon-btn" title="Back to Home">
-        🏠
-      </Link>
       {/* Mobile overlay */}
       {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
 
@@ -382,6 +379,9 @@ function Dashboard() {
           </button>
           <div className="header-title">{NAV.find(n => n.id === view)?.label || "Dashboard"}</div>
           <div className="header-actions">
+            <Link to="/" className="header-icon-btn" title="Back to Home">
+              <FaHome />
+            </Link>
             <button className="header-icon-btn" onClick={() => setDarkMode(!darkMode)} title="Toggle dark mode">
               {darkMode ? <FaSun /> : <FaMoon />}
             </button>

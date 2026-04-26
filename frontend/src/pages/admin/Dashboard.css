@@ -834,9 +834,10 @@
   background: #f4f6f9; border: none; border-radius: 8px;
   width: 36px; height: 36px; cursor: pointer; font-size: 1rem;
   display: flex; align-items: center; justify-content: center;
+  color: #374151; text-decoration: none;
   transition: background 0.2s;
 }
-.header-icon-btn:hover { background: #e8f5e9; }
+.header-icon-btn:hover { background: #e8f5e9; color: #0a5c2f; }
 
 .header-avatar {
   width: 36px; height: 36px; border-radius: 50%;
