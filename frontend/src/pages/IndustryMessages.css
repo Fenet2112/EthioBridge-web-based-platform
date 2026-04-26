@@ -560,3 +560,31 @@
     max-width: 85%;
   }
 }
+
+/* ── Sender name above received bubbles ── */
+.msg-sender-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #0a5c2f;
+  margin-bottom: 3px;
+  padding-left: 2px;
+  text-transform: capitalize;
+}
+
+/* ── Stakeholder email in chat header ── */
+.stakeholder-email {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin: 1px 0 0;
+}
+
+/* ── Org name below contact person in sidebar ── */
+.conv-org {
+  margin: 0 0 2px;
+  font-size: 0.75rem;
+  color: #0a5c2f;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

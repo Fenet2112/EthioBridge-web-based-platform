@@ -1722,22 +1722,27 @@ function Industry() {
                 {conversations.length === 0 ? (
                   <p className="no-conversations">No conversations yet.<br />Stakeholders will appear here when they message you.</p>
                 ) : (
-                  conversations.map(conv => (
-                    <div
-                      key={conv.id}
-                      className={`conversation-item ${selectedConversation?.id === conv.id ? 'active' : ''}`}
-                      onClick={() => loadMessages(conv)}
-                    >
-                      <div className="conv-avatar">{conv.organization_name?.charAt(0) || 'S'}</div>
-                      <div className="conv-info">
-                        <h4>{conv.organization_name}</h4>
-                        <p className="last-message">{conv.last_message || 'No messages yet'}</p>
+                  conversations.map(conv => {
+                    const displayName = conv.contact_person || conv.organization_name || 'Unknown';
+                    const initials = displayName.charAt(0).toUpperCase();
+                    return (
+                      <div
+                        key={conv.id}
+                        className={`conversation-item ${selectedConversation?.id === conv.id ? 'active' : ''}`}
+                        onClick={() => loadMessages(conv)}
+                      >
+                        <div className="conv-avatar">{initials}</div>
+                        <div className="conv-info">
+                          <h4>{displayName}</h4>
+                          <p className="conv-org">{conv.organization_name}</p>
+                          <p className="last-message">{conv.last_message || 'No messages yet'}</p>
+                        </div>
+                        {conv.unread_count > 0 && (
+                          <span className="unread-count">{conv.unread_count}</span>
+                        )}
                       </div>
-                      {conv.unread_count > 0 && (
-                        <span className="unread-count">{conv.unread_count}</span>
-                      )}
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
 
@@ -1751,10 +1756,18 @@ function Industry() {
                   <>
                     <div className="messages-header">
                       <div className="stakeholder-info">
-                        <div className="stakeholder-avatar">{selectedConversation.organization_name?.charAt(0) || 'S'}</div>
+                        <div className="stakeholder-avatar">
+                          {(selectedConversation.contact_person || selectedConversation.organization_name)?.charAt(0)?.toUpperCase() || 'S'}
+                        </div>
                         <div>
-                          <h3>{selectedConversation.organization_name}</h3>
-                          <p>{selectedConversation.organization_type || 'Stakeholder'}</p>
+                          <h3>{selectedConversation.contact_person || selectedConversation.organization_name || 'Unknown'}</h3>
+                          <p>
+                            {selectedConversation.organization_name}
+                            {selectedConversation.organization_type ? ` · ${selectedConversation.organization_type}` : ''}
+                          </p>
+                          {selectedConversation.stakeholder_email && (
+                            <p className="stakeholder-email">{selectedConversation.stakeholder_email}</p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1766,26 +1779,35 @@ function Industry() {
                         <p className="no-messages">No messages yet. Start the conversation!</p>
                       ) : (
                         <>
-                          {messages.map(msg => (
-                            <div
-                              key={msg.id}
-                              className={`message-bubble ${msg.sender_role === 'industry' ? 'sent' : 'received'}`}
-                            >
-                              <div className="message-content">
-                                {msg.content}
-                                {msg.file_url && (
-                                  <div className="message-attachment">
-                                    <a href={`${API_BASE_URL}${msg.file_url}`} target="_blank" rel="noopener noreferrer" className="attachment-link">
-                                      📎 {msg.file_name || 'Download attachment'}
-                                    </a>
-                                  </div>
+                          {messages.map(msg => {
+                            const isSent = msg.sender_role === 'industry';
+                            const senderDisplay = isSent
+                              ? 'You'
+                              : (msg.sender_name || selectedConversation.contact_person || selectedConversation.organization_name || 'Unknown');
+                            return (
+                              <div
+                                key={msg.id}
+                                className={`message-bubble ${isSent ? 'sent' : 'received'}`}
+                              >
+                                {!isSent && (
+                                  <div className="msg-sender-name">{senderDisplay}</div>
                                 )}
+                                <div className="message-content">
+                                  {msg.content}
+                                  {msg.file_url && (
+                                    <div className="message-attachment">
+                                      <a href={`${API_BASE_URL}${msg.file_url}`} target="_blank" rel="noopener noreferrer" className="attachment-link">
+                                        📎 {msg.file_name || 'Download attachment'}
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="message-time">
+                                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
                               </div>
-                              <div className="message-time">
-                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                           <div ref={messagesEndRef} />
                         </>
                       )}

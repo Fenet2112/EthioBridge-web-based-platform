@@ -86,7 +86,9 @@ router.get("/conversations", authenticateToken, async (req, res) => {
       query = `
         SELECT
           c.id, c.created_at,
-          s.id AS stakeholder_id, s.organization_name, s.organization_type, s.user_id AS stakeholder_user_id,
+          s.id AS stakeholder_id, s.organization_name, s.organization_type,
+          s.contact_person, s.phone, s.user_id AS stakeholder_user_id,
+          u.email AS stakeholder_email,
           (
             SELECT m.content FROM messages m
             WHERE m.conversation_id = c.id
@@ -104,6 +106,7 @@ router.get("/conversations", authenticateToken, async (req, res) => {
         FROM conversations c
         JOIN industries i ON i.id = c.industry_id
         JOIN stakeholders s ON s.id = c.stakeholder_id
+        JOIN users u ON u.id = s.user_id
         WHERE i.user_id = $1
         ORDER BY last_message_at DESC NULLS LAST
       `;
