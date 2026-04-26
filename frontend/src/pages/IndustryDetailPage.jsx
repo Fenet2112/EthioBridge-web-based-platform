@@ -154,7 +154,7 @@ function IndustryDetailPage() {
   return (
     <div className="industry-detail-page">
       <div className="detail-topbar">
-        <button className="back-btn" onClick={() => navigate("/stakeholders")}>
+        <button className="back-btn" onClick={() => navigate("/stakeholders")} style={{ background: '#fff', border: '2px solid #0a5c2f', color: '#0a5c2f' }}>
           ← Back to Industries
         </button>
         {!subStatus.is_subscribed && (
