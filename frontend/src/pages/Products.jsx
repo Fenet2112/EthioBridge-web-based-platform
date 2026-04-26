@@ -382,7 +382,7 @@ function Products() {
               className="cart-checkout-btn"
               onClick={() => {
                 setCartOpen(false);
-                alert('Checkout coming soon! Your cart has been saved.');
+                navigate("/cart");
               }}
             >
               Proceed to Checkout →

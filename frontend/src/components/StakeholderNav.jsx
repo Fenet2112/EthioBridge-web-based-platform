@@ -145,6 +145,9 @@ function StakeholderNav({ unreadCount = 0 }) {
 
         {/* Right side — always visible */}
         <div className="sk-nav-right">
+          <Link to="/cart" className="sk-nav-home sk-cart-btn" title="Cart">
+            <span className="material-icon">shopping_cart</span>
+          </Link>
           <Link to="/" className="sk-nav-home" title="Back to Home">
             <span className="material-icon">home</span>
           </Link>
