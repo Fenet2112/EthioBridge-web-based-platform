@@ -6,7 +6,7 @@ import {
   FaIndustry, FaQuestionCircle, FaTimes, FaLock, FaClock, FaCheckCircle,
   FaHandshake, FaShieldAlt, FaCheck, FaTimes as FaTimesCircle, FaPlus,
   FaStar, FaExclamationTriangle, FaInfoCircle, FaPhone, FaMapMarkerAlt,
-  FaEnvelope, FaBuilding, FaCalendar, FaBell
+  FaEnvelope, FaBuilding, FaCalendar, FaBell, FaPaperPlane
 } from "react-icons/fa";
 import SubscriptionModal from "../components/SubscriptionModal";
 import TransactionHistory from "../components/TransactionHistory";
