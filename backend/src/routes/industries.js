@@ -197,7 +197,7 @@ router.get("/:id", authenticateToken, async (req, res) => {
     const industry = industryResult.rows[0];
 
     // ── Trust metrics ──────────────────────────────────────────────────────
-    const [metricsResult, testimonialsResult, productsResult] = await Promise.all([
+    const [metricsResult, productsResult] = await Promise.all([
 
       // Success rate + avg response time
       pool.query(`
@@ -214,15 +214,6 @@ router.get("/:id", authenticateToken, async (req, res) => {
         WHERE industry_id = $1
       `, [id]),
 
-      // Approved testimonials linked to this industry
-      pool.query(`
-        SELECT t.name, t.rating, t.message AS comment, t.created_at
-        FROM testimonials t
-        WHERE t.industry_id = $1 AND t.status = 'approved'
-        ORDER BY t.created_at DESC
-        LIMIT 10
-      `, [id]),
-
       // Products
       pool.query(`
         SELECT id, name, description, price, unit, category,
@@ -234,6 +225,20 @@ router.get("/:id", authenticateToken, async (req, res) => {
         ORDER BY category, name
       `, [id]),
     ]);
+
+    // Testimonials — graceful: only query if industry_id column exists
+    let testimonialsResult = { rows: [] };
+    try {
+      testimonialsResult = await pool.query(`
+        SELECT t.name, t.rating, t.message AS comment, t.created_at
+        FROM testimonials t
+        WHERE t.industry_id = $1 AND t.status = 'approved'
+        ORDER BY t.created_at DESC
+        LIMIT 10
+      `, [id]);
+    } catch (_) {
+      // testimonials.industry_id column doesn't exist yet — skip silently
+    }
 
     const m = metricsResult.rows[0];
     const total      = parseInt(m.total) || 0;
