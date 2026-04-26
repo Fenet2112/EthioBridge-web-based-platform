@@ -936,6 +936,76 @@ router.get('/settings/profile', requireAdminAuth, async (req, res) => {
 });
 
 // ========================================
+// GENERAL SYSTEM SETTINGS
+// ========================================
+
+// GET general settings
+router.get('/settings/general', requireAdminAuth, async (req, res) => {
+  try {
+    // Auto-create the row if it doesn't exist yet
+    await pool.query(`
+      INSERT INTO system_settings (id, free_request_limit, max_products_free, email_alerts_enabled, purchase_alerts_enabled)
+      VALUES (1, 1, 5, true, true)
+      ON CONFLICT (id) DO NOTHING
+    `);
+    const result = await pool.query('SELECT * FROM system_settings WHERE id = 1');
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('[Admin] get general settings error:', err.message);
+    // Table may not exist yet — return defaults
+    res.json({
+      free_request_limit: 1,
+      max_products_free: 5,
+      email_alerts_enabled: true,
+      purchase_alerts_enabled: true,
+    });
+  }
+});
+
+// PUT general settings
+router.put('/settings/general', requireAdminAuth, async (req, res) => {
+  try {
+    const {
+      free_request_limit,
+      max_products_free,
+      email_alerts_enabled,
+      purchase_alerts_enabled,
+    } = req.body;
+
+    // Validate
+    if (free_request_limit !== undefined && (isNaN(free_request_limit) || free_request_limit < 0)) {
+      return res.status(400).json({ message: 'free_request_limit must be a non-negative number' });
+    }
+    if (max_products_free !== undefined && (isNaN(max_products_free) || max_products_free < 0)) {
+      return res.status(400).json({ message: 'max_products_free must be a non-negative number' });
+    }
+
+    const result = await pool.query(`
+      INSERT INTO system_settings (id, free_request_limit, max_products_free, email_alerts_enabled, purchase_alerts_enabled, updated_at)
+      VALUES (1, $1, $2, $3, $4, NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        free_request_limit      = EXCLUDED.free_request_limit,
+        max_products_free       = EXCLUDED.max_products_free,
+        email_alerts_enabled    = EXCLUDED.email_alerts_enabled,
+        purchase_alerts_enabled = EXCLUDED.purchase_alerts_enabled,
+        updated_at              = NOW()
+      RETURNING *
+    `, [
+      parseInt(free_request_limit) ?? 1,
+      parseInt(max_products_free)  ?? 5,
+      email_alerts_enabled  !== undefined ? Boolean(email_alerts_enabled)  : true,
+      purchase_alerts_enabled !== undefined ? Boolean(purchase_alerts_enabled) : true,
+    ]);
+
+    console.log('[Admin] General settings updated:', result.rows[0]);
+    res.json({ message: 'Settings saved successfully', settings: result.rows[0] });
+  } catch (err) {
+    console.error('[Admin] save general settings error:', err.message);
+    res.status(500).json({ message: 'Failed to save settings: ' + err.message });
+  }
+});
+
+// ========================================
 // APPROVAL LOGS
 // ========================================
 router.get('/approval-logs', requireAdminAuth, async (req, res) => {

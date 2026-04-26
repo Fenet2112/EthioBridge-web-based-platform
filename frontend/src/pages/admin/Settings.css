@@ -641,3 +641,9 @@
   .rules-grid { grid-template-columns: 1fr; }
   .logs-table { min-width: 600px; }
 }
+
+.settings-hint {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin: 4px 0 0;
+}

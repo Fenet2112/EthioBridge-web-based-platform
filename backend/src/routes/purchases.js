@@ -61,19 +61,23 @@ router.post(
 
     try {
       // ── Subscription / free-request gate ──
-      const subResult = await pool.query(
-        "SELECT free_requests_used, is_subscribed, subscription_expires_at FROM users WHERE id = $1",
-        [req.user.id]
-      );
+      const [subResult, settingsResult] = await Promise.all([
+        pool.query(
+          "SELECT free_requests_used, is_subscribed, subscription_expires_at FROM users WHERE id = $1",
+          [req.user.id]
+        ),
+        pool.query("SELECT free_request_limit FROM system_settings WHERE id = 1").catch(() => ({ rows: [] })),
+      ]);
       const subUser = subResult.rows[0] || {};
+      const freeLimit = settingsResult.rows[0]?.free_request_limit ?? 1;
       const now = new Date();
       const isSubscribed = subUser.is_subscribed &&
         (!subUser.subscription_expires_at || new Date(subUser.subscription_expires_at) > now);
       const freeUsed = subUser.free_requests_used || 0;
 
-      if (!isSubscribed && freeUsed >= 1) {
+      if (!isSubscribed && freeUsed >= freeLimit) {
         return res.status(402).json({
-          message: "Free request limit reached. Please subscribe to continue.",
+          message: `Free request limit reached (${freeLimit}). Please subscribe to continue.`,
           requires_subscription: true,
         });
       }
