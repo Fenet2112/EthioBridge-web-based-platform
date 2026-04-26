@@ -284,6 +284,26 @@ server.listen(PORT, () => {
     }
   });
 
+  // Auto-create system_settings table if it doesn't exist
+  pool.query(`
+    CREATE TABLE IF NOT EXISTS system_settings (
+      id                        SERIAL PRIMARY KEY,
+      free_request_limit        INTEGER NOT NULL DEFAULT 1,
+      max_products_free         INTEGER NOT NULL DEFAULT 5,
+      email_alerts_enabled      BOOLEAN NOT NULL DEFAULT TRUE,
+      purchase_alerts_enabled   BOOLEAN NOT NULL DEFAULT TRUE,
+      updated_at                TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `).then(() => pool.query(`
+    INSERT INTO system_settings (id, free_request_limit, max_products_free, email_alerts_enabled, purchase_alerts_enabled)
+    VALUES (1, 1, 5, true, true)
+    ON CONFLICT (id) DO NOTHING
+  `)).then(() => {
+    console.log('✅ system_settings table ready');
+  }).catch(err => {
+    console.error('⚠️  system_settings setup failed (non-fatal):', err.message);
+  });
+
   // Ensure Supabase Storage buckets exist
   if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const { createClient } = require('@supabase/supabase-js');
