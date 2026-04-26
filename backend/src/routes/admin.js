@@ -939,20 +939,28 @@ router.get('/settings/profile', requireAdminAuth, async (req, res) => {
 // GENERAL SYSTEM SETTINGS
 // ========================================
 
+const ENSURE_SETTINGS_TABLE = `
+  CREATE TABLE IF NOT EXISTS system_settings (
+    id                        INTEGER PRIMARY KEY DEFAULT 1,
+    free_request_limit        INTEGER NOT NULL DEFAULT 1,
+    max_products_free         INTEGER NOT NULL DEFAULT 5,
+    email_alerts_enabled      BOOLEAN NOT NULL DEFAULT TRUE,
+    purchase_alerts_enabled   BOOLEAN NOT NULL DEFAULT TRUE,
+    updated_at                TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  INSERT INTO system_settings (id, free_request_limit, max_products_free, email_alerts_enabled, purchase_alerts_enabled)
+  VALUES (1, 1, 5, true, true)
+  ON CONFLICT (id) DO NOTHING;
+`;
+
 // GET general settings
 router.get('/settings/general', requireAdminAuth, async (req, res) => {
   try {
-    // Auto-create the row if it doesn't exist yet
-    await pool.query(`
-      INSERT INTO system_settings (id, free_request_limit, max_products_free, email_alerts_enabled, purchase_alerts_enabled)
-      VALUES (1, 1, 5, true, true)
-      ON CONFLICT (id) DO NOTHING
-    `);
+    await pool.query(ENSURE_SETTINGS_TABLE);
     const result = await pool.query('SELECT * FROM system_settings WHERE id = 1');
     res.json(result.rows[0]);
   } catch (err) {
     console.error('[Admin] get general settings error:', err.message);
-    // Table may not exist yet — return defaults
     res.json({
       free_request_limit: 1,
       max_products_free: 5,
@@ -972,13 +980,8 @@ router.put('/settings/general', requireAdminAuth, async (req, res) => {
       purchase_alerts_enabled,
     } = req.body;
 
-    // Validate
-    if (free_request_limit !== undefined && (isNaN(free_request_limit) || free_request_limit < 0)) {
-      return res.status(400).json({ message: 'free_request_limit must be a non-negative number' });
-    }
-    if (max_products_free !== undefined && (isNaN(max_products_free) || max_products_free < 0)) {
-      return res.status(400).json({ message: 'max_products_free must be a non-negative number' });
-    }
+    // Ensure table exists first
+    await pool.query(ENSURE_SETTINGS_TABLE);
 
     const result = await pool.query(`
       INSERT INTO system_settings (id, free_request_limit, max_products_free, email_alerts_enabled, purchase_alerts_enabled, updated_at)
@@ -991,13 +994,13 @@ router.put('/settings/general', requireAdminAuth, async (req, res) => {
         updated_at              = NOW()
       RETURNING *
     `, [
-      parseInt(free_request_limit) ?? 1,
-      parseInt(max_products_free)  ?? 5,
+      parseInt(free_request_limit) || 1,
+      parseInt(max_products_free)  || 5,
       email_alerts_enabled  !== undefined ? Boolean(email_alerts_enabled)  : true,
       purchase_alerts_enabled !== undefined ? Boolean(purchase_alerts_enabled) : true,
     ]);
 
-    console.log('[Admin] General settings updated:', result.rows[0]);
+    console.log('[Admin] General settings saved:', result.rows[0]);
     res.json({ message: 'Settings saved successfully', settings: result.rows[0] });
   } catch (err) {
     console.error('[Admin] save general settings error:', err.message);
