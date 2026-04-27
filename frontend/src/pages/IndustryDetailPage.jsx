@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import SubscriptionModal from "../../components/SubscriptionModal";
-import IDVerificationModal from "../../components/IDVerificationModal";
-import { API_BASE_URL } from "../../utils/api";
+import SubscriptionModal from "../components/SubscriptionModal";
+import IDVerificationModal from "../components/IDVerificationModal";
+import { API_BASE_URL } from "../utils/api";
 import "./IndustryDetailPage.css";
 
 function IndustryDetailPage() {

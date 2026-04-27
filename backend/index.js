@@ -90,6 +90,18 @@ app.use('/api/testimonials', testimonialRoutes);
 const contactRoutes = require('./src/routes/contact');
 app.use('/api/contact', contactRoutes);
 
+const notificationRoutes = require('./src/routes/notifications');
+app.use('/api/industry/notifications', notificationRoutes);
+
+const stakeholderNotificationRoutes = require('./src/routes/stakeholderNotifications');
+app.use('/api/stakeholder/notifications', stakeholderNotificationRoutes);
+
+const statsRoutes = require('./src/routes/stats');
+app.use('/api/stats', statsRoutes);
+
+const transactionRoutes = require('./src/routes/transactions');
+app.use('/api/admin/transactions', transactionRoutes);
+
 const structuredApprovalRoutes = require('./src/routes/structuredApproval');
 app.use('/api/admin/structured-approval', structuredApprovalRoutes);
 

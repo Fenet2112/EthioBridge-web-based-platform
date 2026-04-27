@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../../utils/api';
 import './Settings.css';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+const MODE_META = {
+  manual:      { icon: '👤', color: '#f59e0b', label: 'Manual',      desc: 'Admin reviews every request' },
+  automatic:   { icon: '⚡', color: '#10b981', label: 'Automatic',   desc: 'All requests approved instantly' },
+  conditional: { icon: '🎯', color: '#667eea', label: 'Conditional', desc: 'Rule-based auto approve/reject' },
+};
+
+const DECISION_COLORS = {
+  approved: { bg: '#e8f5e9', color: '#0a5c2f' },
+  rejected: { bg: '#fff5f5', color: '#dc2626' },
+  pending:  { bg: '#fff8e1', color: '#b45309' },
+};
 
 function Settings({ darkMode, setDarkMode }) {
   const [workflows, setWorkflows] = useState([]);
@@ -8,10 +21,16 @@ function Settings({ darkMode, setDarkMode }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [saved, setSaved] = useState(false);
+
+  // Approval logs
+  const [approvalLogs, setApprovalLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsFilter, setLogsFilter] = useState({ entityType: '', decision: '' });
   
   // Dropdown/Accordion state
   const [expandedSections, setExpandedSections] = useState({
     workflows: true,
+    approvalLogs: true,
     account: false,
     appearance: true,
     notifications: true,
@@ -35,7 +54,33 @@ function Settings({ darkMode, setDarkMode }) {
 
   useEffect(() => {
     fetchWorkflows();
+    fetchApprovalLogs();
   }, []);
+
+  useEffect(() => {
+    fetchApprovalLogs();
+  }, [logsFilter]);
+
+  const fetchApprovalLogs = async () => {
+    setLogsLoading(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const params = new URLSearchParams({ limit: '30' });
+      if (logsFilter.entityType) params.set('entityType', logsFilter.entityType);
+      if (logsFilter.decision)   params.set('decision',   logsFilter.decision);
+      const res = await fetch(`${API_BASE_URL}/api/admin/approval-logs?${params}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setApprovalLogs(data.logs || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch approval logs:', err);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
 
   const fetchWorkflows = async () => {
     try {
@@ -68,8 +113,10 @@ function Settings({ darkMode, setDarkMode }) {
       });
 
       if (res.ok) {
-        setMessage({ type: 'success', text: 'Workflow updated successfully' });
+        const meta = MODE_META[mode];
+        setMessage({ type: 'success', text: `Workflow updated to ${meta.label} mode — ${meta.desc}` });
         fetchWorkflows();
+        fetchApprovalLogs();
       } else {
         setMessage({ type: 'error', text: 'Failed to update workflow' });
       }
@@ -77,7 +124,7 @@ function Settings({ darkMode, setDarkMode }) {
       setMessage({ type: 'error', text: 'Network error' });
     } finally {
       setSaving(false);
-      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+      setTimeout(() => setMessage({ type: '', text: '' }), 4000);
     }
   };
 
@@ -179,7 +226,14 @@ function Settings({ darkMode, setDarkMode }) {
                 <div key={workflow.workflow_type} className="workflow-card">
                   <div className="workflow-header">
                     <span className="workflow-icon">{getWorkflowIcon(workflow.workflow_type)}</span>
-                    <h3>{getWorkflowLabel(workflow.workflow_type)}</h3>
+                    <div>
+                      <h3>{getWorkflowLabel(workflow.workflow_type)}</h3>
+                      {workflow.mode && (
+                        <span className="workflow-current-mode" style={{ background: MODE_META[workflow.mode]?.color + '22', color: MODE_META[workflow.mode]?.color }}>
+                          {MODE_META[workflow.mode]?.icon} Currently: {MODE_META[workflow.mode]?.label}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="workflow-modes">
@@ -237,6 +291,125 @@ function Settings({ darkMode, setDarkMode }) {
                 </div>
               ))}
             </div>
+
+            {/* Conditional mode rules reference */}
+            {workflows.some(w => w.mode === 'conditional') && (
+              <div className="conditional-rules-info">
+                <h4>🎯 Active Conditional Rules</h4>
+                <div className="rules-grid">
+                  <div className="rules-col">
+                    <strong>🏭 Industry Registration</strong>
+                    <ul>
+                      <li>✅ Company name provided</li>
+                      <li>✅ Sector/category provided</li>
+                      <li>✅ Location provided</li>
+                      <li>⚠️ GPS coordinates (soft)</li>
+                      <li>⚠️ Phone number (soft)</li>
+                      <li>🚫 No duplicate company name</li>
+                    </ul>
+                  </div>
+                  <div className="rules-col">
+                    <strong>🤝 Stakeholder Registration</strong>
+                    <ul>
+                      <li>✅ Organization name provided</li>
+                      <li>✅ Organization type provided</li>
+                      <li>✅ Location provided</li>
+                      <li>⚠️ Email verified (soft)</li>
+                      <li>⚠️ Phone number (soft)</li>
+                      <li>⚠️ ID document uploaded (soft)</li>
+                    </ul>
+                  </div>
+                  <div className="rules-col">
+                    <strong>🛒 Purchase Requests</strong>
+                    <ul>
+                      <li>✅ Product is available</li>
+                      <li>✅ Industry is approved</li>
+                      <li>✅ Valid quantity (1–10,000)</li>
+                      <li>⚠️ Stakeholder is approved (soft)</li>
+                      <li>🚫 No burst activity (&lt;10/hour)</li>
+                    </ul>
+                  </div>
+                </div>
+                <p className="rules-legend">✅ Hard requirement — fail = reject &nbsp;|&nbsp; ⚠️ Soft requirement — fail = pending &nbsp;|&nbsp; 🚫 Fraud check — fail = reject</p>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* Approval Decision Logs Section */}
+      <section className="settings-section collapsible">
+        <div className="section-title clickable" onClick={() => toggleSection('approvalLogs')}>
+          <div>
+            <h2>📋 Approval Decision Logs</h2>
+            <p>Audit trail of all automatic and manual approval decisions</p>
+          </div>
+          <span className={`collapse-icon ${expandedSections.approvalLogs ? 'expanded' : ''}`}>▼</span>
+        </div>
+
+        {expandedSections.approvalLogs && (
+          <div className="section-content">
+            {/* Filters */}
+            <div className="logs-filters">
+              <select value={logsFilter.entityType} onChange={e => setLogsFilter(f => ({ ...f, entityType: e.target.value }))}>
+                <option value="">All Types</option>
+                <option value="industry">Industry</option>
+                <option value="stakeholder">Stakeholder</option>
+                <option value="purchase_request">Purchase Request</option>
+              </select>
+              <select value={logsFilter.decision} onChange={e => setLogsFilter(f => ({ ...f, decision: e.target.value }))}>
+                <option value="">All Decisions</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="pending">Pending</option>
+              </select>
+              <button className="btn-refresh-logs" onClick={fetchApprovalLogs}>↻ Refresh</button>
+            </div>
+
+            {logsLoading ? (
+              <div className="logs-loading">Loading logs…</div>
+            ) : approvalLogs.length === 0 ? (
+              <div className="logs-empty">No approval decisions logged yet. Decisions appear here once workflows run.</div>
+            ) : (
+              <div className="logs-table-wrap">
+                <table className="logs-table">
+                  <thead>
+                    <tr>
+                      <th>Entity</th>
+                      <th>Type</th>
+                      <th>Decision</th>
+                      <th>Mode</th>
+                      <th>Reason</th>
+                      <th>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {approvalLogs.map(log => {
+                      const dc = DECISION_COLORS[log.decision] || { bg: '#f5f5f5', color: '#888' };
+                      const modeMeta = MODE_META[log.mode] || {};
+                      return (
+                        <tr key={log.id}>
+                          <td className="log-entity">{log.entity_name || `#${log.entity_id}`}</td>
+                          <td><span className="log-type-badge">{log.entity_type.replace('_', ' ')}</span></td>
+                          <td>
+                            <span className="log-decision-badge" style={{ background: dc.bg, color: dc.color }}>
+                              {log.decision}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="log-mode-badge" style={{ color: modeMeta.color }}>
+                              {modeMeta.icon} {log.mode}
+                            </span>
+                          </td>
+                          <td className="log-reason">{log.reason || '—'}</td>
+                          <td className="log-time">{new Date(log.created_at).toLocaleString()}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </section>

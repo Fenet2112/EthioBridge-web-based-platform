@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL } from "../../utils/api";
-import "../ProfileForm.css";
+import { FaMapMarkerAlt, FaSpinner, FaTimes } from "react-icons/fa";
+import "./ProfileForm.css";
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 function IndustryProfile() {
   const navigate = useNavigate();
@@ -18,9 +20,64 @@ function IndustryProfile() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const [locationError, setLocationError] = useState("");
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const detectLocation = () => {
+    setLocationError("");
+    setDetectingLocation(true);
+
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser");
+      setDetectingLocation(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setFormData({
+          ...formData,
+          latitude: latitude.toString(),
+          longitude: longitude.toString(),
+        });
+        setDetectingLocation(false);
+      },
+      (err) => {
+        switch (err.code) {
+          case err.PERMISSION_DENIED:
+            setLocationError("Location permission denied. Please enable location access.");
+            break;
+          case err.POSITION_UNAVAILABLE:
+            setLocationError("Location information unavailable.");
+            break;
+          case err.TIMEOUT:
+            setLocationError("Location request timed out.");
+            break;
+          default:
+            setLocationError("Unable to detect location.");
+        }
+        setDetectingLocation(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  };
+
+  const clearLocation = () => {
+    setFormData({
+      ...formData,
+      latitude: "",
+      longitude: "",
+    });
+    setLocationError("");
   };
 
   const handleSubmit = async (e) => {
@@ -122,16 +179,28 @@ function IndustryProfile() {
           <div className="form-row">
             <div className="form-group">
               <label>Latitude (for map display)</label>
-              <input
-                type="number"
-                name="latitude"
-                value={formData.latitude}
-                onChange={handleChange}
-                placeholder="e.g. 9.0320 (Addis Ababa)"
-                step="0.000001"
-                min="-90"
-                max="90"
-              />
+              <div className="location-input-group">
+                <input
+                  type="number"
+                  name="latitude"
+                  value={formData.latitude}
+                  onChange={handleChange}
+                  placeholder="e.g. 9.0320"
+                  step="0.000001"
+                  min="-90"
+                  max="90"
+                />
+                {(formData.latitude || formData.longitude) && (
+                  <button
+                    type="button"
+                    className="clear-location-btn"
+                    onClick={clearLocation}
+                    title="Clear location"
+                  >
+                    <FaTimes />
+                  </button>
+                )}
+              </div>
               <small style={{color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px', display: 'block'}}>
                 Optional: Your location's latitude coordinate
               </small>
@@ -143,7 +212,7 @@ function IndustryProfile() {
                 name="longitude"
                 value={formData.longitude}
                 onChange={handleChange}
-                placeholder="e.g. 38.7469 (Addis Ababa)"
+                placeholder="e.g. 38.7469"
                 step="0.000001"
                 min="-180"
                 max="180"
@@ -152,6 +221,32 @@ function IndustryProfile() {
                 Optional: Your location's longitude coordinate
               </small>
             </div>
+          </div>
+
+          {/* Location Detection Button */}
+          <div className="form-group full-width">
+            <button
+              type="button"
+              className="detect-location-btn"
+              onClick={detectLocation}
+              disabled={detectingLocation}
+            >
+              {detectingLocation ? (
+                <>
+                  <FaSpinner className="spinner" /> Detecting location...
+                </>
+              ) : (
+                <>
+                  <FaMapMarkerAlt /> Detect My Location (GPS)
+                </>
+              )}
+            </button>
+            {locationError && (
+              <p className="location-error">{locationError}</p>
+            )}
+            <small style={{color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '8px', display: 'block'}}>
+              Click to automatically detect your current location using GPS
+            </small>
           </div>
 
           <div className="form-row">

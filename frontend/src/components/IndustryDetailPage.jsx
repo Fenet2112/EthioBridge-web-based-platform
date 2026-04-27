@@ -240,18 +240,36 @@ function IndustryDetailPage() {
           <div className="products-grid">
             {products.map((product) => (
               <div key={product.id} className="product-card">
-                {product.image_url && (
-                  <img src={product.image_url} alt={product.name} className="product-image" />
-                )}
+                <div className="product-card-img-wrap">
+                  {product.image_url && (
+                    <img src={product.image_url} alt={product.name} className="product-image" />
+                  )}
+                  <div className="product-card-badges">
+                    {product.is_new && <span className="badge-new">🆕 New</span>}
+                    {product.is_popular && <span className="badge-popular">🔥 Popular</span>}
+                    {product.discount_percentage > 0 && (
+                      <span className="badge-discount">-{product.discount_percentage}% OFF</span>
+                    )}
+                  </div>
+                </div>
                 <div className="product-info">
                   <h3>{product.name}</h3>
                   {product.category && <span className="product-category">{product.category}</span>}
                   {product.description && <p className="product-desc">{product.description}</p>}
                   <div className="product-footer">
                     {product.price && (
-                      <span className="product-price">
-                        {product.price.toLocaleString()} ETB{product.unit !== "unit" ? ` / ${product.unit}` : ""}
-                      </span>
+                      <div className="product-price-wrap">
+                        {product.discount_percentage > 0 ? (
+                          <>
+                            <span className="price-original">{Number(product.price).toLocaleString()} ETB</span>
+                            <span className="price-discounted">{Number(product.discounted_price).toLocaleString()} ETB</span>
+                          </>
+                        ) : (
+                          <span className="product-price">
+                            {Number(product.price).toLocaleString()} ETB{product.unit !== "unit" ? ` / ${product.unit}` : ""}
+                          </span>
+                        )}
+                      </div>
                     )}
                     <button className="buy-btn" onClick={() => handleBuyClick(product)}>
                       {isBlurred ? "🔒 Subscribe to Buy" : "Request Purchase"}

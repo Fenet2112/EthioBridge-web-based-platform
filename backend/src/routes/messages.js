@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require("../config/db");
 const { authenticateToken } = require("../middleware/auth");
 const { resolveSubType } = require("./subscription");
+const { createNotification } = require("../utils/createNotification");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -223,6 +224,34 @@ router.post("/conversations/:id/messages", authenticateToken, uploadMessageFile.
     );
 
     res.status(201).json(result.rows[0]);
+
+    // ── Notify the industry if the sender is a stakeholder ──
+    if (req.user.role === 'stakeholder') {
+      try {
+        const convRes = await pool.query(
+          `SELECT c.industry_id, i.user_id AS industry_user_id,
+                  s.organization_name AS sender_name
+           FROM conversations c
+           JOIN industries i ON i.id = c.industry_id
+           JOIN stakeholders s ON s.id = c.stakeholder_id
+           WHERE c.id = $1`,
+          [id]
+        );
+        if (convRes.rows.length > 0) {
+          const { industry_user_id, sender_name } = convRes.rows[0];
+          await createNotification(
+            pool,
+            industry_user_id,
+            'New Message Received',
+            `${sender_name || 'A stakeholder'} sent you a new message.`,
+            'message',
+            parseInt(id)
+          );
+        }
+      } catch (notifErr) {
+        console.error('[Messages] Notification trigger failed (non-fatal):', notifErr.message);
+      }
+    }
   } catch (error) {
     console.error("Send message error:", error);
     res.status(500).json({ message: "Server error" });

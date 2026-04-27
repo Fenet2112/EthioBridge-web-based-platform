@@ -7,6 +7,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { sendPurchaseApprovedEmail, sendPurchaseRejectedEmail } = require("../utils/sendEmail");
+const { createNotification } = require("../utils/createNotification");
 
 // ── Multer setup for ID documents ──
 const idStorage = multer.diskStorage({
@@ -120,10 +121,10 @@ router.post(
         );
         const p = profileResult.rows[0];
         requestData = {
-          full_name: p.contact_person || full_name || 'N/A',
-          organization_name: p.organization_name || organization_name,
-          phone: p.phone || phone,
-          location: p.location || location,
+          full_name:         p.contact_person    || full_name         || 'N/A',
+          organization_name: p.organization_name || organization_name || 'N/A',
+          phone:             p.phone             || phone             || 'N/A',
+          location:          p.location          || location          || 'N/A',
         };
         requestStatus = 'approved';
       } else {
@@ -182,6 +183,42 @@ router.post(
         request: result.rows[0],
         requires_verification: requiresVerification,
       });
+
+      // ── Run approval workflow for non-verification requests ──
+      if (!requiresVerification) {
+        try {
+          const { processPurchaseRequestApproval } = require('../services/approvalWorkflow');
+          const { newStatus, reason } = await processPurchaseRequestApproval(result.rows[0].id);
+          console.log(`[Purchases] Workflow result for PR ${result.rows[0].id}: ${newStatus} — ${reason}`);
+        } catch (wfErr) {
+          console.error('[Purchases] Workflow error (non-fatal):', wfErr.message);
+        }
+      }
+
+      // ── Notify the industry about the new purchase request ──
+      try {
+        const industryUserRes = await pool.query(
+          `SELECT i.user_id, p.name AS product_name, s.organization_name
+           FROM industries i
+           JOIN products p ON p.id = $1
+           JOIN stakeholders s ON s.id = $2
+           WHERE i.id = $3`,
+          [product_id, stakeholder_id, industry_id]
+        );
+        if (industryUserRes.rows.length > 0) {
+          const { user_id, product_name, organization_name } = industryUserRes.rows[0];
+          await createNotification(
+            pool,
+            user_id,
+            'New Purchase Request Received',
+            `${organization_name || 'A stakeholder'} has submitted a purchase request for "${product_name}".`,
+            'request',
+            result.rows[0].id
+          );
+        }
+      } catch (notifErr) {
+        console.error('[Purchases] Notification trigger failed (non-fatal):', notifErr.message);
+      }
     } catch (error) {
       console.error("Create purchase request error:", error);
       res.status(500).json({ message: "Server error: " + error.message });
@@ -247,21 +284,36 @@ router.get(
   requireRole("stakeholder"),
   async (req, res) => {
     try {
+      const { status, dateFrom, dateTo, page = "1", limit = "50" } = req.query;
+      const params = [req.user.id];
+      let n = 2;
+      let where = `WHERE s.user_id = $1`;
+      if (status && status !== "all") { where += ` AND pr.status = $${n++}`; params.push(status); }
+      if (dateFrom) { where += ` AND pr.created_at >= $${n++}`; params.push(dateFrom); }
+      if (dateTo)   { where += ` AND pr.created_at <= $${n++}::date + interval '1 day'`; params.push(dateTo); }
+
+      const pageNum  = Math.max(1, parseInt(page));
+      const limitNum = Math.min(100, parseInt(limit));
+      const offset   = (pageNum - 1) * limitNum;
+
       const result = await pool.query(`
         SELECT
-          pr.id, pr.status, pr.quantity, pr.notes, pr.admin_notes, pr.created_at,
+          pr.id, pr.status, pr.quantity, pr.notes, pr.admin_notes,
+          pr.created_at, pr.updated_at,
           pr.id_document_url, pr.id_document_type,
-          p.name AS product_name, p.price, p.unit,
+          p.name AS product_name, p.price, p.unit, p.image_url AS product_image,
+          (p.price * pr.quantity) AS total_price,
           i.company_name AS industry_name, i.sector, i.location AS industry_location
         FROM purchase_requests pr
         JOIN stakeholders s ON s.id = pr.stakeholder_id
         JOIN products p ON p.id = pr.product_id
         JOIN industries i ON i.id = pr.industry_id
-        WHERE s.user_id = $1
+        ${where}
         ORDER BY pr.created_at DESC
-      `, [req.user.id]);
+        LIMIT $${n++} OFFSET $${n++}
+      `, [...params, limitNum, offset]);
 
-      res.json(result.rows);
+      res.json({ transactions: result.rows, total: result.rows.length, page: pageNum });
     } catch (error) {
       console.error("Get my requests error:", error);
       res.status(500).json({ message: "Server error" });
@@ -269,12 +321,11 @@ router.get(
   }
 );
 
-// ── GET PURCHASE REQUESTS FOR MY INDUSTRY (all statuses except pending_verification) ──
+// ── GET PURCHASE REQUESTS FOR MY INDUSTRY (transaction history) ──
 router.get(
   "/purchases/industry-requests",
   authenticateToken,
   requireRole("industry"),
-  requireApproved,
   async (req, res) => {
     try {
       const industryResult = await pool.query(
@@ -285,11 +336,26 @@ router.get(
       }
       const industry_id = industryResult.rows[0].id;
 
+      const { status, dateFrom, dateTo, page = "1", limit = "50" } = req.query;
+      const params = [industry_id];
+      let n = 2;
+      let where = `WHERE pr.industry_id = $1`;
+      if (status && status !== "all") { where += ` AND pr.status = $${n++}`; params.push(status); }
+      else { where += ` AND pr.status IN ('approved','pending','rejected','completed')`; }
+      if (dateFrom) { where += ` AND pr.created_at >= $${n++}`; params.push(dateFrom); }
+      if (dateTo)   { where += ` AND pr.created_at <= $${n++}::date + interval '1 day'`; params.push(dateTo); }
+
+      const pageNum  = Math.max(1, parseInt(page));
+      const limitNum = Math.min(100, parseInt(limit));
+      const offset   = (pageNum - 1) * limitNum;
+
       const result = await pool.query(`
         SELECT
           pr.id, pr.status, pr.quantity, pr.notes, pr.full_name, pr.organization_name,
-          pr.phone, pr.location, pr.created_at, pr.id_document_type,
-          p.name AS product_name, p.price, p.unit,
+          pr.phone, pr.location, pr.created_at, pr.updated_at, pr.admin_notes,
+          pr.id_document_type,
+          p.name AS product_name, p.price, p.unit, p.image_url AS product_image,
+          (p.price * pr.quantity) AS total_price,
           s.organization_name AS stakeholder_org, s.contact_person, s.identity_verified,
           s.id AS stakeholder_id,
           c.id AS conversation_id,
@@ -299,11 +365,12 @@ router.get(
         JOIN stakeholders s ON s.id = pr.stakeholder_id
         JOIN users u ON u.id = s.user_id
         LEFT JOIN conversations c ON c.stakeholder_id = pr.stakeholder_id AND c.industry_id = pr.industry_id
-        WHERE pr.industry_id = $1 AND pr.status IN ('approved', 'pending')
+        ${where}
         ORDER BY pr.created_at DESC
-      `, [industry_id]);
+        LIMIT $${n++} OFFSET $${n++}
+      `, [...params, limitNum, offset]);
 
-      res.json(result.rows);
+      res.json({ transactions: result.rows, total: result.rows.length, page: pageNum });
     } catch (error) {
       console.error("Get industry requests error:", error);
       res.status(500).json({ message: "Server error" });
@@ -373,7 +440,7 @@ router.patch("/admin/purchases/:id/approve", requireAdminAuth, async (req, res) 
     // Send approval email to stakeholder (non-fatal)
     try {
       const emailRes = await pool.query(
-        `SELECT u.email, pr.product_id, p.name AS product_name, i.company_name
+        `SELECT u.id AS stakeholder_user_id, u.email, p.name AS product_name, i.company_name
          FROM purchase_requests pr
          JOIN stakeholders s ON s.id = pr.stakeholder_id
          JOIN users u ON u.id = s.user_id
@@ -382,15 +449,20 @@ router.patch("/admin/purchases/:id/approve", requireAdminAuth, async (req, res) 
          WHERE pr.id = $1`, [id]
       );
       if (emailRes.rows.length > 0) {
-        const { email, product_name, company_name } = emailRes.rows[0];
+        const { stakeholder_user_id, email, product_name, company_name } = emailRes.rows[0];
         await sendPurchaseApprovedEmail(email, product_name, company_name);
+        // Notify stakeholder
+        await createNotification(pool, stakeholder_user_id,
+          'Purchase Request Approved',
+          `Your request for "${product_name}" from ${company_name} has been approved. You can now message the industry.`,
+          'approval', parseInt(id)
+        );
       }
     } catch (emailErr) {
-      console.error("Purchase approval email failed (non-fatal):", emailErr.message);
+      console.error("Purchase approval email/notif failed (non-fatal):", emailErr.message);
     }
 
-    res.json({ message: "Purchase request approved and stakeholder verified", request });
-  } catch (error) {
+    res.json({ message: "Purchase request approved and stakeholder verified", request });  } catch (error) {
     console.error("Admin approve purchase error:", error);
     res.status(500).json({ message: "Server error" });
   }
@@ -413,7 +485,7 @@ router.patch("/admin/purchases/:id/reject", requireAdminAuth, async (req, res) =
     // Send rejection email to stakeholder (non-fatal)
     try {
       const emailRes = await pool.query(
-        `SELECT u.email, p.name AS product_name, i.company_name
+        `SELECT u.id AS stakeholder_user_id, u.email, p.name AS product_name, i.company_name
          FROM purchase_requests pr
          JOIN stakeholders s ON s.id = pr.stakeholder_id
          JOIN users u ON u.id = s.user_id
@@ -422,11 +494,16 @@ router.patch("/admin/purchases/:id/reject", requireAdminAuth, async (req, res) =
          WHERE pr.id = $1`, [id]
       );
       if (emailRes.rows.length > 0) {
-        const { email, product_name, company_name } = emailRes.rows[0];
+        const { stakeholder_user_id, email, product_name, company_name } = emailRes.rows[0];
         await sendPurchaseRejectedEmail(email, product_name, company_name, admin_notes);
+        await createNotification(pool, stakeholder_user_id,
+          'Purchase Request Rejected',
+          `Your request for "${product_name}" from ${company_name} was not approved. Reason: ${admin_notes}`,
+          'approval', parseInt(id)
+        );
       }
     } catch (emailErr) {
-      console.error("Purchase rejection email failed (non-fatal):", emailErr.message);
+      console.error("Purchase rejection email/notif failed (non-fatal):", emailErr.message);
     }
 
     res.json({ message: "Purchase request rejected", request: result.rows[0] });

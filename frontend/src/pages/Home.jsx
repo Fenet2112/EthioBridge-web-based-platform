@@ -9,6 +9,7 @@ import {
 import Logo from "../components/Logo";
 import DarkModeToggle from "../components/DarkModeToggle";
 import FeedbackForm from "../components/FeedbackForm";
+import GlobalNav from "../components/GlobalNav";
 import { API_BASE_URL } from "../utils/api";
 import "./Home.css";
 
@@ -28,6 +29,12 @@ function Home() {
   const [contactSubmitting, setContactSubmitting] = useState(false);
   const [contactMessage, setContactMessage] = useState({ type: '', text: '' });
 
+  // ── Dynamic platform stats ──
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -41,12 +48,21 @@ function Home() {
     );
     document.querySelectorAll(".animate-on-scroll").forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [testimonials]); // re-run when testimonials load so new cards get observed
 
   // Fetch approved testimonials
   useEffect(() => {
     fetchTestimonials();
   }, []);
+
+  // Fetch live platform stats
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/stats/summary`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setStats(data); })
+      .catch(() => {})
+      .finally(() => setStatsLoading(false));
+  }, [API_BASE_URL]);
 
   const fetchTestimonials = async () => {
     try {
@@ -61,6 +77,14 @@ function Home() {
     } finally {
       setLoadingTestimonials(false);
     }
+  };
+
+  // Format a raw count into a display string like "42", "200+", "1.2K+"
+  const fmtStat = (n) => {
+    if (n === null || n === undefined) return '—';
+    if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K+`;
+    if (n > 0) return `${n}+`;
+    return '0';
   };
 
   const getRoleDisplay = (role) => {
@@ -140,28 +164,8 @@ function Home() {
     <div className="home">
 
       {/* ── NAVBAR ── */}
-      <nav className="navbar">
-        <div className="logo">
-          <Logo size={40} color="#1d522d" />
-          <span className="logo-text">EthioBridge</span>
-        </div>
+      <GlobalNav />
 
-        <ul className="nav-links">
-          <li><Link to="/">Home</Link></li>
-          <li><Link to="/products">Products</Link></li>
-          <li><Link to="/explore">Explore Map</Link></li>
-          <li><a href="#services">Services</a></li>
-          <li><a href="#about">About</a></li>
-          <li><Link to="/help">Help</Link></li>
-          <li><a href="#contact">Contact</a></li>
-        </ul>
-
-        <div className="nav-actions">
-          <DarkModeToggle />
-          <Link to="/login" className="nav-login">Log In</Link>
-          <Link to="/signup" className="nav-signup">Get Started</Link>
-        </div>
-      </nav>
 
       {/* ── HERO ── */}
       <section
@@ -204,22 +208,22 @@ function Home() {
           <div className="hero-card card-1">
             <div className="card-icon"><FaHardHat /></div>
             <div className="card-text">
-              <strong>500+</strong>
+              <strong>{statsLoading ? '…' : fmtStat(stats?.totalRequests)}</strong>
               <span>Active Projects</span>
             </div>
           </div>
           <div className="hero-card card-2">
             <div className="card-icon"><FaIndustry /></div>
             <div className="card-text">
-              <strong>200+</strong>
+              <strong>{statsLoading ? '…' : fmtStat(stats?.industryCount)}</strong>
               <span>Verified Industries</span>
             </div>
           </div>
           <div className="hero-card card-3">
             <div className="card-icon"><FaHandshake /></div>
             <div className="card-text">
-              <strong>1,200+</strong>
-              <span>Connections Made</span>
+              <strong>{statsLoading ? '…' : fmtStat(stats?.approvedUsers)}</strong>
+              <span>Registered Users</span>
             </div>
           </div>
         </div>
@@ -233,23 +237,23 @@ function Home() {
       {/* ── STATS BAR ── */}
       <section className="stats-bar animate-on-scroll">
         <div className="stat-item">
-          <span className="stat-number">500+</span>
+          <span className="stat-number">{statsLoading ? '…' : fmtStat(stats?.totalRequests)}</span>
           <span className="stat-label">Active Projects</span>
         </div>
         <div className="stat-divider"></div>
         <div className="stat-item">
-          <span className="stat-number">200+</span>
+          <span className="stat-number">{statsLoading ? '…' : fmtStat(stats?.industryCount)}</span>
           <span className="stat-label">Verified Industries</span>
         </div>
         <div className="stat-divider"></div>
         <div className="stat-item">
-          <span className="stat-number">1,200+</span>
-          <span className="stat-label">Connections Made</span>
+          <span className="stat-number">{statsLoading ? '…' : fmtStat(stats?.approvedUsers)}</span>
+          <span className="stat-label">Registered Users</span>
         </div>
         <div className="stat-divider"></div>
         <div className="stat-item">
-          <span className="stat-number">11</span>
-          <span className="stat-label">Regions Covered</span>
+          <span className="stat-number">{statsLoading ? '…' : fmtStat(stats?.productCount)}</span>
+          <span className="stat-label">Products Listed</span>
         </div>
       </section>
 
@@ -413,7 +417,7 @@ function Home() {
         ) : (
           <div className="testimonials-grid">
             {testimonials.map((testimonial, i) => (
-              <div className="testimonial-card animate-on-scroll" key={testimonial.id} style={{ animationDelay: `${i * 0.1}s` }}>
+              <div className="testimonial-card" key={testimonial.id} style={{ animationDelay: `${i * 0.1}s` }}>
                 <div className="testimonial-quote-icon-small">
                   <FaQuoteLeft />
                 </div>
@@ -664,7 +668,7 @@ function Home() {
             </div>
             <div className="trust-badge">
               <FaStar />
-              <span>Trusted by 1000+</span>
+              <span>Trusted by {statsLoading ? '…' : fmtStat(stats?.approvedUsers)}</span>
             </div>
           </div>
         </div>

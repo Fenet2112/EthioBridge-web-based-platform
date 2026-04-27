@@ -58,9 +58,11 @@ router.post("/signup", async (req, res) => {
 
     const newUser = await pool.query(
       `INSERT INTO users (email, password, role, status, email_verified, verification_token, verification_token_expires)
-       VALUES ($1, $2, $3, 'pending', FALSE, $4, $5)
+       VALUES ($1, $2, $3, $4, FALSE, $5, $6)
        RETURNING id, email, role, status`,
-      [email, hashedPassword, role, verificationToken, tokenExpires]
+      [email, hashedPassword, role,
+       role === 'stakeholder' ? 'approved' : 'incomplete',  // stakeholders get immediate access
+       verificationToken, tokenExpires]
     );
 
     // Send emails asynchronously (don't block response)
@@ -169,7 +171,7 @@ router.post("/login", async (req, res) => {
 // ── SUBMIT INDUSTRY PROFILE ──
 router.post("/profile/industry", async (req, res) => {
   try {
-    const { user_id, company_name, sector, location, description, phone, website, established_year, latitude, longitude } = req.body;
+    const { user_id, company_name, sector, business_role, location, description, phone, website, established_year, latitude, longitude } = req.body;
 
     if (!user_id || !company_name || !sector || !location) {
       return res.status(400).json({ message: "user_id, company_name, sector, and location are required" });
@@ -186,11 +188,12 @@ router.post("/profile/industry", async (req, res) => {
 
     // Upsert industry profile
     await pool.query(
-      `INSERT INTO industries (user_id, company_name, sector, location, description, phone, website, established_year, latitude, longitude)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO industries (user_id, company_name, sector, business_role, location, description, phone, website, established_year, latitude, longitude)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        ON CONFLICT (user_id) DO UPDATE SET
          company_name = EXCLUDED.company_name,
          sector = EXCLUDED.sector,
+         business_role = EXCLUDED.business_role,
          location = EXCLUDED.location,
          description = EXCLUDED.description,
          phone = EXCLUDED.phone,
@@ -198,20 +201,29 @@ router.post("/profile/industry", async (req, res) => {
          established_year = EXCLUDED.established_year,
          latitude = EXCLUDED.latitude,
          longitude = EXCLUDED.longitude`,
-      [user_id, company_name, sector, location, description || null, phone || null, website || null, established_year || null, latitude || null, longitude || null]
+      [user_id, company_name, sector, business_role || null, location, description || null, phone || null, website || null, established_year || null, latitude || null, longitude || null]
     );
 
     // Only set status to pending if user is currently incomplete
     // Don't reset approved users back to pending when they edit their profile
     const currentStatus = userResult.rows[0].status;
     if (currentStatus === 'incomplete') {
+      // Run through the approval workflow
+      const { processIndustryApproval } = require('../services/approvalWorkflow');
       await pool.query("UPDATE users SET status = 'pending' WHERE id = $1", [user_id]);
+      const { newStatus, reason } = await processIndustryApproval(parseInt(user_id));
+      console.log(`[Auth] Industry ${user_id} workflow result: ${newStatus} — ${reason}`);
+      const finalStatus = newStatus || 'pending';
+      const msg = finalStatus === 'approved'
+        ? 'Industry profile approved automatically.'
+        : finalStatus === 'rejected'
+        ? `Industry profile rejected: ${reason}`
+        : 'Industry profile submitted. Awaiting admin approval.';
+      return res.json({ message: msg, status: finalStatus, reason });
     }
 
     res.json({ 
-      message: currentStatus === 'incomplete' 
-        ? "Industry profile submitted. Awaiting admin approval." 
-        : "Industry profile updated successfully."
+      message: "Industry profile updated successfully."
     });
   } catch (error) {
     console.error("Industry profile error:", error);
@@ -257,17 +269,16 @@ router.post("/profile/stakeholder", uploadStakeholderID.single("id_document"), a
       [user_id, organization_name, organization_type, location, description || null, phone || null, contact_person || null, idDocUrl, idDocType]
     );
 
-    // Only set status to pending if user is currently incomplete
-    // Don't reset approved users back to pending when they edit their profile
+    // Stakeholders are approved on signup — profile completion just saves data
+    // Status only changes if somehow still 'incomplete' (legacy accounts)
     const currentStatus = userResult.rows[0].status;
     if (currentStatus === 'incomplete') {
-      await pool.query("UPDATE users SET status = 'pending' WHERE id = $1", [user_id]);
+      await pool.query("UPDATE users SET status = 'approved' WHERE id = $1", [user_id]);
     }
 
     res.json({ 
-      message: currentStatus === 'incomplete' 
-        ? "Stakeholder profile submitted. Awaiting admin approval." 
-        : "Stakeholder profile updated successfully."
+      message: "Stakeholder profile updated successfully.",
+      status: currentStatus === 'incomplete' ? 'approved' : currentStatus
     });
   } catch (error) {
     console.error("Stakeholder profile CRASH:", error.message);

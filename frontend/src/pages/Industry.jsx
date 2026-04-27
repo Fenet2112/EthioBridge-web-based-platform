@@ -6,10 +6,12 @@ import {
   FaIndustry, FaQuestionCircle, FaTimes, FaLock, FaClock, FaCheckCircle,
   FaHandshake, FaShieldAlt, FaCheck, FaTimes as FaTimesCircle, FaPlus,
   FaStar, FaExclamationTriangle, FaInfoCircle, FaPhone, FaMapMarkerAlt,
-  FaEnvelope, FaBuilding, FaCalendar
+  FaEnvelope, FaBuilding, FaCalendar, FaBell
 } from "react-icons/fa";
-import { API_BASE_URL } from "../../utils/api";
-import SubscriptionModal from "../../components/SubscriptionModal";
+import { API_BASE_URL } from "../utils/api";
+import SubscriptionModal from "../components/SubscriptionModal";
+import TransactionHistory from "../components/TransactionHistory";
+import { imageUrl } from "../utils/imageUrl";
 import "./Industry.css";
 import "./IndustryDarkMode.css";
 import "./IndustryMessages.css";
@@ -35,9 +37,12 @@ function Industry() {
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState({
-    name: "", description: "", price: "", unit: "unit", category: ""
+    name: "", description: "", price: "", unit: "unit", category: "", discount_percentage: ""
   });
   const [productNameError, setProductNameError] = useState("");
+  const [productImage, setProductImage] = useState(null);       // File object
+  const [productImagePreview, setProductImagePreview] = useState(null); // base64 preview
+  const productImageRef = useRef(null);
 
   // Purchase requests state
   const [purchaseRequests, setPurchaseRequests] = useState([]);
@@ -59,6 +64,12 @@ function Industry() {
   const [unreadCount, setUnreadCount] = useState(0);
   const fileInputRef = useRef(null);
 
+  // Notification state
+  const [notifications, setNotifications] = useState([]);
+  const [notifUnreadCount, setNotifUnreadCount] = useState(0);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [notifsLoading, setNotifsLoading] = useState(false);
+
   const menuItems = [
     { id: "dashboard", label: "Dashboard",                   icon: <FaHome /> },
     { id: "profile",   label: "Manage Profile",              icon: <FaUser /> },
@@ -71,6 +82,7 @@ function Industry() {
   const [profile, setProfile] = useState({
     companyName: "",
     industryType: "",
+    businessRole: "",
     location: "",
     phone: "",
     email: "",
@@ -78,9 +90,13 @@ function Industry() {
     description: "",
     licenseNumber: "",
     logoPreview: null,
-    latitude: "",
-    longitude: "",
+    latitude: null,
+    longitude: null,
   });
+
+  // GPS detection state
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState(""); // "detected" | "denied" | ""
 
   const [isEditing, setIsEditing] = useState(true);
   // Check auth and profile status on load
@@ -118,6 +134,7 @@ function Industry() {
           setProfile({
             companyName: data.profile.company_name || "",
             industryType: data.profile.sector || "",
+            businessRole: data.profile.business_role || "",
             location: data.profile.location || "",
             phone: data.profile.phone || "",
             email: userData.email || "",
@@ -125,8 +142,10 @@ function Industry() {
             description: data.profile.description || "",
             licenseNumber: "",
             logoPreview: data.profile.profile_picture
-              ? `${API_BASE_URL}${data.profile.profile_picture}`
+              ? imageUrl(data.profile.profile_picture)
               : null,
+            latitude: data.profile.latitude || null,
+            longitude: data.profile.longitude || null,
           });
           
           // If profile exists and is approved, show view mode
@@ -319,6 +338,128 @@ function Industry() {
     }
   };
 
+
+
+  // Notification functions
+  const fetchNotifications = async () => {
+    setNotifsLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE_URL}/api/industry/notifications`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+      }
+    } catch (err) {
+      console.error("Failed to load notifications:", err);
+    } finally {
+      setNotifsLoading(false);
+    }
+  };
+
+  const fetchNotifUnreadCount = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE_URL}/api/industry/notifications/unread-count`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifUnreadCount(data.count || 0);
+      }
+    } catch (err) {
+      console.error("Failed to fetch notification unread count:", err);
+    }
+  };
+
+  const markNotificationRead = async (notifId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`${API_BASE_URL}/api/industry/notifications/${notifId}/read`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, is_read: true } : n));
+      setNotifUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+    }
+  };
+
+  const markAllNotificationsRead = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`${API_BASE_URL}/api/industry/notifications/mark-all-read`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setNotifUnreadCount(0);
+    } catch (err) {
+      console.error("Failed to mark all notifications as read:", err);
+    }
+  };
+
+  const formatTimeAgo = (dateString) => {
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffMs = now - past;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+    if (diffDay > 0) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+    if (diffHour > 0) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+    if (diffMin > 0) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+    return "Just now";
+  };
+
+  const handleNotificationClick = (notification) => {
+    if (!notification.is_read) {
+      markNotificationRead(notification.id);
+    }
+    setShowNotifDropdown(false);
+  };
+
+  const handleMarkAllRead = () => {
+    markAllNotificationsRead();
+  };
+
+  // Fetch notifications when profile is approved
+  useEffect(() => {
+    if (profileStatus === "approved") {
+      fetchNotifications();
+      fetchNotifUnreadCount();
+    }
+  }, [profileStatus]);
+
+  // Poll for new notifications every 15 seconds
+  useEffect(() => {
+    if (profileStatus !== "approved") return;
+    const interval = setInterval(() => {
+      fetchNotifUnreadCount();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [profileStatus]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const container = document.getElementById('notification-bell-container');
+      if (container && !container.contains(event.target)) {
+        setShowNotifDropdown(false);
+      }
+    };
+    if (showNotifDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotifDropdown]);
+
   const sendMessage = async () => {
     if ((!newMessage.trim() && !selectedFile) || !selectedConversation) return;
 
@@ -477,7 +618,7 @@ function Industry() {
       // Replace the base64 preview with the persisted server URL
       setProfile(prev => ({
         ...prev,
-        logoPreview: `${API_BASE_URL}${data.profile_picture}`,
+        logoPreview: imageUrl(data.profile_picture),
       }));
     } catch (err) {
       console.error("Logo upload failed:", err.message);
@@ -502,11 +643,12 @@ function Industry() {
           user_id: userData.id,
           company_name: profile.companyName,
           sector: profile.industryType,
+          business_role: profile.businessRole || null,
           location: profile.location,
           description: profile.description,
           phone: profile.phone,
           website: profile.website,
-          established_year: null, // Add this field to the form if needed
+          established_year: null,
           latitude: profile.latitude || null,
           longitude: profile.longitude || null
         })
@@ -554,6 +696,32 @@ function Industry() {
     setIsEditing(true);
   };
 
+  // ── GPS location detection ──
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      setGpsStatus("denied");
+      return;
+    }
+    setGpsLoading(true);
+    setGpsStatus("");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setProfile(prev => ({
+          ...prev,
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        }));
+        setGpsLoading(false);
+        setGpsStatus("detected");
+      },
+      () => {
+        setGpsLoading(false);
+        setGpsStatus("denied");
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
+
   const canAccessOtherSections = profileStatus === "approved";
   const showPendingBanner = profileStatus === "pending";
 
@@ -578,22 +746,28 @@ function Industry() {
 
   const handleProductSubmit = async (e) => {
     e.preventDefault();
-    if (productNameError) return; // block if inline error is showing
+    if (productNameError) return;
 
     const token = localStorage.getItem("token");
-    const url = editingProduct 
+    const url = editingProduct
       ? `${API_BASE_URL}/api/products/${editingProduct.id}`
       : `${API_BASE_URL}/api/products`;
     const method = editingProduct ? "PUT" : "POST";
 
     try {
+      // Always use FormData so we can attach the image file
+      const formData = new FormData();
+      formData.append("name",        productForm.name);
+      formData.append("category",    productForm.category);
+      formData.append("price",       productForm.price);
+      formData.append("unit",        productForm.unit);
+      formData.append("description", productForm.description);
+      if (productImage) formData.append("image", productImage);
+
       const res = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(productForm)
+        headers: { Authorization: `Bearer ${token}` }, // NO Content-Type — let browser set multipart boundary
+        body: formData,
       });
       
       if (res.status === 402) {
@@ -634,7 +808,10 @@ function Industry() {
       setShowProductForm(false);
       setEditingProduct(null);
       setProductNameError("");
-      setProductForm({ name: "", description: "", price: "", unit: "unit", category: "" });
+      setProductForm({ name: "", description: "", price: "", unit: "unit", category: "", discount_percentage: "" });
+      setProductImage(null);
+      setProductImagePreview(null);
+      if (productImageRef.current) productImageRef.current.value = "";
     } catch (err) {
       alert(err.message);
     }
@@ -647,8 +824,12 @@ function Industry() {
       description: product.description || "",
       price: product.price || "",
       unit: product.unit || "unit",
-      category: product.category || ""
+      category: product.category || "",
+      discount_percentage: product.discount_percentage || ""
     });
+    setProductImage(null);
+    setProductImagePreview(product.image_url ? imageUrl(product.image_url) : null);
+    if (productImageRef.current) productImageRef.current.value = "";
     setProductNameError("");
     setShowProductForm(true);
   };
@@ -693,6 +874,58 @@ function Industry() {
           <Link to="/help" className="help-link" title="Help Center">
             <FaQuestionCircle /> Help
           </Link>
+          
+          {/* Notification Bell */}
+          {profileStatus === "approved" && (
+            <div id="notification-bell-container" style={{ position: 'relative' }}>
+              <button 
+                className="notification-bell" 
+                onClick={() => {
+                  setShowNotifDropdown(!showNotifDropdown);
+                  if (!showNotifDropdown) fetchNotifications();
+                }}
+                title="Notifications"
+              >
+                <FaBell />
+                {notifUnreadCount > 0 && (
+                  <span className="notification-badge">{notifUnreadCount}</span>
+                )}
+              </button>
+
+              {showNotifDropdown && (
+                <div className="notification-dropdown">
+                  <div className="notification-header">
+                    <h4>Notifications</h4>
+                    {notifUnreadCount > 0 && (
+                      <button className="mark-all-read-btn" onClick={handleMarkAllRead}>
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="notification-list">
+                    {notifsLoading ? (
+                      <div className="notif-loading">Loading...</div>
+                    ) : notifications.length === 0 ? (
+                      <div className="no-notifications">No notifications yet</div>
+                    ) : (
+                      notifications.map(notif => (
+                        <div
+                          key={notif.id}
+                          className={`notification-item ${notif.is_read ? 'read' : 'unread'}`}
+                          onClick={() => handleNotificationClick(notif)}
+                        >
+                          <div className="notif-title">{notif.title}</div>
+                          <div className="notif-message">{notif.message}</div>
+                          <div className="notif-time">{formatTimeAgo(notif.created_at)}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
           <span className="welcome-text">Welcome back</span>
           <div className="user-avatar"><FaIndustry /></div>
         </div>
@@ -712,7 +945,7 @@ function Industry() {
           )}
           <div className="sidebar-profile-info">
             <h4>{profile.companyName || "Your Company"}</h4>
-            <p>{profile.industryType || "Industry"}</p>
+            <p>{profile.businessRole ? `${profile.businessRole} · ` : ""}{profile.industryType || "Industry"}</p>
           </div>
         </div>
 
@@ -752,7 +985,14 @@ function Industry() {
         {activeSection !== "dashboard" && (
           <div className="content-header">
             <h1>{menuItems.find(item => item.id === activeSection)?.label || "Dashboard"}</h1>
-            <p>Manage your business profile and operations</p>
+            <p>
+              {activeSection === "requests"  ? "All purchase requests from stakeholders for your products" :
+               activeSection === "products"  ? "Manage and update your product catalog" :
+               activeSection === "profile"   ? "Update your company information and profile" :
+               activeSection === "messages"  ? "Communicate directly with your stakeholders" :
+               activeSection === "analytics" ? "Track your business performance and insights" :
+               "Manage your business profile and operations"}
+            </p>
           </div>
         )}
 
@@ -957,36 +1197,68 @@ function Industry() {
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label htmlFor="industryType">Industry Type *</label>
-                    <select
-                      id="industryType"
-                      name="industryType"
-                      value={profile.industryType}
-                      onChange={handleProfileChange}
-                      required
-                    >
-                      <option value="">Select type</option>
-                      <option>Cement Manufacturer</option>
-                      <option>Steel & Metal Producer</option>
-                      <option>Construction Materials Supplier</option>
-                      <option>Electrical & Lighting</option>
-                      <option>Plumbing & Sanitary</option>
-                      <option>Machinery & Equipment</option>
-                      <option>Other</option>
-                    </select>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label htmlFor="industryType">Industry Type *</label>
+                      <select id="industryType" name="industryType" value={profile.industryType} onChange={handleProfileChange} required>
+                        <option value="">Select type</option>
+                        <option>Cement Manufacturer</option>
+                        <option>Steel &amp; Metal Producer</option>
+                        <option>Construction Materials Supplier</option>
+                        <option>Electrical &amp; Lighting</option>
+                        <option>Plumbing &amp; Sanitary</option>
+                        <option>Machinery &amp; Equipment</option>
+                        <option>Other</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="businessRole">Business Role *</label>
+                      <select id="businessRole" name="businessRole" value={profile.businessRole} onChange={handleProfileChange} required>
+                        <option value="">Select role</option>
+                        <option value="Supplier">Supplier</option>
+                        <option value="Manufacturer">Manufacturer</option>
+                        <option value="Producer">Producer</option>
+                        <option value="Distributor">Distributor</option>
+                        <option value="Contractor">Contractor</option>
+                      </select>
+                    </div>
                   </div>
 
+                  {/* Location with GPS */}
                   <div className="form-group">
-                    <label htmlFor="location">Location *</label>
+                    <label htmlFor="location">Location / City *</label>
                     <input
                       type="text"
                       id="location"
                       name="location"
                       value={profile.location}
                       onChange={handleProfileChange}
+                      placeholder="e.g. Addis Ababa, Bole"
                       required
                     />
+                  </div>
+
+                  {/* GPS coordinates — auto-detected, not manually entered */}
+                  <div className="form-group">
+                    <label>GPS Coordinates <span style={{ color: "var(--text-muted)", fontWeight: 400, fontSize: "0.85rem" }}>(for map display)</span></label>
+                    <div className="gps-row">
+                      <button type="button" className="gps-btn" onClick={detectLocation} disabled={gpsLoading}>
+                        {gpsLoading ? "⏳ Detecting..." : "📍 Use My Location"}
+                      </button>
+                      {gpsStatus === "detected" && profile.latitude && (
+                        <span className="gps-ok">
+                          ✅ {Number(profile.latitude).toFixed(4)}, {Number(profile.longitude).toFixed(4)}
+                        </span>
+                      )}
+                      {gpsStatus === "denied" && (
+                        <span className="gps-denied">⚠️ Location access denied — map pin won't be shown</span>
+                      )}
+                      {!gpsStatus && profile.latitude && (
+                        <span className="gps-ok">
+                          📍 {Number(profile.latitude).toFixed(4)}, {Number(profile.longitude).toFixed(4)}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="form-row">
@@ -1102,7 +1374,7 @@ function Industry() {
                   )}
                   <div className="profile-title">
                     <h2>{profile.companyName || "Company Name"}</h2>
-                    <p className="industry-type">{profile.industryType || "Industry Type"}</p>
+                    <p className="industry-type">{profile.industryType || "Industry Type"}{profile.businessRole ? ` · ${profile.businessRole}` : ""}</p>
                   </div>
                   <button className="edit-btn" onClick={handleEditClick}>
                     Edit Profile
@@ -1210,6 +1482,53 @@ function Industry() {
               <div className="product-form-card">
                 <h3>{editingProduct ? "Edit Product" : "Add New Product"}</h3>
                 <form onSubmit={handleProductSubmit}>
+                  {/* ── Product Image ── */}
+                  <div className="form-group">
+                    <label>Product Image <span style={{ color: "#9ca3af", fontWeight: 400 }}>(JPG/PNG/WebP, max 2 MB)</span></label>
+                    <div className="product-img-upload-wrap">
+                      {productImagePreview ? (
+                        <div className="product-img-preview-box">
+                          <img src={productImagePreview} alt="Preview" className="product-img-preview" />
+                          <button
+                            type="button"
+                            className="product-img-remove"
+                            onClick={() => {
+                              setProductImage(null);
+                              setProductImagePreview(null);
+                              if (productImageRef.current) productImageRef.current.value = "";
+                            }}
+                          >✕ Remove</button>
+                        </div>
+                      ) : (
+                        <label className="product-img-placeholder" htmlFor="product-image-input">
+                          <span className="product-img-icon">📷</span>
+                          <span>Click to upload image</span>
+                          <span style={{ fontSize: "0.75rem", color: "#9ca3af" }}>Optional</span>
+                        </label>
+                      )}
+                      <input
+                        id="product-image-input"
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        ref={productImageRef}
+                        style={{ display: "none" }}
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (!file) return;
+                          if (file.size > 2 * 1024 * 1024) {
+                            alert("Image must be smaller than 2 MB");
+                            e.target.value = "";
+                            return;
+                          }
+                          setProductImage(file);
+                          const reader = new FileReader();
+                          reader.onloadend = () => setProductImagePreview(reader.result);
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </div>
+                  </div>
+
                   <div className="form-row">
                     <div className="form-group">
                       <label>Product Name *</label>
@@ -1283,8 +1602,36 @@ function Industry() {
                       rows="3"
                     />
                   </div>
+
+                  {/* Discount */}
+                  <div className="form-group">
+                    <label>Discount % <span style={{ color: "#9ca3af", fontWeight: 400, fontSize: "0.82rem" }}>Optional (0–100)</span></label>
+                    <input
+                      type="number"
+                      name="discount_percentage"
+                      value={productForm.discount_percentage}
+                      onChange={handleProductFormChange}
+                      min="0"
+                      max="100"
+                      step="1"
+                      placeholder="e.g. 20 for 20% off"
+                    />
+                    {productForm.discount_percentage > 0 && productForm.price > 0 && (
+                      <small className="discount-preview">
+                        Original: {Number(productForm.price).toLocaleString()} ETB →{" "}
+                        <strong style={{ color: "#dc2626" }}>
+                          {(productForm.price * (1 - productForm.discount_percentage / 100)).toFixed(2)} ETB
+                        </strong>{" "}
+                        after {productForm.discount_percentage}% off
+                      </small>
+                    )}
+                  </div>
                   <div className="form-actions">
-                    <button type="button" className="cancel-btn" onClick={() => setShowProductForm(false)}>
+                    <button type="button" className="cancel-btn" onClick={() => {
+                      setShowProductForm(false);
+                      setProductImage(null);
+                      setProductImagePreview(null);
+                    }}>
                       Cancel
                     </button>
                     <button type="submit" className="save-btn" disabled={!!productNameError}>
@@ -1302,15 +1649,46 @@ function Industry() {
               <div className="products-grid">
                 {products.map(product => (
                   <div key={product.id} className="product-item-card">
-                    <h4>{product.name}</h4>
-                    <p className="product-category">{product.category}</p>
-                    {product.description && <p className="product-desc">{product.description}</p>}
-                    <div className="product-price">
-                      {product.price ? `${product.price.toLocaleString()} / ${product.unit}` : "Price on request"}
+                    {/* Product image */}
+                    <div className="product-item-img-wrap">
+                      {product.image_url ? (
+                        <img
+                          src={imageUrl(product.image_url)}
+                          alt={product.name}
+                          className="product-item-img"
+                          onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
+                        />
+                      ) : null}
+                      <div className="product-item-img-placeholder" style={{ display: product.image_url ? "none" : "flex" }}>
+                        📦
+                      </div>
                     </div>
-                    <div className="product-actions">
-                      <button onClick={() => handleEditProduct(product)}>Edit</button>
-                      <button className="delete-btn" onClick={() => handleDeleteProduct(product.id)}>Delete</button>
+                    <div className="product-item-body">
+                      <div className="product-item-badges">
+                        {product.is_new && <span className="badge-new">🆕 New</span>}
+                        {product.is_popular && <span className="badge-popular">🔥 Popular</span>}
+                        {product.discount_percentage > 0 && (
+                          <span className="badge-discount">-{product.discount_percentage}% OFF</span>
+                        )}
+                      </div>
+                      <h4>{product.name}</h4>
+                      <p className="product-category">{product.category}</p>
+                      {product.description && <p className="product-desc">{product.description}</p>}
+                      <div className="product-price">
+                        {product.discount_percentage > 0 ? (
+                          <>
+                            <span className="price-original">{Number(product.price).toLocaleString()} ETB</span>
+                            <span className="price-discounted">{Number(product.discounted_price).toLocaleString()} ETB</span>
+                            <span className="price-unit">/ {product.unit}</span>
+                          </>
+                        ) : (
+                          product.price ? `${Number(product.price).toLocaleString()} ETB / ${product.unit}` : "Price on request"
+                        )}
+                      </div>
+                      <div className="product-actions">
+                        <button onClick={() => handleEditProduct(product)}>Edit</button>
+                        <button className="delete-btn" onClick={() => handleDeleteProduct(product.id)}>Delete</button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1319,118 +1697,10 @@ function Industry() {
           </div>
         )}
 
-        {/* Purchase Requests Section */}
+        {/* Purchase Requests / Transaction History Section */}
         {canAccessOtherSections && activeSection === "requests" && (
           <div className="requests-section">
-            <div style={{marginBottom: '30px'}}>
-              <h2 style={{marginBottom: '8px'}}>Purchase Requests</h2>
-              <p style={{color: 'var(--text-muted)', fontSize: '14px'}}>Requests from stakeholders who want to buy your products</p>
-            </div>
-
-            {requestsLoading ? (
-              <div style={{textAlign: 'center', padding: '40px', color: 'var(--text-light)'}}>
-                <div style={{fontSize: '40px', marginBottom: '10px'}}>⏳</div>
-                <p>Loading requests...</p>
-              </div>
-            ) : purchaseRequests.length === 0 ? (
-              <div style={{
-                textAlign: 'center', padding: '60px 20px',
-                background: 'var(--bg-input)', borderRadius: '12px',
-                border: '2px dashed var(--border)'
-              }}>
-                <div style={{fontSize: '60px', marginBottom: '15px'}}>📋</div>
-                <h3 style={{color: 'var(--text-muted)', marginBottom: '8px'}}>No Purchase Requests Yet</h3>
-                <p style={{color: 'var(--text-light)', fontSize: '14px'}}>When stakeholders request your products, they'll appear here</p>
-              </div>
-            ) : (
-              <div style={{display: 'grid', gap: '20px'}}>
-                {purchaseRequests.map(req => (
-                  <div key={req.id} className="purchase-request-card">
-                    {/* Header */}
-                    <div className="pr-card-header">
-                      <div>
-                        <h4 className="pr-product-name">📦 {req.product_name}</h4>
-                        <div style={{display:'flex', gap:'8px', flexWrap:'wrap', marginTop:'6px'}}>
-                          {req.status === 'approved' ? (
-                            <span className="pr-badge pr-badge-approved">✓ Verified Request</span>
-                          ) : (
-                            <span className="pr-badge pr-badge-pending">⏳ Pending Review</span>
-                          )}
-                          {req.identity_verified && (
-                            <span className="pr-badge pr-badge-id">🛡️ ID Verified</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="pr-qty-box">
-                        <div className="pr-qty-num">{req.quantity}</div>
-                        <div className="pr-qty-unit">{req.unit}</div>
-                      </div>
-                    </div>
-
-                    {/* Details */}
-                    <div className="pr-details-grid">
-                      <div className="pr-detail">
-                        <div className="pr-detail-label">👤 Stakeholder</div>
-                        <div className="pr-detail-value">{req.full_name}</div>
-                      </div>
-                      <div className="pr-detail">
-                        <div className="pr-detail-label">🏢 Organization</div>
-                        <div className="pr-detail-value">{req.organization_name}</div>
-                      </div>
-                      <div className="pr-detail">
-                        <div className="pr-detail-label">📞 Phone</div>
-                        <div className="pr-detail-value">
-                          <a href={`tel:${req.phone}`} style={{color:'#667eea', textDecoration:'none'}}>{req.phone}</a>
-                        </div>
-                      </div>
-                      <div className="pr-detail">
-                        <div className="pr-detail-label">📍 Location</div>
-                        <div className="pr-detail-value">{req.location}</div>
-                      </div>
-                      <div className="pr-detail">
-                        <div className="pr-detail-label">📅 Date</div>
-                        <div className="pr-detail-value">{new Date(req.created_at).toLocaleDateString()}</div>
-                      </div>
-                      {req.stakeholder_email && (
-                        <div className="pr-detail">
-                          <div className="pr-detail-label">✉️ Email</div>
-                          <div className="pr-detail-value">
-                            <a href={`mailto:${req.stakeholder_email}`} style={{color:'#667eea', textDecoration:'none'}}>{req.stakeholder_email}</a>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {req.notes && (
-                      <div className="pr-notes">
-                        <div className="pr-detail-label">📝 Notes</div>
-                        <div style={{fontSize:'14px', color:'var(--text-muted)', lineHeight:'1.5', marginTop:'4px'}}>{req.notes}</div>
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    {req.status === 'approved' && (
-                      <div className="pr-actions">
-                        <button
-                          className="pr-action-btn pr-msg-btn"
-                          onClick={() => openConversationWithStakeholder(req.stakeholder_id)}
-                        >
-                          💬 Message Stakeholder
-                        </button>
-                        <a href={`tel:${req.phone}`} className="pr-action-btn pr-call-btn">
-                          📞 Call
-                        </a>
-                      </div>
-                    )}
-                    {req.status === 'pending' && (
-                      <div className="pr-pending-notice">
-                        ⏳ This request is under admin review. You'll be able to contact the stakeholder once approved.
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            <TransactionHistory role="industry" onMessage={(stakeholderId) => openConversationWithStakeholder(stakeholderId)} />
           </div>
         )}
         {/* Messages Section */}
@@ -1662,3 +1932,4 @@ function AnalyticsSection({ subStatus, onUpgrade }) {
 }
 
 export default Industry;
+

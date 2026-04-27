@@ -1,12 +1,13 @@
 ﻿import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
-import StakeholderNav from "../../components/StakeholderNav";
-import SubscriptionModal from "../../components/SubscriptionModal";
-import RecommendWidget from "../../components/RecommendWidget";
-import Logo from "../../components/Logo";
-import { getUserLocation, addDistanceToIndustries, sortIndustriesByDistance, formatDistance } from '../../utils/distance';
-import { API_BASE_URL } from '../../utils/api';
+import StakeholderNav from "../components/StakeholderNav";
+import SubscriptionModal from "../components/SubscriptionModal";
+import RecommendWidget from "../components/RecommendWidget";
+import Logo from "../components/Logo";
+import { getUserLocation, addDistanceToIndustries, sortIndustriesByDistance, formatDistance } from '../utils/distance';
+import { imageUrl } from '../utils/imageUrl';
+import { API_BASE_URL } from '../utils/api';
 import "./Stakeholders.css";
 import "./StakeholdersDarkMode.css";
 let socket;
@@ -108,7 +109,7 @@ function Stakeholders() {
         
         // Handle both array response and paginated {industries:[]} response
         const list = Array.isArray(data) ? data : (data.industries || []);
-        
+
         // Add distance information if user location is available
         const industriesWithDistance = userLocation 
           ? addDistanceToIndustries(list, userLocation)
@@ -425,7 +426,21 @@ function Stakeholders() {
                   {displayedIndustries.map((industry) => (
                     <div key={industry.id} className="company-card">
                       <div className="card-top">
-                        <div className="company-logo">
+                        {industry.profile_picture ? (
+                    <img
+                      src={imageUrl(industry.profile_picture)}
+                      alt={industry.company_name}
+                      className="company-cover-img"
+                      onError={e => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    className="company-logo"
+                    style={{ display: industry.profile_picture ? 'none' : 'flex' }}
+                  >
                           {industry.company_name?.charAt(0) || "?"}
                           <span className="badge-verified" title="Verified"></span>
                         </div>
@@ -441,7 +456,13 @@ function Stakeholders() {
                         <div className="company-meta">
                           
                           {industry.sector}
-                          <span className="dot">•</span>
+                          {industry.business_role && (
+                      <>
+                        <span className="dot">•</span>
+                        <span className="business-role-badge">{industry.business_role}</span>
+                      </>
+                    )}
+                    <span className="dot">•</span>
                          
                           {industry.location}
                         </div>

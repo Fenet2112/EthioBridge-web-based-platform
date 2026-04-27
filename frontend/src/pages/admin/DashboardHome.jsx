@@ -40,8 +40,9 @@ export default function DashboardHome({ tok }) {
     Promise.all([
       fetch(`${API}/api/admin/users/all`, { headers }).then(r => r.json()),
       fetch(`${API}/api/admin/purchases`, { headers }).then(r => r.json()),
-    ]).then(([users, purchases]) => {
-      if (!Array.isArray(users)) { setLoading(false); return; }
+    ]).then(([usersResp, purchases]) => {
+      // Handle both plain array and paginated {users:[]} response
+      const users = Array.isArray(usersResp) ? usersResp : (usersResp.users || []);
 
       const industries   = users.filter(u => u.role === "industry" && u.status === "approved");
       const stakeholders = users.filter(u => u.role === "stakeholder" && u.status === "approved");

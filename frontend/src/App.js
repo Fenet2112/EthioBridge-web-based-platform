@@ -1,17 +1,17 @@
 import { Routes, Route } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import Home from "./pages/Home";
-import Stakeholders from "./pages/stakeholder/Stakeholders";
+import Stakeholders from "./pages/Stakeholders";
 import SignUp from "./pages/SignUp";
-import Industry from "./pages/industry/Industry";
+import Industry from "./pages/Industry";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
-import IndustryProfile from "./pages/industry/IndustryProfile";
-import StakeholderProfile from "./pages/stakeholder/StakeholderProfile";
+import IndustryProfile from "./pages/IndustryProfile";
+import StakeholderProfile from "./pages/StakeholderProfile";
 import PendingApproval from "./pages/PendingApproval";
-import IndustryDetailPage from "./pages/stakeholder/IndustryDetailPage";
+import IndustryDetailPage from "./pages/IndustryDetailPage";
 import ProfilePage from "./pages/ProfilePage";
-import StakeholderMessages from "./pages/stakeholder/StakeholderMessages";
+import StakeholderMessages from "./pages/StakeholderMessages";
 import AccountStatus from "./pages/AccountStatus";
 import Products from "./pages/Products";
 import Subscription from "./pages/Subscription";
@@ -23,6 +23,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import AdminLogin from "./pages/admin/Login";
 import Help from "./pages/Help";
 import MyRequests from "./pages/MyRequests";
+import MyTransactions from "./pages/MyTransactions";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Explore from "./pages/Explore";
 
@@ -77,6 +78,9 @@ function App() {
       {/* Support Requests Page */}
       <Route path="/my-requests" element={<MyRequests />} />
 
+      {/* My Transactions Page */}
+      <Route path="/my-transactions" element={<MyTransactions />} />
+
       {/* Help Page */}
       <Route path="/help" element={<Help />} />
 
@@ -101,7 +105,7 @@ function App() {
       <Route path="/account-status" element={<AccountStatus />} />
 
       {/* Industry Detail Page - for stakeholders to view industry and products */}
-      <Route path="/industry/:id" element={<IndustryDetailPage />} />
+      <Route path="/:id" element={<IndustryDetailPage />} />
 
     </Routes>
   );

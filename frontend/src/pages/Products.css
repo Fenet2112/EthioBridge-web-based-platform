@@ -369,7 +369,7 @@
 
 /* ══════════════════════════════════════
    CART
-══════════════════════════════════════ */
+   ══════════════════════════════════════ */
 
 /* Cart count badge on header button */
 .cart-btn {
@@ -667,4 +667,197 @@
 
 @media (max-width: 480px) {
   .cart-drawer { width: 100vw; }
+}
+
+/* ══════════════════════════════════════
+   FILTER PANEL LAYOUT
+   ══════════════════════════════════════ */
+
+.filter-toggle {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 48px 16px;
+}
+
+.toggle-filters-btn {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  color: var(--text);
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+
+.toggle-filters-btn:hover {
+  border-color: #0a5c2f;
+  color: #0a5c2f;
+}
+
+.products-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 48px 60px;
+}
+
+.products-sidebar {
+  width: 100%;
+}
+
+.products-sidebar:not(.show) {
+  display: none;
+}
+
+.products-main {
+  min-width: 0;
+}
+
+.results-summary {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 40px;
+  padding: 20px 0;
+}
+
+.pagination-btn {
+  padding: 10px 24px;
+  background: #0a5c2f;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #064020;
+  transform: translateY(-1px);
+}
+
+.pagination-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.pagination-info {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .products-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .products-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    padding: 14px 20px;
+  }
+
+  .products-layout {
+    padding: 0 16px 40px;
+  }
+
+  .filter-toggle {
+    padding: 0 20px 12px;
+  }
+
+  .products-sidebar.show {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+    padding: 20px;
+  }
+
+  .products-sidebar.show .filter-panel {
+    margin-bottom: 0;
+  }
+}
+
+/* Add to cart button disabled state */
+.add-to-cart-btn.disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.add-to-cart-btn.disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Badge for out of stock */
+.badge-out {
+  background: #dc2626;
+  color: white;
+}
+
+/* ── Always show sidebar on desktop ── */
+@media (min-width: 1025px) {
+  .products-sidebar { display: block !important; }
+  .filter-toggle { display: none; }
+}
+
+/* ── Discount pricing ── */
+.price-original {
+  text-decoration: line-through;
+  color: #9ca3af;
+  font-size: 0.82rem;
+  margin-right: 6px;
+}
+.price-discounted {
+  color: #dc2626 !important;
+}
+.badge-discount {
+  background: #dc2626;
+  color: white;
+}
+
+/* ── Business role badge on card ── */
+.owner-role {
+  background: #e8f5e9;
+  color: #0a5c2f;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+/* ── Popular badge ── */
+.badge-popular {
+  background: #f59e0b;
+  color: white;
 }
