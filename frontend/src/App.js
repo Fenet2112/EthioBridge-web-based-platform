@@ -14,6 +14,7 @@ import ProfilePage from "./pages/ProfilePage";
 import StakeholderMessages from "./pages/StakeholderMessages";
 import AccountStatus from "./pages/AccountStatus";
 import Products from "./pages/Products";
+import CartCheckout from "./pages/CartCheckout";
 import Subscription from "./pages/Subscription";
 import Recommendations from "./pages/Recommendations";
 import GoogleAuthSuccess from "./pages/GoogleAuthSuccess";
@@ -68,6 +69,9 @@ function App() {
 
       {/* Products Page */}
       <Route path="/products" element={<Products />} />
+
+      {/* Cart & Checkout */}
+      <Route path="/cart" element={<CartCheckout />} />
 
       {/* Subscription Page */}
       <Route path="/subscription" element={<Subscription />} />

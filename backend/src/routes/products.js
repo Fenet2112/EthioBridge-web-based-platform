@@ -542,4 +542,79 @@ router.get(
   }
 );
 
+// ========================================
+// INDUSTRY ANALYTICS (chart data — free for all)
+// ========================================
+router.get(
+  "/industry/analytics",
+  authenticateToken,
+  requireRole("industry"),
+  requireApproved,
+  async (req, res) => {
+    try {
+      const industry = await getIndustryForUser(req.user.id);
+      if (!industry) return res.status(404).json({ message: "Industry profile not found" });
+      const id = industry.id;
+
+      const [summary, byProduct, byStatus, overTime] = await Promise.all([
+        // Summary counts
+        pool.query(`
+          SELECT
+            COUNT(*)                                          AS total_requests,
+            COUNT(*) FILTER (WHERE status = 'pending')       AS pending,
+            COUNT(*) FILTER (WHERE status = 'approved')      AS approved,
+            COUNT(*) FILTER (WHERE status = 'rejected')      AS rejected,
+            COUNT(*) FILTER (WHERE status = 'completed')     AS completed,
+            COUNT(DISTINCT stakeholder_id)                   AS unique_stakeholders,
+            COALESCE(SUM(p.price * pr.quantity) FILTER (WHERE pr.status IN ('approved','completed')), 0) AS total_revenue
+          FROM purchase_requests pr
+          LEFT JOIN products p ON p.id = pr.product_id
+          WHERE pr.industry_id = $1
+        `, [id]),
+
+        // Requests per product (top 8)
+        pool.query(`
+          SELECT p.name AS product, COUNT(pr.id) AS requests
+          FROM purchase_requests pr
+          JOIN products p ON p.id = pr.product_id
+          WHERE pr.industry_id = $1
+          GROUP BY p.name
+          ORDER BY requests DESC
+          LIMIT 8
+        `, [id]),
+
+        // Status distribution
+        pool.query(`
+          SELECT status, COUNT(*) AS count
+          FROM purchase_requests
+          WHERE industry_id = $1
+          GROUP BY status
+        `, [id]),
+
+        // Requests over last 30 days
+        pool.query(`
+          SELECT
+            TO_CHAR(DATE_TRUNC('day', created_at), 'Mon DD') AS day,
+            COUNT(*) AS count
+          FROM purchase_requests
+          WHERE industry_id = $1
+            AND created_at >= NOW() - INTERVAL '30 days'
+          GROUP BY DATE_TRUNC('day', created_at)
+          ORDER BY DATE_TRUNC('day', created_at)
+        `, [id]),
+      ]);
+
+      res.json({
+        summary:    summary.rows[0],
+        byProduct:  byProduct.rows,
+        byStatus:   byStatus.rows,
+        overTime:   overTime.rows,
+      });
+    } catch (err) {
+      console.error("Industry analytics error:", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
 module.exports = router;

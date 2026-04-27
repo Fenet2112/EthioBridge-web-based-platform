@@ -22,6 +22,15 @@ function Settings({ darkMode, setDarkMode }) {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [saved, setSaved] = useState(false);
 
+  // General settings (system rules + notifications)
+  const [generalSettings, setGeneralSettings] = useState({
+    free_request_limit: 1,
+    max_products_free: 5,
+    email_alerts_enabled: true,
+    purchase_alerts_enabled: true,
+  });
+  const [generalSaved, setGeneralSaved] = useState(false);
+
   // Approval logs
   const [approvalLogs, setApprovalLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
@@ -55,6 +64,7 @@ function Settings({ darkMode, setDarkMode }) {
   useEffect(() => {
     fetchWorkflows();
     fetchApprovalLogs();
+    fetchGeneralSettings();
   }, []);
 
   useEffect(() => {
@@ -79,6 +89,54 @@ function Settings({ darkMode, setDarkMode }) {
       console.error('Failed to fetch approval logs:', err);
     } finally {
       setLogsLoading(false);
+    }
+  };
+
+  const fetchGeneralSettings = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE_URL}/api/admin/settings/general`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGeneralSettings({
+          free_request_limit:      data.free_request_limit      ?? 1,
+          max_products_free:       data.max_products_free       ?? 5,
+          email_alerts_enabled:    data.email_alerts_enabled    ?? true,
+          purchase_alerts_enabled: data.purchase_alerts_enabled ?? true,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch general settings:', err);
+    }
+  };
+
+  const saveGeneralSettings = async () => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch(`${API_BASE_URL}/api/admin/settings/general`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(generalSettings),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMessage({ type: 'success', text: 'General settings saved successfully' });
+        setGeneralSaved(true);
+        setTimeout(() => setGeneralSaved(false), 2500);
+      } else {
+        setMessage({ type: 'error', text: data.message || 'Failed to save settings' });
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Network error — settings not saved' });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setMessage({ type: '', text: '' }), 4000);
     }
   };
 
@@ -499,82 +557,100 @@ function Settings({ darkMode, setDarkMode }) {
         </div>
       </section>
 
-      {/* Notifications Section */}
-      <section className="settings-section">
-        <div className="section-title">
-          <h2>🔔 Notifications</h2>
-          <p>Configure email and system alerts</p>
-        </div>
-
-        <div className="settings-card">
-          <div className="settings-row">
-            <div>
-              <div className="settings-label">Email Alerts</div>
-              <div className="settings-sub">Receive email for new registrations</div>
-            </div>
-            <button type="button" className="toggle-btn on">
-              <span className="toggle-knob" />
-            </button>
-          </div>
-          <div className="settings-row">
-            <div>
-              <div className="settings-label">Purchase Alerts</div>
-              <div className="settings-sub">Notify on new purchase requests</div>
-            </div>
-            <button type="button" className="toggle-btn on">
-              <span className="toggle-knob" />
-            </button>
-          </div>
-        </div>
-      </section>
-
       {/* System Rules Section */}
-      <section className="settings-section">
-        <div className="section-title">
-          <h2>⚙️ System Rules</h2>
-          <p>Configure platform limits and restrictions</p>
+      <section className="settings-section collapsible">
+        <div className="section-title clickable" onClick={() => toggleSection('systemRules')}>
+          <div>
+            <h2>⚙️ System Rules</h2>
+            <p>Configure platform limits and restrictions</p>
+          </div>
+          <span className={`collapse-icon ${expandedSections.systemRules ? 'expanded' : ''}`}>▼</span>
         </div>
 
-        <div className="settings-card">
-          <div className="settings-field">
-            <label>Free Request Limit per User</label>
-            <input type="number" defaultValue={1} className="settings-input" />
+        {expandedSections.systemRules && (
+          <div className="section-content">
+            <div className="settings-card">
+              <div className="settings-field">
+                <label>Free Request Limit per User</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={generalSettings.free_request_limit}
+                  onChange={e => setGeneralSettings(s => ({ ...s, free_request_limit: parseInt(e.target.value) || 0 }))}
+                  className="settings-input"
+                />
+                <p className="settings-hint">How many purchase requests non-subscribed users can make</p>
+              </div>
+              <div className="settings-field">
+                <label>Max Products per Industry (Free)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={generalSettings.max_products_free}
+                  onChange={e => setGeneralSettings(s => ({ ...s, max_products_free: parseInt(e.target.value) || 0 }))}
+                  className="settings-input"
+                />
+                <p className="settings-hint">Product listing limit for non-premium industry accounts</p>
+              </div>
+            </div>
           </div>
-          <div className="settings-field">
-            <label>Max Products per Industry (Free)</label>
-            <input type="number" defaultValue={5} className="settings-input" />
-          </div>
-        </div>
+        )}
       </section>
 
-      {/* Categories Section */}
-      <section className="settings-section">
-        <div className="section-title">
-          <h2>🏷️ Categories</h2>
-          <p>Manage industry sectors and classifications</p>
+      {/* Notifications Section */}
+      <section className="settings-section collapsible">
+        <div className="section-title clickable" onClick={() => toggleSection('notifications')}>
+          <div>
+            <h2>🔔 Notifications</h2>
+            <p>Configure email and system alerts</p>
+          </div>
+          <span className={`collapse-icon ${expandedSections.notifications ? 'expanded' : ''}`}>▼</span>
         </div>
 
-        <div className="settings-card">
-          <div className="settings-field">
-            <label>Industry Sectors (comma-separated)</label>
-            <textarea 
-              className="settings-textarea" 
-              defaultValue="Agriculture, Manufacturing, Technology, Healthcare, Finance, Energy, Retail, Construction" 
-              rows={3} 
-            />
+        {expandedSections.notifications && (
+          <div className="section-content">
+            <div className="settings-card">
+              <div className="settings-row">
+                <div>
+                  <div className="settings-label">Email Alerts</div>
+                  <div className="settings-sub">Receive email for new registrations</div>
+                </div>
+                <button
+                  type="button"
+                  className={`toggle-btn ${generalSettings.email_alerts_enabled ? 'on' : ''}`}
+                  onClick={() => setGeneralSettings(s => ({ ...s, email_alerts_enabled: !s.email_alerts_enabled }))}
+                >
+                  <span className="toggle-knob" />
+                </button>
+              </div>
+              <div className="settings-row">
+                <div>
+                  <div className="settings-label">Purchase Alerts</div>
+                  <div className="settings-sub">Notify on new purchase requests</div>
+                </div>
+                <button
+                  type="button"
+                  className={`toggle-btn ${generalSettings.purchase_alerts_enabled ? 'on' : ''}`}
+                  onClick={() => setGeneralSettings(s => ({ ...s, purchase_alerts_enabled: !s.purchase_alerts_enabled }))}
+                >
+                  <span className="toggle-knob" />
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </section>
 
-      {/* Save Button for General Settings */}
+      {/* Save Button */}
       <div style={{ marginTop: 24, paddingBottom: 24 }}>
-        <button 
+        <button
           type="button"
-          className="btn-primary" 
-          style={{ width: "auto", padding: "12px 32px" }} 
-          onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2000); }}
+          className="btn-primary"
+          style={{ width: 'auto', padding: '12px 32px' }}
+          onClick={saveGeneralSettings}
+          disabled={saving}
         >
-          {saved ? "✓ Saved!" : "Save General Settings"}
+          {saving ? 'Saving...' : generalSaved ? '✓ Saved!' : 'Save General Settings'}
         </button>
       </div>
     </div>

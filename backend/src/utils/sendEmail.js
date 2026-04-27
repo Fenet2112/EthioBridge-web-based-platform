@@ -1,43 +1,42 @@
 const nodemailer = require('nodemailer');
 
-// Gmail SMTP Configuration
-const createTransporter = () => {
+// Gmail SMTP Configuration — lazy-created so env vars are always fresh
+let _transporter = null;
+let _transporterVerified = false;
+
+const getTransporter = () => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.warn('[EMAIL] ⚠️  EMAIL_USER or EMAIL_PASS not set - email functionality disabled');
     return null;
   }
-
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // Use STARTTLS
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS, // Must be Gmail App Password (16 characters)
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-  });
+  if (!_transporter) {
+    _transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 15000,
+    });
+  }
+  return _transporter;
 };
 
-const transporter = createTransporter();
-
-// Verify transporter configuration on startup (only if transporter exists)
-if (transporter) {
-  transporter.verify((error, success) => {
-    if (error) {
-      console.error('[EMAIL] ❌ Gmail SMTP connection failed:', error.message);
-      console.error('[EMAIL] Please check:');
-      console.error('  1. EMAIL_USER is set correctly');
-      console.error('  2. EMAIL_PASS is a Gmail App Password (not regular password)');
-      console.error('  3. 2-Step Verification is enabled on Gmail account');
-    } else {
-      console.log('[EMAIL] ✓ Gmail SMTP connection verified successfully');
-      console.log(`[EMAIL] Using email: ${process.env.EMAIL_USER}`);
-    }
-  });
-}
+// Verify on first use (once)
+const verifyTransporter = async (t) => {
+  if (_transporterVerified) return;
+  try {
+    await t.verify();
+    _transporterVerified = true;
+    console.log(`[EMAIL] ✅ Gmail SMTP verified — sending as ${process.env.EMAIL_USER}`);
+  } catch (err) {
+    console.error('[EMAIL] ❌ Gmail SMTP verification failed:', err.message);
+    console.error('[EMAIL] Check: EMAIL_USER, EMAIL_PASS (must be 16-char App Password), 2FA enabled on Gmail');
+  }
+};
 
 const FROM = () => `"EthioBridge" <${process.env.EMAIL_USER}>`;
 const APP  = () => process.env.APP_URL || 'http://localhost:3000';
@@ -45,17 +44,18 @@ const BACKEND = () => process.env.BACKEND_URL || 'http://localhost:5000';
 
 // Helper function to safely send emails
 const safeSendMail = async (mailOptions, emailType = 'email') => {
-  if (!transporter) {
-    console.warn(`[EMAIL] ⚠️  Email not configured - skipping ${emailType}`);
+  const t = getTransporter();
+  if (!t) {
+    console.warn(`[EMAIL] ⚠️  EMAIL_USER/EMAIL_PASS not configured — skipping ${emailType}`);
     return { skipped: true };
   }
-  
+  await verifyTransporter(t);
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[EMAIL] ✓ ${emailType} sent successfully`);
+    const info = await t.sendMail(mailOptions);
+    console.log(`[EMAIL] ✅ ${emailType} sent — messageId: ${info.messageId}`);
     return info;
   } catch (error) {
-    console.error(`[EMAIL] ❌ Failed to send ${emailType}:`, error.message);
+    console.error(`[EMAIL] ❌ Failed to send ${emailType} to ${mailOptions.to}:`, error.message);
     throw error;
   }
 };
@@ -86,42 +86,29 @@ const wrap = (title, body) => `
 
 // ── 1. Email Verification ──
 const sendVerificationEmail = async (userEmail, token) => {
-  if (!transporter) {
+  const t = getTransporter();
+  if (!t) {
     console.warn('[EMAIL] ⚠️  Email not configured - skipping verification email');
     return { skipped: true };
   }
 
-  try {
-    // Link goes to backend which verifies token then redirects to frontend
-    const backendUrl = BACKEND();
-    const link = `${backendUrl}/api/verify-email?token=${token}`;
-    
-    console.log(`[EMAIL] 📧 Preparing verification email for ${userEmail}`);
-    console.log(`[EMAIL] Verification link: ${link}`);
-    
-    const info = await safeSendMail({
-      from: FROM(),
-      to: userEmail,
-      subject: 'Verify your EthioBridge email address',
-      html: wrap('Email Verification', `
-        <p>Hi there,</p>
-        <p>Thanks for signing up on <strong>EthioBridge</strong>! Please verify your email address to activate your account.</p>
-        <a href="${link}" class="btn">✉️ Verify Email Address</a>
-        <p style="font-size:13px;color:#888">Or copy this link into your browser:<br>
-        <a href="${link}" style="color:#0a5c2f;word-break:break-all">${link}</a></p>
-        <p style="font-size:13px;color:#888">This link expires in <strong>24 hours</strong>.</p>
-        <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
-        <p style="font-size:13px;color:#888">You signed up using this email address. If this was not you, please ignore this message or contact support.</p>
-      `),
-    }, 'verification email');
-    
-    console.log(`[EMAIL] Message ID: ${info.messageId}`);
-    return info;
-  } catch (error) {
-    console.error(`[EMAIL] ❌ Failed to send verification email to ${userEmail}`);
-    console.error(`[EMAIL] Full error:`, error);
-    throw error;
-  }
+  const backendUrl = BACKEND();
+  const link = `${backendUrl}/api/verify-email?token=${token}`;
+  console.log(`[EMAIL] 📧 Sending verification email to ${userEmail}`);
+
+  return safeSendMail({
+    from: FROM(),
+    to: userEmail,
+    subject: 'Verify your EthioBridge email address',
+    html: wrap('Email Verification', `
+      <p>Hi there,</p>
+      <p>Thanks for signing up on <strong>EthioBridge</strong>! Please verify your email address to activate your account.</p>
+      <a href="${link}" class="btn">✉️ Verify Email Address</a>
+      <p style="font-size:13px;color:#888">Or copy this link into your browser:<br>
+      <a href="${link}" style="color:#0a5c2f;word-break:break-all">${link}</a></p>
+      <p style="font-size:13px;color:#888">This link expires in <strong>24 hours</strong>.</p>
+    `),
+  }, 'verification email');
 };
 
 // ── 2. Signup Notification ──
@@ -251,7 +238,26 @@ const sendPasswordResetEmail = async (userEmail, token) => {
   }, 'password reset email');
 };
 
+// ── Generic sendEmail (used by contact.js and other routes) ──
+const sendEmail = async (to, subject, html) => {
+  if (!to || !subject) {
+    console.warn('[EMAIL] ⚠️  sendEmail called with missing to/subject — skipping');
+    return { skipped: true };
+  }
+  console.log(`[EMAIL] 📧 Sending "${subject}" to ${to}`);
+  const info = await safeSendMail({
+    from: FROM(),
+    to,
+    subject,
+    html,
+    text: html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(), // plain-text fallback
+  }, `"${subject}"`);
+  console.log(`[EMAIL] ✅ Delivered to ${to} — messageId: ${info?.messageId || 'n/a'}`);
+  return info;
+};
+
 module.exports = {
+  sendEmail,
   sendVerificationEmail,
   sendSignupNotification,
   sendApprovalEmail,

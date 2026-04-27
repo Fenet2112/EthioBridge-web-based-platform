@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const { sendApprovalEmail, sendRejectionEmail, sendSuspensionEmail } = require('../utils/sendEmail');
@@ -534,7 +534,7 @@ router.get('/industries', requireAdminAuth, async (req, res) => {
       JOIN users u ON u.id = i.user_id
       LEFT JOIN products p ON p.industry_id = i.id
       LEFT JOIN purchase_requests pr ON pr.industry_id = i.id
-      WHERE u.status = 'approved'
+      WHERE 1=1
     `;
 
     const queryParams = [];
@@ -654,7 +654,7 @@ router.get('/products', requireAdminAuth, async (req, res) => {
       JOIN industries i ON i.id = p.industry_id
       JOIN users u ON u.id = i.user_id
       LEFT JOIN purchase_requests pr ON pr.product_id = p.id
-      WHERE u.status = 'approved'
+      WHERE 1=1
     `;
 
     const queryParams = [];
@@ -932,6 +932,79 @@ router.get('/settings/profile', requireAdminAuth, async (req, res) => {
   } catch (error) {
     console.error('Get admin profile error:', error);
     res.status(500).json({ message: 'Failed to get profile' });
+  }
+});
+
+// ========================================
+// GENERAL SYSTEM SETTINGS
+// ========================================
+
+const ENSURE_SETTINGS_TABLE = `
+  CREATE TABLE IF NOT EXISTS system_settings (
+    id                        INTEGER PRIMARY KEY DEFAULT 1,
+    free_request_limit        INTEGER NOT NULL DEFAULT 1,
+    max_products_free         INTEGER NOT NULL DEFAULT 5,
+    email_alerts_enabled      BOOLEAN NOT NULL DEFAULT TRUE,
+    purchase_alerts_enabled   BOOLEAN NOT NULL DEFAULT TRUE,
+    updated_at                TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+  INSERT INTO system_settings (id, free_request_limit, max_products_free, email_alerts_enabled, purchase_alerts_enabled)
+  VALUES (1, 1, 5, true, true)
+  ON CONFLICT (id) DO NOTHING;
+`;
+
+// GET general settings
+router.get('/settings/general', requireAdminAuth, async (req, res) => {
+  try {
+    await pool.query(ENSURE_SETTINGS_TABLE);
+    const result = await pool.query('SELECT * FROM system_settings WHERE id = 1');
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('[Admin] get general settings error:', err.message);
+    res.json({
+      free_request_limit: 1,
+      max_products_free: 5,
+      email_alerts_enabled: true,
+      purchase_alerts_enabled: true,
+    });
+  }
+});
+
+// PUT general settings
+router.put('/settings/general', requireAdminAuth, async (req, res) => {
+  try {
+    const {
+      free_request_limit,
+      max_products_free,
+      email_alerts_enabled,
+      purchase_alerts_enabled,
+    } = req.body;
+
+    // Ensure table exists first
+    await pool.query(ENSURE_SETTINGS_TABLE);
+
+    const result = await pool.query(`
+      INSERT INTO system_settings (id, free_request_limit, max_products_free, email_alerts_enabled, purchase_alerts_enabled, updated_at)
+      VALUES (1, $1, $2, $3, $4, NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        free_request_limit      = EXCLUDED.free_request_limit,
+        max_products_free       = EXCLUDED.max_products_free,
+        email_alerts_enabled    = EXCLUDED.email_alerts_enabled,
+        purchase_alerts_enabled = EXCLUDED.purchase_alerts_enabled,
+        updated_at              = NOW()
+      RETURNING *
+    `, [
+      parseInt(free_request_limit) || 1,
+      parseInt(max_products_free)  || 5,
+      email_alerts_enabled  !== undefined ? Boolean(email_alerts_enabled)  : true,
+      purchase_alerts_enabled !== undefined ? Boolean(purchase_alerts_enabled) : true,
+    ]);
+
+    console.log('[Admin] General settings saved:', result.rows[0]);
+    res.json({ message: 'Settings saved successfully', settings: result.rows[0] });
+  } catch (err) {
+    console.error('[Admin] save general settings error:', err.message);
+    res.status(500).json({ message: 'Failed to save settings: ' + err.message });
   }
 });
 

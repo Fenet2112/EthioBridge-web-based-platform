@@ -6,7 +6,7 @@ import {
   FaIndustry, FaQuestionCircle, FaTimes, FaLock, FaClock, FaCheckCircle,
   FaHandshake, FaShieldAlt, FaCheck, FaTimes as FaTimesCircle, FaPlus,
   FaStar, FaExclamationTriangle, FaInfoCircle, FaPhone, FaMapMarkerAlt,
-  FaEnvelope, FaBuilding, FaCalendar, FaBell
+  FaEnvelope, FaBuilding, FaCalendar, FaBell, FaPaperPlane
 } from "react-icons/fa";
 import { API_BASE_URL } from "../utils/api";
 import SubscriptionModal from "../components/SubscriptionModal";
@@ -1706,31 +1706,58 @@ function Industry() {
         {/* Messages Section */}
         {canAccessOtherSections && activeSection === "messages" && (
           <div className="messages-section">
-            <h2>Communicate with Stakeholders {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}</h2>
-            
+            <div className="messages-section-header">
+              <h2>
+                <FaComments />
+                Stakeholder Messages
+                {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}
+              </h2>
+            </div>
+
             <div className="messages-container">
               {/* Conversations List */}
               <div className="conversations-list">
+                {/* Search */}
+                <div className="conv-search-wrap">
+                  <input
+                    className="conv-search-input"
+                    type="text"
+                    placeholder="Search conversations..."
+                  />
+                </div>
                 <h3>Conversations</h3>
                 {conversations.length === 0 ? (
-                  <p className="no-conversations">No conversations yet. Stakeholders will appear here when they message you.</p>
+                  <p className="no-conversations">No conversations yet.<br />Stakeholders will appear here when they message you.</p>
                 ) : (
-                  conversations.map(conv => (
-                    <div
-                      key={conv.id}
-                      className={`conversation-item ${selectedConversation?.id === conv.id ? 'active' : ''}`}
-                      onClick={() => loadMessages(conv)}
-                    >
-                      <div className="conv-avatar">{conv.organization_name?.charAt(0) || 'S'}</div>
-                      <div className="conv-info">
-                        <h4>{conv.organization_name}</h4>
-                        <p className="last-message">{conv.last_message || 'No messages yet'}</p>
+                  conversations.map(conv => {
+                    const displayName = conv.contact_person || conv.organization_name || 'Unknown';
+                    const initials = displayName.charAt(0).toUpperCase();
+                    const lastTime = conv.last_message_at
+                      ? new Date(conv.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : '';
+                    return (
+                      <div
+                        key={conv.id}
+                        className={`conversation-item ${selectedConversation?.id === conv.id ? 'active' : ''}`}
+                        onClick={() => loadMessages(conv)}
+                      >
+                        <div className="conv-avatar">{initials}</div>
+                        <div className="conv-info">
+                          <h4>{displayName}</h4>
+                          {conv.organization_name && conv.contact_person && (
+                            <p className="conv-org">{conv.organization_name}</p>
+                          )}
+                          <p className="last-message">{conv.last_message || 'No messages yet'}</p>
+                        </div>
+                        <div className="conv-meta">
+                          {lastTime && <span className="conv-time">{lastTime}</span>}
+                          {conv.unread_count > 0 && (
+                            <span className="unread-count">{conv.unread_count}</span>
+                          )}
+                        </div>
                       </div>
-                      {conv.unread_count > 0 && (
-                        <span className="unread-count">{conv.unread_count}</span>
-                      )}
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
 
@@ -1744,41 +1771,58 @@ function Industry() {
                   <>
                     <div className="messages-header">
                       <div className="stakeholder-info">
-                        <div className="stakeholder-avatar">{selectedConversation.organization_name?.charAt(0) || 'S'}</div>
+                        <div className="stakeholder-avatar">
+                          {(selectedConversation.contact_person || selectedConversation.organization_name)?.charAt(0)?.toUpperCase() || 'S'}
+                        </div>
                         <div>
-                          <h3>{selectedConversation.organization_name}</h3>
-                          <p>{selectedConversation.organization_type}</p>
+                          <h3>{selectedConversation.contact_person || selectedConversation.organization_name || 'Unknown'}</h3>
+                          <p>
+                            {selectedConversation.organization_name}
+                            {selectedConversation.organization_type ? ` · ${selectedConversation.organization_type}` : ''}
+                          </p>
+                          {selectedConversation.stakeholder_email && (
+                            <p className="stakeholder-email">{selectedConversation.stakeholder_email}</p>
+                          )}
                         </div>
                       </div>
                     </div>
 
                     <div className="messages-list">
                       {messagesLoading ? (
-                        <p>Loading messages...</p>
+                        <p className="no-messages">Loading messages...</p>
                       ) : messages.length === 0 ? (
                         <p className="no-messages">No messages yet. Start the conversation!</p>
                       ) : (
                         <>
-                          {messages.map(msg => (
-                            <div
-                              key={msg.id}
-                              className={`message-bubble ${msg.sender_role === 'industry' ? 'sent' : 'received'}`}
-                            >
-                              <div className="message-content">
-                                {msg.content}
-                                {msg.file_url && (
-                                  <div className="message-attachment">
-                                    <a href={`${API_BASE_URL}${msg.file_url}`} target="_blank" rel="noopener noreferrer" className="attachment-link">
-                                      📎 {msg.file_name || 'Download attachment'}
-                                    </a>
-                                  </div>
+                          {messages.map(msg => {
+                            const isSent = msg.sender_role === 'industry';
+                            const senderDisplay = isSent
+                              ? 'You'
+                              : (msg.sender_name || selectedConversation.contact_person || selectedConversation.organization_name || 'Unknown');
+                            return (
+                              <div
+                                key={msg.id}
+                                className={`message-bubble ${isSent ? 'sent' : 'received'}`}
+                              >
+                                {!isSent && (
+                                  <div className="msg-sender-name">{senderDisplay}</div>
                                 )}
+                                <div className="message-content">
+                                  {msg.content}
+                                  {msg.file_url && (
+                                    <div className="message-attachment">
+                                      <a href={`${API_BASE_URL}${msg.file_url}`} target="_blank" rel="noopener noreferrer" className="attachment-link">
+                                        📎 {msg.file_name || 'Download attachment'}
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="message-time">
+                                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
                               </div>
-                              <div className="message-time">
-                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                           <div ref={messagesEndRef} />
                         </>
                       )}
@@ -1799,9 +1843,9 @@ function Industry() {
                           style={{ display: 'none' }}
                           accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
                         />
-                        <button 
-                          type="button" 
-                          onClick={() => fileInputRef.current?.click()} 
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
                           className="attach-btn"
                           title="Attach file"
                         >
@@ -1809,13 +1853,19 @@ function Industry() {
                         </button>
                         <input
                           type="text"
-                          placeholder="Type your message..."
+                          placeholder="Type a message..."
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                         />
-                        <button onClick={sendMessage} disabled={!newMessage.trim() && !selectedFile}>
-                          Send
+                        <button
+                          className="send-message-btn"
+                          onClick={sendMessage}
+                          disabled={!newMessage.trim() && !selectedFile}
+                          title="Send"
+                          style={{ color: '#ffffff' }}
+                        >
+                          <FaPaperPlane style={{ color: '#ffffff', fill: '#ffffff' }} />
                         </button>
                       </div>
                     </div>
@@ -1855,76 +1905,165 @@ function Industry() {
 }
 
 function AnalyticsSection({ subStatus, onUpgrade }) {
-  const [analytics, setAnalytics] = useState(null);
+  const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch(`${API_BASE_URL}/api/subscription/analytics`, {
+    fetch(`${API_BASE_URL}/api/industry/analytics`, {
       headers: { Authorization: `Bearer ${token}` }
-    }).then(r => r.json()).then(setAnalytics).catch(() => {}).finally(() => setLoading(false));
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(setData)
+      .catch(() => setError("Failed to load analytics"))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={{ padding: "40px", textAlign: "center", color: "#999" }}>Loading analytics...</div>;
+  if (loading) return (
+    <div className="an-loading">
+      <div className="an-spinner" />
+      <span>Loading analytics...</span>
+    </div>
+  );
 
+  if (error) return (
+    <div className="an-error">{error}</div>
+  );
+
+  const s = data?.summary || {};
   const isPremium = subStatus?.is_subscribed;
 
-  return (
-    <div style={{ padding: "0 0 40px" }}>
-      <div style={{ marginBottom: "28px" }}>
-        <h2 style={{ margin: "0 0 6px", fontSize: "1.4rem", fontWeight: 800, color: "#0d1b2a" }}>Analytics</h2>
-        <p style={{ margin: 0, color: "#777", fontSize: "0.9rem" }}>
-          {isPremium ? "Full analytics — Premium plan" : "Basic analytics — Upgrade for full insights"}
-        </p>
-      </div>
+  const STATUS_COLORS = {
+    pending:   "#f59e0b",
+    approved:  "#0a5c2f",
+    rejected:  "#dc2626",
+    completed: "#3b82f6",
+  };
 
-      {/* Basic stat always visible */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px", marginBottom: "28px" }}>
-        <div style={{ background: "white", borderRadius: "16px", padding: "24px", border: "1px solid #f0f0f0", textAlign: "center" }}>
-          <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "#667eea" }}>{analytics?.total_profile_views || 0}</div>
-          <div style={{ fontSize: "0.85rem", color: "#888", marginTop: "6px" }}>Profile Views</div>
-        </div>
-
-        {isPremium ? (
-          <>
-            <div style={{ background: "white", borderRadius: "16px", padding: "24px", border: "1px solid #f0f0f0", textAlign: "center" }}>
-              <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "#0a5c2f" }}>{analytics?.total_product_clicks || 0}</div>
-              <div style={{ fontSize: "0.85rem", color: "#888", marginTop: "6px" }}>Product Clicks</div>
-            </div>
-            <div style={{ background: "white", borderRadius: "16px", padding: "24px", border: "1px solid #f0f0f0", textAlign: "center" }}>
-              <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "#f59e0b" }}>{analytics?.total_purchase_requests || 0}</div>
-              <div style={{ fontSize: "0.85rem", color: "#888", marginTop: "6px" }}>Purchase Requests</div>
-            </div>
-          </>
-        ) : (
-          <>
-            {["Product Clicks", "Purchase Requests"].map(label => (
-              <div key={label} style={{ background: "#f8f9fc", borderRadius: "16px", padding: "24px", border: "2px dashed #e0e0e0", textAlign: "center", position: "relative" }}>
-                <div style={{ fontSize: "2.2rem", fontWeight: 900, color: "#ccc", filter: "blur(4px)" }}>42</div>
-                <div style={{ fontSize: "0.85rem", color: "#bbb", marginTop: "6px" }}>{label}</div>
-                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "6px" }}>
-                  <span style={{ fontSize: "1.2rem" }}>🔒</span>
-                  <span style={{ fontSize: "0.75rem", color: "#888", fontWeight: 600 }}>Premium Only</span>
-                </div>
+  const BarChart = ({ items, color = "#0a5c2f" }) => {
+    if (!items?.length) return <div className="an-empty">No data yet</div>;
+    const max = Math.max(...items.map(i => Number(i.requests || i.count || 0)), 1);
+    return (
+      <div className="an-bar-list">
+        {items.map((item, i) => {
+          const val = Number(item.requests || item.count || 0);
+          const pct = (val / max) * 100;
+          return (
+            <div key={i} className="an-bar-row">
+              <div className="an-bar-label">{item.product || item.status || item.day}</div>
+              <div className="an-bar-track">
+                <div className="an-bar-fill" style={{ width: `${pct}%`, background: color, minWidth: val > 0 ? 4 : 0 }} />
               </div>
-            ))}
-          </>
-        )}
+              <div className="an-bar-val">{val}</div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const DonutChart = ({ items }) => {
+    if (!items?.length) return <div className="an-empty">No data yet</div>;
+    const total = items.reduce((s, i) => s + Number(i.count), 0);
+    if (total === 0) return <div className="an-empty">No requests yet</div>;
+    let offset = 0;
+    const r = 40, cx = 60, cy = 60, stroke = 18;
+    const circ = 2 * Math.PI * r;
+    return (
+      <div className="an-donut-wrap">
+        <svg width={120} height={120} viewBox="0 0 120 120">
+          {items.map((item, i) => {
+            const pct = Number(item.count) / total;
+            const dash = pct * circ;
+            const el = (
+              <circle key={i} cx={cx} cy={cy} r={r}
+                fill="none"
+                stroke={STATUS_COLORS[item.status] || "#9ca3af"}
+                strokeWidth={stroke}
+                strokeDasharray={`${dash} ${circ - dash}`}
+                strokeDashoffset={-offset * circ}
+              />
+            );
+            offset += pct;
+            return el;
+          })}
+          <text x={cx} y={cy + 5} textAnchor="middle" fontSize={14} fontWeight={700} fill="#111827">{total}</text>
+        </svg>
+        <div className="an-donut-legend">
+          {items.map((item, i) => (
+            <div key={i} className="an-legend-row">
+              <div className="an-legend-dot" style={{ background: STATUS_COLORS[item.status] || "#9ca3af" }} />
+              <span className="an-legend-label">{item.status}</span>
+              <span className="an-legend-val">{item.count}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const statCards = [
+    { label: "Total Requests",   value: s.total_requests      || 0, color: "#0a5c2f", icon: "📋" },
+    { label: "Pending",          value: s.pending             || 0, color: "#f59e0b", icon: "⏳" },
+    { label: "Approved",         value: s.approved            || 0, color: "#16a34a", icon: "✅" },
+    { label: "Stakeholders",     value: s.unique_stakeholders || 0, color: "#3b82f6", icon: "🤝" },
+  ];
+
+  return (
+    <div className="an-page">
+
+      {/* Header */}
+      <div className="an-header">
+        <h2 className="an-title">Analytics</h2>
+        <p className="an-subtitle">Business performance overview — last 30 days</p>
       </div>
 
+      {/* Stat cards */}
+      <div className="an-stats-grid">
+        {statCards.map(c => (
+          <div key={c.label} className="an-stat-card" style={{ borderTopColor: c.color }}>
+            <div className="an-stat-icon">{c.icon}</div>
+            <div className="an-stat-value" style={{ color: c.color }}>{c.value}</div>
+            <div className="an-stat-label">{c.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Charts row */}
+      <div className="an-charts-row">
+        <div className="an-chart-card">
+          <h3 className="an-chart-title">📦 Product Performance</h3>
+          <BarChart items={data?.byProduct} color="#0a5c2f" />
+        </div>
+        <div className="an-chart-card">
+          <h3 className="an-chart-title">🥧 Request Status</h3>
+          <DonutChart items={data?.byStatus} />
+        </div>
+      </div>
+
+      {/* Timeline */}
+      <div className="an-chart-card">
+        <h3 className="an-chart-title">📈 Requests Over Last 30 Days</h3>
+        <BarChart items={data?.overTime?.map(d => ({ product: d.day, requests: d.count }))} color="#3b82f6" />
+      </div>
+
+      {/* Revenue banner */}
+      <div className="an-revenue-card">
+        <div>
+          <div className="an-revenue-label">Estimated Revenue (Approved + Completed)</div>
+          <div className="an-revenue-value">{Number(s.total_revenue || 0).toLocaleString()} ETB</div>
+        </div>
+        <div className="an-revenue-icon">💰</div>
+      </div>
+
+      {/* Premium upsell */}
       {!isPremium && (
-        <div style={{ background: "linear-gradient(135deg, #667eea15, #764ba215)", border: "2px solid #667eea30", borderRadius: "16px", padding: "28px", textAlign: "center" }}>
-          <div style={{ fontSize: "2rem", marginBottom: "10px" }}>📊</div>
-          <h3 style={{ margin: "0 0 8px", color: "#0d1b2a", fontSize: "1.1rem" }}>Unlock Full Analytics</h3>
-          <p style={{ margin: "0 0 20px", color: "#777", fontSize: "0.9rem" }}>
-            See product clicks, interested stakeholders, and 30-day activity trends with Premium.
-          </p>
-          <button
-            onClick={onUpgrade}
-            style={{ background: "linear-gradient(135deg, #667eea, #764ba2)", color: "white", border: "none", padding: "12px 28px", borderRadius: "10px", fontWeight: 700, cursor: "pointer", fontSize: "0.95rem" }}
-          >
-            ⭐ Upgrade to Premium
-          </button>
+        <div className="an-upsell">
+          <div className="an-upsell-icon">⭐</div>
+          <h3 className="an-upsell-title">Unlock Advanced Insights</h3>
+          <p className="an-upsell-desc">AI-powered forecasting, stakeholder profiles, and detailed 90-day reports.</p>
+          <button className="an-upsell-btn" onClick={onUpgrade}>Upgrade to Premium</button>
         </div>
       )}
     </div>

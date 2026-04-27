@@ -75,6 +75,7 @@ const messageRoutes = require("./routes/messages.js");
 const subscriptionRoutes = require("./routes/subscription.js");
 const profileRoutes = require("./routes/profile.js");
 const contactRoutes = require("./routes/contact.js");
+const notificationRoutes = require("./routes/notifications.js");
 
 app.use("/api", authRoutes);
 app.use("/api/admin", adminRoutes);
@@ -85,6 +86,7 @@ app.use("/api", messageRoutes);
 app.use("/api", subscriptionRoutes);
 app.use("/api", profileRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/industry/notifications", notificationRoutes);
 
 // Test routes
 app.get("/", (req, res) => {
@@ -280,6 +282,26 @@ server.listen(PORT, () => {
     } else {
       console.log('✅ Database connected successfully');
     }
+  });
+
+  // Auto-create system_settings table if it doesn't exist
+  pool.query(`
+    CREATE TABLE IF NOT EXISTS system_settings (
+      id                        SERIAL PRIMARY KEY,
+      free_request_limit        INTEGER NOT NULL DEFAULT 1,
+      max_products_free         INTEGER NOT NULL DEFAULT 5,
+      email_alerts_enabled      BOOLEAN NOT NULL DEFAULT TRUE,
+      purchase_alerts_enabled   BOOLEAN NOT NULL DEFAULT TRUE,
+      updated_at                TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `).then(() => pool.query(`
+    INSERT INTO system_settings (id, free_request_limit, max_products_free, email_alerts_enabled, purchase_alerts_enabled)
+    VALUES (1, 1, 5, true, true)
+    ON CONFLICT (id) DO NOTHING
+  `)).then(() => {
+    console.log('✅ system_settings table ready');
+  }).catch(err => {
+    console.error('⚠️  system_settings setup failed (non-fatal):', err.message);
   });
 
   // Ensure Supabase Storage buckets exist

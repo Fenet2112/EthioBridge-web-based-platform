@@ -3,7 +3,8 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { 
   FaIndustry, FaComments, FaBox, FaStar, FaUser, FaQuestionCircle,
-  FaLink, FaTimes, FaHome, FaDoorOpen, FaClipboardList, FaBell
+  FaLink, FaTimes, FaHome, FaDoorOpen, FaClipboardList, FaBell,
+  FaShoppingCart
 } from "react-icons/fa";
 import ProfileDropdown from "./ProfileDropdown";
 import DarkModeToggle from "./DarkModeToggle";
@@ -148,8 +149,11 @@ function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, reques
         
         {/* Right side — always visible */}
         <div className="sk-nav-right">
+          <Link to="/cart" className="sk-nav-home sk-cart-btn" title="Cart">
+            <FaShoppingCart />
+          </Link>
           <Link to="/" className="sk-nav-home" title="Back to Home">
-            <span className="material-icon">home</span>
+            <FaHome />
           </Link>
 
           {/* Notification Bell */}
