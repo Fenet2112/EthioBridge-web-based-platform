@@ -3,14 +3,12 @@ const router = express.Router();
 const pool = require("../config/db");
 const { authenticateToken, requireRole } = require("../middleware/auth");
 
-// ── GET CART ──
 router.get("/cart", authenticateToken, requireRole("stakeholder"), async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT
-         ci.id, ci.quantity, ci.created_at,
-         p.id AS product_id, p.name, p.price, p.unit, p.category, p.image_url,
-         i.company_name
+      `SELECT ci.id, ci.quantity, ci.created_at,
+              p.id AS product_id, p.name, p.price, p.unit, p.category, p.image_url,
+              i.company_name
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
        JOIN industries i ON i.id = p.industry_id
@@ -25,16 +23,18 @@ router.get("/cart", authenticateToken, requireRole("stakeholder"), async (req, r
   }
 });
 
-// ── ADD / UPDATE ITEM ──
 router.post("/cart", authenticateToken, requireRole("stakeholder"), async (req, res) => {
   const { product_id, quantity = 1 } = req.body;
   if (!product_id) return res.status(400).json({ message: "product_id is required" });
 
   try {
-    // Verify product exists
-    const prod = await pool.query("SELECT id FROM products WHERE id = $1 AND is_available = true", [product_id]);
+    const prod = await pool.query(
+      "SELECT id FROM products WHERE id = $1 AND is_available = true",
+      [product_id]
+    );
     if (prod.rows.length === 0) return res.status(404).json({ message: "Product not found" });
 
+    // Upsert — add to existing quantity if already in cart
     const result = await pool.query(
       `INSERT INTO cart_items (user_id, product_id, quantity)
        VALUES ($1, $2, $3)
@@ -50,7 +50,6 @@ router.post("/cart", authenticateToken, requireRole("stakeholder"), async (req, 
   }
 });
 
-// ── UPDATE QUANTITY ──
 router.patch("/cart/:product_id", authenticateToken, requireRole("stakeholder"), async (req, res) => {
   const { product_id } = req.params;
   const { quantity } = req.body;
@@ -70,7 +69,6 @@ router.patch("/cart/:product_id", authenticateToken, requireRole("stakeholder"),
   }
 });
 
-// ── REMOVE ITEM ──
 router.delete("/cart/:product_id", authenticateToken, requireRole("stakeholder"), async (req, res) => {
   try {
     await pool.query(
@@ -84,7 +82,6 @@ router.delete("/cart/:product_id", authenticateToken, requireRole("stakeholder")
   }
 });
 
-// ── CLEAR CART ──
 router.delete("/cart", authenticateToken, requireRole("stakeholder"), async (req, res) => {
   try {
     await pool.query("DELETE FROM cart_items WHERE user_id = $1", [req.user.id]);
@@ -95,15 +92,18 @@ router.delete("/cart", authenticateToken, requireRole("stakeholder"), async (req
   }
 });
 
-// ── SYNC (merge localStorage cart on login) ──
+// Merge guest cart (localStorage) into DB on login
 router.post("/cart/sync", authenticateToken, requireRole("stakeholder"), async (req, res) => {
-  const { items } = req.body; // [{ product_id, quantity }]
+  const { items } = req.body;
   if (!Array.isArray(items) || items.length === 0) return res.json({ message: "Nothing to sync" });
 
   try {
     for (const item of items) {
       if (!item.product_id || !item.quantity) continue;
-      const prod = await pool.query("SELECT id FROM products WHERE id = $1 AND is_available = true", [item.product_id]);
+      const prod = await pool.query(
+        "SELECT id FROM products WHERE id = $1 AND is_available = true",
+        [item.product_id]
+      );
       if (prod.rows.length === 0) continue;
 
       await pool.query(
@@ -114,9 +114,10 @@ router.post("/cart/sync", authenticateToken, requireRole("stakeholder"), async (
         [req.user.id, item.product_id, item.quantity]
       );
     }
-    // Return merged cart
+
     const result = await pool.query(
-      `SELECT ci.id, ci.quantity, p.id AS product_id, p.name, p.price, p.unit, p.category, p.image_url, i.company_name
+      `SELECT ci.id, ci.quantity, p.id AS product_id, p.name, p.price, p.unit,
+              p.category, p.image_url, i.company_name
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
        JOIN industries i ON i.id = p.industry_id

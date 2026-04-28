@@ -1,22 +1,17 @@
 const nodemailer = require('nodemailer');
 
-// Gmail SMTP Configuration — lazy-created so env vars are always fresh
+// Lazy-init so env vars are read at call time, not module load
 let _transporter = null;
-let _transporterVerified = false;
+let _verified = false;
 
 const getTransporter = () => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    return null;
-  }
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return null;
   if (!_transporter) {
     _transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
       secure: false,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
       connectionTimeout: 15000,
       greetingTimeout: 15000,
       socketTimeout: 15000,
@@ -25,42 +20,36 @@ const getTransporter = () => {
   return _transporter;
 };
 
-// Verify on first use (once)
-const verifyTransporter = async (t) => {
-  if (_transporterVerified) return;
+// Verify SMTP once on first send
+const verifyOnce = async (t) => {
+  if (_verified) return;
   try {
     await t.verify();
-    _transporterVerified = true;
-    console.log(`[EMAIL] ✅ Gmail SMTP verified — sending as ${process.env.EMAIL_USER}`);
+    _verified = true;
+    console.log(`[EMAIL] SMTP ready — ${process.env.EMAIL_USER}`);
   } catch (err) {
-    console.error('[EMAIL] ❌ Gmail SMTP verification failed:', err.message);
-    console.error('[EMAIL] Check: EMAIL_USER, EMAIL_PASS (must be 16-char App Password), 2FA enabled on Gmail');
+    console.error('[EMAIL] SMTP verification failed:', err.message);
+    // EMAIL_PASS must be a 16-char Gmail App Password, not your regular password
   }
 };
 
-const FROM = () => `"EthioBridge" <${process.env.EMAIL_USER}>`;
-const APP  = () => process.env.APP_URL || 'http://localhost:3000';
-const BACKEND = () => process.env.BACKEND_URL || 'http://localhost:5000';
+const FROM    = () => `"EthioBridge" <${process.env.EMAIL_USER}>`;
+const APP_URL = () => process.env.APP_URL     || 'http://localhost:3000';
+const API_URL = () => process.env.BACKEND_URL || 'http://localhost:5000';
 
-// Helper function to safely send emails
-const safeSendMail = async (mailOptions, emailType = 'email') => {
+const send = async (mailOptions, label = 'email') => {
   const t = getTransporter();
   if (!t) {
-    console.warn(`[EMAIL] ⚠️  EMAIL_USER/EMAIL_PASS not configured — skipping ${emailType}`);
+    console.warn(`[EMAIL] Not configured — skipping ${label}`);
     return { skipped: true };
   }
-  await verifyTransporter(t);
-  try {
-    const info = await t.sendMail(mailOptions);
-    console.log(`[EMAIL] ✅ ${emailType} sent — messageId: ${info.messageId}`);
-    return info;
-  } catch (error) {
-    console.error(`[EMAIL] ❌ Failed to send ${emailType} to ${mailOptions.to}:`, error.message);
-    throw error;
-  }
+  await verifyOnce(t);
+  const info = await t.sendMail(mailOptions);
+  console.log(`[EMAIL] Sent ${label} — ${info.messageId}`);
+  return info;
 };
 
-// ── Shared HTML wrapper ──
+// Shared HTML email wrapper
 const wrap = (title, body) => `
 <!DOCTYPE html><html><head><meta charset="utf-8">
 <style>
@@ -81,179 +70,111 @@ const wrap = (title, body) => `
   <div class="header"><h1>🌉 EthioBridge</h1><p>${title}</p></div>
   <div class="body">${body}</div>
   <div class="footer">© ${new Date().getFullYear()} EthioBridge · Ethiopia's Construction Marketplace<br>
-  If you did not request this email, please ignore it or contact <a href="mailto:support@ethiobridge.et">support@ethiobridge.et</a></div>
+  If you did not request this email, ignore it or contact <a href="mailto:support@ethiobridge.et">support@ethiobridge.et</a></div>
 </div></body></html>`;
 
-// ── 1. Email Verification ──
+const sendEmail = async (to, subject, html) => {
+  if (!to || !subject) return { skipped: true };
+  return send({
+    from: FROM(), to, subject, html,
+    text: html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+  }, `"${subject}"`);
+};
+
 const sendVerificationEmail = async (userEmail, token) => {
   const t = getTransporter();
-  if (!t) {
-    console.warn('[EMAIL] ⚠️  Email not configured - skipping verification email');
-    return { skipped: true };
-  }
-
-  const backendUrl = BACKEND();
-  const link = `${backendUrl}/api/verify-email?token=${token}`;
-  console.log(`[EMAIL] 📧 Sending verification email to ${userEmail}`);
-
-  return safeSendMail({
-    from: FROM(),
-    to: userEmail,
+  if (!t) return { skipped: true };
+  const link = `${API_URL()}/api/verify-email?token=${token}`;
+  return send({
+    from: FROM(), to: userEmail,
     subject: 'Verify your EthioBridge email address',
     html: wrap('Email Verification', `
       <p>Hi there,</p>
-      <p>Thanks for signing up on <strong>EthioBridge</strong>! Please verify your email address to activate your account.</p>
+      <p>Thanks for signing up! Click below to verify your email and activate your account.</p>
       <a href="${link}" class="btn">✉️ Verify Email Address</a>
-      <p style="font-size:13px;color:#888">Or copy this link into your browser:<br>
-      <a href="${link}" style="color:#0a5c2f;word-break:break-all">${link}</a></p>
-      <p style="font-size:13px;color:#888">This link expires in <strong>24 hours</strong>.</p>
+      <p style="font-size:13px;color:#888">Link expires in <strong>24 hours</strong>.</p>
     `),
   }, 'verification email');
 };
 
-// ── 2. Signup Notification ──
-const sendSignupNotification = async (userEmail) => {
-  return safeSendMail({
-    from: FROM(), to: userEmail,
-    subject: 'Welcome to EthioBridge – Account Created',
-    html: wrap('Account Created', `
-      <p>Hi,</p>
-      <p>A new account was created on <strong>EthioBridge</strong> using this email address.</p>
-      <p>If this was you, no action is needed — please check your inbox for a verification email.</p>
-      <p>If this was <strong>not you</strong>, please ignore this message or contact our support team immediately at
-      <a href="mailto:support@ethiobridge.et">support@ethiobridge.et</a>.</p>
-    `),
-  }, 'signup notification');
-};
+const sendSignupNotification = async (userEmail) => send({
+  from: FROM(), to: userEmail,
+  subject: 'Welcome to EthioBridge – Account Created',
+  html: wrap('Account Created', `
+    <p>A new account was created on EthioBridge using this email.</p>
+    <p>If this wasn't you, contact <a href="mailto:support@ethiobridge.et">support@ethiobridge.et</a> immediately.</p>
+  `),
+}, 'signup notification');
 
-// ── 3. Industry Approval ──
-const sendApprovalEmail = async (userEmail, companyName) => {
-  return safeSendMail({
-    from: FROM(), to: userEmail,
-    subject: '✅ Your EthioBridge Industry Account Has Been Approved',
-    html: wrap('Account Approved', `
-      <p>Hi <strong>${companyName}</strong>,</p>
-      <p>Great news! Your industry account has been <span class="badge badge-green">✓ Approved</span> by our admin team.</p>
-      <p>You can now log in and:</p>
-      <ul>
-        <li>Add and manage your product listings</li>
-        <li>Receive purchase requests from stakeholders</li>
-        <li>View analytics and performance data</li>
-        <li>Communicate with buyers directly</li>
-      </ul>
-      <a href="${APP()}/login" class="btn">Log In Now →</a>
-      <p>Welcome to Ethiopia's construction marketplace!</p>
-    `),
-  }, 'approval email');
-};
+const sendApprovalEmail = async (userEmail, companyName) => send({
+  from: FROM(), to: userEmail,
+  subject: '✅ Your EthioBridge Industry Account Has Been Approved',
+  html: wrap('Account Approved', `
+    <p>Hi <strong>${companyName}</strong>,</p>
+    <p>Your industry account has been <span class="badge badge-green">✓ Approved</span>.</p>
+    <p>You can now list products, receive purchase requests, and communicate with stakeholders.</p>
+    <a href="${APP_URL()}/login" class="btn">Log In Now →</a>
+  `),
+}, 'approval email');
 
-// ── 4. Industry / User Rejection ──
-const sendRejectionEmail = async (userEmail, companyName, reason) => {
-  return safeSendMail({
-    from: FROM(), to: userEmail,
-    subject: 'Update on Your EthioBridge Application',
-    html: wrap('Application Update', `
-      <p>Hi <strong>${companyName}</strong>,</p>
-      <p>After careful review, your application has been <span class="badge badge-red">✕ Rejected</span>.</p>
-      <p><strong>Reason:</strong> ${reason}</p>
-      <p>You may update your profile and resubmit. Please ensure:</p>
-      <ul>
-        <li>All required fields are complete and accurate</li>
-        <li>Documents are clear and valid</li>
-        <li>Business registration details are correct</li>
-      </ul>
-      <a href="${APP()}/login" class="btn">Update Profile →</a>
-      <p>For questions, contact <a href="mailto:support@ethiobridge.et">support@ethiobridge.et</a></p>
-    `),
-  }, 'rejection email');
-};
+const sendRejectionEmail = async (userEmail, companyName, reason) => send({
+  from: FROM(), to: userEmail,
+  subject: 'Update on Your EthioBridge Application',
+  html: wrap('Application Update', `
+    <p>Hi <strong>${companyName}</strong>,</p>
+    <p>Your application has been <span class="badge badge-red">✕ Rejected</span>.</p>
+    <p><strong>Reason:</strong> ${reason}</p>
+    <p>You can update your profile and resubmit. Contact <a href="mailto:support@ethiobridge.et">support</a> if you have questions.</p>
+    <a href="${APP_URL()}/login" class="btn">Update Profile →</a>
+  `),
+}, 'rejection email');
 
-// ── 5. Purchase Request Approved ──
-const sendPurchaseApprovedEmail = async (userEmail, productName, industryName) => {
-  return safeSendMail({
-    from: FROM(), to: userEmail,
-    subject: '✅ Your Purchase Request Has Been Approved',
-    html: wrap('Purchase Request Approved', `
-      <p>Hi,</p>
-      <p>Your purchase request for <strong>${productName}</strong> from <strong>${industryName}</strong> has been
-      <span class="badge badge-green">✓ Approved</span>.</p>
-      <p>The industry will be in touch with you shortly to proceed with the transaction.</p>
-      <a href="${APP()}/messages" class="btn">View Messages →</a>
-    `),
-  }, 'purchase approved email');
-};
+const sendPurchaseApprovedEmail = async (userEmail, productName, industryName) => send({
+  from: FROM(), to: userEmail,
+  subject: '✅ Your Purchase Request Has Been Approved',
+  html: wrap('Purchase Request Approved', `
+    <p>Your request for <strong>${productName}</strong> from <strong>${industryName}</strong> has been
+    <span class="badge badge-green">✓ Approved</span>.</p>
+    <p>The industry will contact you shortly.</p>
+    <a href="${APP_URL()}/messages" class="btn">View Messages →</a>
+  `),
+}, 'purchase approved email');
 
-// ── 6. Purchase Request Rejected ──
-const sendPurchaseRejectedEmail = async (userEmail, productName, industryName, reason) => {
-  return safeSendMail({
-    from: FROM(), to: userEmail,
-    subject: 'Update on Your Purchase Request',
-    html: wrap('Purchase Request Update', `
-      <p>Hi,</p>
-      <p>Your purchase request for <strong>${productName}</strong> from <strong>${industryName}</strong> has been
-      <span class="badge badge-red">✕ Rejected</span>.</p>
-      ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
-      <p>You may submit a new request or contact support if you believe this is an error.</p>
-      <a href="${APP()}/stakeholders" class="btn">Browse Industries →</a>
-    `),
-  }, 'purchase rejected email');
-};
+const sendPurchaseRejectedEmail = async (userEmail, productName, industryName, reason) => send({
+  from: FROM(), to: userEmail,
+  subject: 'Update on Your Purchase Request',
+  html: wrap('Purchase Request Update', `
+    <p>Your request for <strong>${productName}</strong> from <strong>${industryName}</strong> was
+    <span class="badge badge-red">✕ Rejected</span>.</p>
+    ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+    <a href="${APP_URL()}/stakeholders" class="btn">Browse Industries →</a>
+  `),
+}, 'purchase rejected email');
 
-// ── 7. Account Suspended / Banned ──
 const sendSuspensionEmail = async (userEmail, action, reason) => {
   const isBan = action === 'banned';
-  return safeSendMail({
+  return send({
     from: FROM(), to: userEmail,
-    subject: `Important: Your EthioBridge Account Has Been ${isBan ? 'Banned' : 'Suspended'}`,
+    subject: `Your EthioBridge Account Has Been ${isBan ? 'Banned' : 'Suspended'}`,
     html: wrap(`Account ${isBan ? 'Banned' : 'Suspended'}`, `
-      <p>Hi,</p>
-      <p>Your EthioBridge account has been <span class="badge badge-${isBan ? 'red' : 'amber'}">${isBan ? '🚫 Banned' : '⏸ Suspended'}</span>
-      due to a policy violation.</p>
+      <p>Your account has been <span class="badge badge-${isBan ? 'red' : 'amber'}">${isBan ? '🚫 Banned' : '⏸ Suspended'}</span>.</p>
       ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
-      <p>If you believe this is a mistake or would like to appeal, please contact our support team:</p>
       <a href="mailto:support@ethiobridge.et" class="btn">Contact Support</a>
-      <p style="font-size:13px;color:#888">
-        ${isBan ? 'Banned accounts cannot be reactivated without admin review.' : 'Suspended accounts may be reactivated after the suspension period ends.'}
-      </p>
     `),
   }, 'suspension email');
 };
 
-// ── 8. Password Reset ──
 const sendPasswordResetEmail = async (userEmail, token) => {
-  const link = `${BACKEND()}/api/reset-password?token=${token}`;
-  return safeSendMail({
+  const link = `${API_URL()}/api/reset-password?token=${token}`;
+  return send({
     from: FROM(), to: userEmail,
     subject: '🔑 Reset Your EthioBridge Password',
-    html: wrap('Password Reset Request', `
-      <p>Hi,</p>
-      <p>We received a request to reset the password for your EthioBridge account.</p>
-      <a href="${link}" class="btn">🔑 Reset My Password</a>
-      <p style="font-size:13px;color:#888">Or copy this link into your browser:<br>
-      <a href="${link}" style="color:#0a5c2f;word-break:break-all">${link}</a></p>
-      <p style="font-size:13px;color:#888">This link expires in <strong>1 hour</strong>.</p>
-      <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
-      <p style="font-size:13px;color:#888">If you did not request a password reset, you can safely ignore this email. Your password will not change.</p>
+    html: wrap('Password Reset', `
+      <p>Click below to reset your password. This link expires in <strong>1 hour</strong>.</p>
+      <a href="${link}" class="btn">🔑 Reset Password</a>
+      <p style="font-size:13px;color:#888">If you didn't request this, ignore the email — your password won't change.</p>
     `),
   }, 'password reset email');
-};
-
-// ── Generic sendEmail (used by contact.js and other routes) ──
-const sendEmail = async (to, subject, html) => {
-  if (!to || !subject) {
-    console.warn('[EMAIL] ⚠️  sendEmail called with missing to/subject — skipping');
-    return { skipped: true };
-  }
-  console.log(`[EMAIL] 📧 Sending "${subject}" to ${to}`);
-  const info = await safeSendMail({
-    from: FROM(),
-    to,
-    subject,
-    html,
-    text: html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(), // plain-text fallback
-  }, `"${subject}"`);
-  console.log(`[EMAIL] ✅ Delivered to ${to} — messageId: ${info?.messageId || 'n/a'}`);
-  return info;
 };
 
 module.exports = {
