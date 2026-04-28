@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { 
   FaFlag, FaHardHat, FaIndustry, FaHandshake, FaFileAlt, FaSearch, 
   FaRocket, FaCheckCircle, FaComments, FaChartBar, FaShieldAlt, 
@@ -10,10 +10,13 @@ import Logo from "../components/Logo";
 import DarkModeToggle from "../components/DarkModeToggle";
 import FeedbackForm from "../components/FeedbackForm";
 import GlobalNav from "../components/GlobalNav";
+import { useAuth } from "../contexts/AuthContext";
 import { API_BASE_URL } from "../utils/api";
 import "./Home.css";
 
 function Home() {
+  const navigate = useNavigate();
+  const { logout, isAuthenticated, user } = useAuth();
   const heroRef = useRef(null);
   const [testimonials, setTestimonials] = useState([]);
   const [loadingTestimonials, setLoadingTestimonials] = useState(true);
@@ -34,6 +37,10 @@ function Home() {
   const [statsLoading, setStatsLoading] = useState(true);
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+  // Handle logout when authenticated user navigates to home
+  // REMOVED: This was causing login issues by immediately logging out users
+  // Logout is now handled in navigation components (GlobalNav, StakeholderNav, Industry)
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -540,12 +547,20 @@ function Home() {
 
             <div className="contact-socials">
               {[
-                { icon: "X", label: "Twitter",  href: "#" },
-                { icon: "in", label: "LinkedIn", href: "#" },
-                { icon: "f",  label: "Facebook", href: "#" },
-                { icon: "YT",  label: "YouTube",  href: "#" },
+                { icon: "X", label: "Twitter" },
+                { icon: "in", label: "LinkedIn" },
+                { icon: "f",  label: "Facebook" },
+                { icon: "YT",  label: "YouTube" },
               ].map(s => (
-                <a key={s.label} href={s.href} className="social-btn" aria-label={s.label}>{s.icon}</a>
+                <button 
+                  key={s.label} 
+                  className="social-btn" 
+                  aria-label={s.label}
+                  disabled
+                  title="Coming soon"
+                >
+                  {s.icon}
+                </button>
               ))}
             </div>
           </div>
@@ -685,12 +700,20 @@ function Home() {
             <p>Ethiopia's leading B2B platform connecting construction industries, suppliers, and stakeholders. Building the future of Ethiopian construction, one connection at a time.</p>
             <div className="footer-socials">
               {[
-                { icon: "X", label: "Twitter",  href: "#" },
-                { icon: "in", label: "LinkedIn", href: "#" },
-                { icon: "f",  label: "Facebook", href: "#" },
-                { icon: "YT",  label: "YouTube",  href: "#" },
+                { icon: "X", label: "Twitter" },
+                { icon: "in", label: "LinkedIn" },
+                { icon: "f",  label: "Facebook" },
+                { icon: "YT",  label: "YouTube" },
               ].map(s => (
-                <a key={s.label} href={s.href} className="footer-social-btn" aria-label={s.label}>{s.icon}</a>
+                <button 
+                  key={s.label} 
+                  className="footer-social-btn" 
+                  aria-label={s.label}
+                  disabled
+                  title="Coming soon"
+                >
+                  {s.icon}
+                </button>
               ))}
             </div>
           </div>
@@ -700,7 +723,7 @@ function Home() {
             <ul>
               <li><Link to="/stakeholders">For Stakeholders</Link></li>
               <li><Link to="/industry">For Industries</Link></li>
-              <li><Link to="/products">Browse Products</Link></li>
+              <li><Link to="/products" state={{ from: 'home' }}>Browse Products</Link></li>
               <li><Link to="/signup">Get Started</Link></li>
             </ul>
           </div>
@@ -739,9 +762,9 @@ function Home() {
         <div className="footer-bottom">
           <p>© 2025 EthioBridge. All rights reserved. Building Ethiopia's construction future.</p>
           <div className="footer-bottom-links">
-            <a href="#privacy">Privacy Policy</a>
+            <button className="footer-link-btn" disabled title="Coming soon">Privacy Policy</button>
             <span>•</span>
-            <a href="#terms">Terms of Service</a>
+            <button className="footer-link-btn" disabled title="Coming soon">Terms of Service</button>
           </div>
         </div>
       </footer>

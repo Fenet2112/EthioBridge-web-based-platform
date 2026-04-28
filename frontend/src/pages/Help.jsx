@@ -20,9 +20,16 @@ import {
   FaChevronRight
 } from 'react-icons/fa';
 import GlobalNav from '../components/GlobalNav';
+import StakeholderNav from '../components/StakeholderNav';
 import { API_BASE_URL } from '../utils/api';
 import Logo from '../components/Logo';
 import './Help.css';
+
+// Helper function to get user role
+const getUserRole = () => {
+  const userData = JSON.parse(localStorage.getItem("user") || "{}");
+  return userData.role || null;
+};
 
 function Help() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,6 +45,20 @@ function Help() {
   });
   const [helpSubmitting, setHelpSubmitting] = useState(false);
   const [helpMessage, setHelpMessage] = useState({ type: '', text: '' });
+  const userRole = getUserRole();
+
+  // Determine which navigation to render
+  const renderNavigation = () => {
+    if (userRole === 'stakeholder') {
+      return <StakeholderNav />;
+    } else if (userRole === 'industry') {
+      // For industry, show GlobalNav (or create IndustryNav if needed)
+      return <GlobalNav />;
+    } else {
+      // Guest or no role - show GlobalNav
+      return <GlobalNav />;
+    }
+  };
 
   const scrollToCategory = (categoryId) => {
     setActiveCategory(categoryId);
@@ -260,7 +281,7 @@ function Help() {
 
   return (
     <div className="help-center">
-      <GlobalNav />
+      {renderNavigation()}
 
       {/* Hero Section */}
       <section className="help-hero">

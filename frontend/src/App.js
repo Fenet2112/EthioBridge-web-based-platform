@@ -109,7 +109,7 @@ function App() {
       <Route path="/account-status" element={<AccountStatus />} />
 
       {/* Industry Detail Page - for stakeholders to view industry and products */}
-      <Route path="/:id" element={<IndustryDetailPage />} />
+      <Route path="/industry/:id" element={<IndustryDetailPage />} />
 
     </Routes>
   );

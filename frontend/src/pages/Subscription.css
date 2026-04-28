@@ -43,7 +43,7 @@
   min-height: 100vh;
   background: var(--bg);
   padding-bottom: 80px;
-  padding-top: 72px; /* Account for fixed header */
+   /* Account for fixed header */
 }
 
 .sub-page-loading {

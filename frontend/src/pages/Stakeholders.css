@@ -185,6 +185,7 @@
   gap: 12px;
   transition: all 0.3s ease;
   border: none;
+  flex-wrap: nowrap;
 }
 
 .search-bar:focus-within {
@@ -198,7 +199,8 @@
 }
 
 .search-field {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   border: none;
   outline: none;
   font-size: 1rem;
@@ -207,6 +209,7 @@
   background: transparent;
   padding: 0;
   min-height: 48px;
+  max-height: 48px;
 }
 
 .search-field::placeholder {
@@ -220,6 +223,10 @@
   justify-content: center;
   width: 40px;
   height: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  min-height: 40px;
+  max-height: 40px;
   border-radius: 50%;
   background: transparent;
   border: 2px solid var(--border-light);
@@ -227,7 +234,16 @@
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
+  flex-grow: 0;
   padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.search-location-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .search-location-btn:hover {
@@ -249,32 +265,13 @@
   transform: scale(1.05);
 }
 
-.search-location-btn.loading {
-  opacity: 0.7;
-  cursor: not-allowed;
-  animation: locationPulse 1.5s ease-in-out infinite;
-}
-
-.search-location-btn.loading:hover {
-  transform: none;
-}
-
-@keyframes locationPulse {
-  0%, 100% { 
-    opacity: 0.7;
-    transform: scale(1);
-  }
-  50% { 
-    opacity: 1;
-    transform: scale(1.1);
-  }
-}
-
 .search-btn {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: var(--text-inverse);
   border: none;
   height: 48px;
+  min-height: 48px;
+  max-height: 48px;
   padding: 0 32px;
   border-radius: 999px;
   display: inline-flex;
@@ -288,6 +285,7 @@
   box-shadow: 0 4px 16px rgba(29, 95, 58, 0.3);
   white-space: nowrap;
   flex-shrink: 0;
+  flex-grow: 0;
 }
 
 .search-btn:hover {
@@ -679,11 +677,33 @@
 
 .card-top {
   position: relative;
-  height: 140px;
+  height: 180px;
   display: flex;
   align-items: flex-end;
   padding: 18px;
   background: linear-gradient(135deg, var(--card-surface-soft) 0%, var(--bg-accent) 100%);
+  overflow: hidden;
+}
+
+.company-cover-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.company-cover-img::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent);
+  z-index: 1;
 }
 
 .company-logo {
@@ -702,6 +722,7 @@
   flex-shrink: 0;
   border: 3px solid var(--card-surface);
   position: relative;
+  z-index: 2;
 }
 
 .badge-verified {
@@ -741,7 +762,7 @@
   position: absolute;
   top: 14px;
   right: 14px;
-  z-index: 1;
+  z-index: 3;
   box-shadow: 0 2px 8px rgba(29, 95, 58, 0.3);
 }
 
@@ -882,7 +903,7 @@
 }
 
 .skeleton-card-top {
-  height: 140px;
+  height: 180px;
   background: linear-gradient(90deg, var(--card-surface-soft) 25%, var(--bg-accent) 50%, var(--card-surface-soft) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -983,7 +1004,7 @@
   height: 100vh;
   background: var(--bg-primary);
   transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: var(--z-modal);
+  z-index: 9999;
   display: flex;
   flex-direction: column;
 }
@@ -994,6 +1015,7 @@
 
 .chat-header {
   padding: 24px;
+  padding-top: calc(24px + 72px);
   background: var(--bg-primary);
   color: var(--text-primary);
   display: flex;
@@ -1301,26 +1323,61 @@
     padding: var(--space-2xl) var(--space-lg) var(--space-xl);
   }
 
+  .hero-title {
+    font-size: 2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem;
+  }
+
   .search-container {
     justify-content: center;
-    padding: 0 var(--space-md);
+    padding: 0;
+    max-width: 100%;
   }
 
   .search-bar {
-    flex-direction: column;
-    padding: 12px;
-    gap: 12px;
-    align-items: stretch;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    padding: 8px;
+    gap: 8px;
+    align-items: center;
   }
 
   .search-field {
-    min-height: 44px;
+    min-height: 40px;
+    max-height: 40px;
+    font-size: 0.9rem;
+    padding: 0 12px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .search-location-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    min-height: 40px;
+    max-height: 40px;
+    flex-shrink: 0;
   }
 
   .search-btn {
-    width: 100%;
-    height: 44px;
-    padding: 0 24px;
+    width: auto;
+    height: 40px;
+    min-height: 40px;
+    max-height: 40px;
+    padding: 0 20px;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    flex-grow: 0;
+    white-space: nowrap;
+  }
+
+  .search-btn svg {
+    display: none;
   }
 
   .filter-bar,
@@ -1331,6 +1388,7 @@
   .page-body {
     grid-template-columns: 1fr;
     gap: var(--space-xl);
+    padding: 0 var(--space-md);
   }
 
   .cards-header {
@@ -1361,7 +1419,13 @@
 
   .sector-tags {
     justify-content: flex-start;
-    padding: 0 var(--space-lg);
+    padding: 0 var(--space-md);
+    gap: 0.75rem;
+  }
+
+  .sector-pill {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.85rem;
   }
 
   .filter-content {
@@ -1378,6 +1442,7 @@
   .card-top {
     padding: var(--space-lg);
     gap: var(--space-md);
+    height: 160px;
   }
 
   .company-logo {
@@ -1418,7 +1483,55 @@
   }
 
   .search-container {
-    padding: var(--space-sm);
+    padding: 0;
+  }
+
+  .search-bar {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .search-field {
+    font-size: 0.85rem;
+    padding: 0 10px;
+    min-height: 36px;
+    max-height: 36px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .search-location-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    max-width: 36px;
+    min-height: 36px;
+    max-height: 36px;
+  }
+
+  .search-location-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .search-btn {
+    padding: 0 16px;
+    font-size: 0.85rem;
+    height: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    flex-shrink: 0;
+    flex-grow: 0;
+  }
+
+  .sector-tags {
+    padding: 0 var(--space-md);
+    gap: 0.5rem;
+  }
+
+  .sector-pill {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
   }
 
   .cards-header {
@@ -1426,7 +1539,11 @@
   }
 
   .cards-title {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
+  }
+
+  .cards-subtitle {
+    font-size: 0.875rem;
   }
 
   .company-name {
@@ -1441,6 +1558,14 @@
   .btn-primary {
     font-size: 0.85rem;
     padding: 10px 16px;
+  }
+
+  .page-body {
+    padding: 0 var(--space-sm);
+  }
+
+  .cards-grid {
+    gap: 12px;
   }
 }
 

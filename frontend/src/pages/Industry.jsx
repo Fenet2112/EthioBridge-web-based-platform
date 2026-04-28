@@ -6,11 +6,13 @@ import {
   FaIndustry, FaQuestionCircle, FaTimes, FaLock, FaClock, FaCheckCircle,
   FaHandshake, FaShieldAlt, FaCheck, FaTimes as FaTimesCircle, FaPlus,
   FaStar, FaExclamationTriangle, FaInfoCircle, FaPhone, FaMapMarkerAlt,
-  FaEnvelope, FaBuilding, FaCalendar, FaBell, FaPaperPlane
+  FaEnvelope, FaBuilding, FaCalendar, FaBell, FaPaperPlane, FaImage
 } from "react-icons/fa";
 import { API_BASE_URL } from "../utils/api";
+import { useAuth } from "../contexts/AuthContext";
 import SubscriptionModal from "../components/SubscriptionModal";
 import TransactionHistory from "../components/TransactionHistory";
+import DarkModeToggle from "../components/DarkModeToggle";
 import { imageUrl } from "../utils/imageUrl";
 import "./Industry.css";
 import "./IndustryDarkMode.css";
@@ -20,6 +22,7 @@ let socket;
 
 function Industry() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const messagesEndRef = useRef(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -75,7 +78,7 @@ function Industry() {
     { id: "profile",   label: "Manage Profile",              icon: <FaUser /> },
     { id: "products",  label: "Manage Product Listings",     icon: <FaBox /> },
     { id: "requests",  label: "Purchase Requests",           icon: <FaClipboardList /> },
-    { id: "messages",  label: "Communicate with Stakeholders", icon: <FaComments /> },
+    { id: "messages",  label: "Messages", icon: <FaComments /> },
     { id: "analytics", label: "Analytics",                   icon: <FaChartBar /> },
   ];
 
@@ -849,7 +852,64 @@ function Industry() {
     }
   };
 
-  if (loading) return <div className="industry-dashboard">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="industry-dashboard">
+        {/* Navbar Skeleton */}
+        <nav className="dashboard-navbar">
+          <div className="nav-left">
+            <div className="skeleton skeleton-hamburger"></div>
+            <div className="skeleton skeleton-logo"></div>
+          </div>
+          <div className="nav-right">
+            <div className="skeleton skeleton-icon"></div>
+            <div className="skeleton skeleton-icon"></div>
+            <div className="skeleton skeleton-avatar"></div>
+          </div>
+        </nav>
+
+        {/* Main Content Skeleton */}
+        <main className="main-content">
+          <div className="content-card">
+            <div className="skeleton-profile-header">
+              <div className="skeleton skeleton-profile-logo"></div>
+              <div className="skeleton-profile-info">
+                <div className="skeleton skeleton-title"></div>
+                <div className="skeleton skeleton-subtitle"></div>
+              </div>
+            </div>
+            
+            <div className="skeleton-profile-body">
+              <div className="skeleton-section">
+                <div className="skeleton skeleton-section-title"></div>
+                <div className="skeleton skeleton-input"></div>
+                <div className="skeleton-row">
+                  <div className="skeleton skeleton-input"></div>
+                  <div className="skeleton skeleton-input"></div>
+                </div>
+                <div className="skeleton skeleton-textarea"></div>
+              </div>
+
+              <div className="skeleton-section">
+                <div className="skeleton skeleton-section-title"></div>
+                <div className="skeleton-row">
+                  <div className="skeleton skeleton-input"></div>
+                  <div className="skeleton skeleton-input"></div>
+                </div>
+                <div className="skeleton skeleton-input"></div>
+              </div>
+
+              <div className="skeleton-section">
+                <div className="skeleton skeleton-section-title"></div>
+                <div className="skeleton skeleton-input"></div>
+                <div className="skeleton skeleton-button"></div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="industry-dashboard">
@@ -868,12 +928,18 @@ function Industry() {
           <h2 className="dashboard-logo">EthioBridge Industry</h2>
         </div>
         <div className="nav-right">
-          <Link to="/" className="nav-home-btn" title="Back to Home">
+          <button 
+            className="nav-home-btn" 
+            title="Back to Home"
+            onClick={(e) => {
+              e.preventDefault();
+              console.log('[Industry] Navigating to home, logging out');
+              logout();
+              window.location.href = '/';
+            }}
+          >
             <FaHome />
-          </Link>
-          <Link to="/help" className="help-link" title="Help Center">
-            <FaQuestionCircle /> Help
-          </Link>
+          </button>
           
           {/* Notification Bell */}
           {profileStatus === "approved" && (
@@ -926,15 +992,18 @@ function Industry() {
             </div>
           )}
           
+          <DarkModeToggle />
           <span className="welcome-text">Welcome back</span>
           <div className="user-avatar"><FaIndustry /></div>
         </div>
       </nav>
 
+      {/* Backdrop */}
+      {isMenuOpen && <div className="sidebar-backdrop" onClick={() => setIsMenuOpen(false)} />}
+
       {/* Sidebar */}
       <div className={`sidebar-menu ${isMenuOpen ? "open" : ""}`}>
-        <div className="sidebar-top-spacer"></div>
-
+       
         <div className="sidebar-profile">
           {profile.logoPreview ? (
             <img src={profile.logoPreview} alt="Company Logo" className="sidebar-avatar" />
@@ -985,14 +1054,7 @@ function Industry() {
         {activeSection !== "dashboard" && (
           <div className="content-header">
             <h1>{menuItems.find(item => item.id === activeSection)?.label || "Dashboard"}</h1>
-            <p>
-              {activeSection === "requests"  ? "All purchase requests from stakeholders for your products" :
-               activeSection === "products"  ? "Manage and update your product catalog" :
-               activeSection === "profile"   ? "Update your company information and profile" :
-               activeSection === "messages"  ? "Communicate directly with your stakeholders" :
-               activeSection === "analytics" ? "Track your business performance and insights" :
-               "Manage your business profile and operations"}
-            </p>
+           
           </div>
         )}
 
@@ -1160,208 +1222,217 @@ function Industry() {
           <div className="profile-card">
             {isEditing ? (
               <>
-                <h2>{profileStatus !== "incomplete" ? "Update Your Profile" : "Complete Your Company Profile"}</h2>
-                <p>
-                  {profileStatus !== "incomplete"
-                    ? "Make changes to your profile"
-                    : "Please fill in your company details to get started"}
-                </p>
+                <div className="profile-form-header">
+                  <h2>{profileStatus !== "incomplete" ? "Update Your Profile" : "Complete Your Company Profile"}</h2>
+                  <p className="profile-form-subtitle">
+                    {profileStatus !== "incomplete"
+                      ? "Keep your company information up to date"
+                      : "Fill in your company details to get started"}
+                  </p>
+                </div>
 
                 <form onSubmit={handleProfileSubmit} className="profile-form">
-                  <div className="form-group logo-group">
-                    <label>Company Logo</label>
-                    <div className="logo-preview-container">
-                      {profile.logoPreview ? (
-                        <img src={profile.logoPreview} alt="Logo preview" className="logo-preview" />
-                      ) : (
-                        <div className="logo-placeholder">Upload Logo</div>
-                      )}
+                  {/* Modern Logo Uploader */}
+                  <div className="form-section">
+                    <h3 className="section-title">Company Logo</h3>
+                    <div className="modern-logo-uploader">
+                      <div className="logo-upload-area">
+                        {profile.logoPreview ? (
+                          <div className="logo-preview-wrapper">
+                            <img src={profile.logoPreview} alt="Logo preview" className="logo-preview-img" />
+                            <div className="logo-overlay">
+                              <span className="change-photo-text">Click to change</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="logo-upload-placeholder">
+                            <div className="upload-icon">
+                              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                              </svg>
+                            </div>
+                            <p className="upload-text">Click to upload logo</p>
+                            <p className="upload-hint">PNG, JPG or WEBP (max. 2MB)</p>
+                          </div>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoChange}
+                          className="logo-file-input"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Company Information */}
+                  <div className="form-section">
+                    <h3 className="section-title">Company Information</h3>
+                    
+                    <div className="form-group">
+                      <label htmlFor="companyName">Company Name <span className="required">*</span></label>
                       <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoChange}
-                        className="logo-input"
+                        type="text"
+                        id="companyName"
+                        name="companyName"
+                        value={profile.companyName}
+                        onChange={handleProfileChange}
+                        placeholder="Enter your company name"
+                        required
+                      />
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="industryType">Industry Type <span className="required">*</span></label>
+                        <select id="industryType" name="industryType" value={profile.industryType} onChange={handleProfileChange} required>
+                          <option value="">Select industry type</option>
+                          <option>Cement Manufacturer</option>
+                          <option>Steel &amp; Metal Producer</option>
+                          <option>Construction Materials Supplier</option>
+                          <option>Electrical &amp; Lighting</option>
+                          <option>Plumbing &amp; Sanitary</option>
+                          <option>Machinery &amp; Equipment</option>
+                          <option>Other</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="businessRole">Business Role <span className="required">*</span></label>
+                        <select id="businessRole" name="businessRole" value={profile.businessRole} onChange={handleProfileChange} required>
+                          <option value="">Select business role</option>
+                          <option value="Supplier">Supplier</option>
+                          <option value="Manufacturer">Manufacturer</option>
+                          <option value="Producer">Producer</option>
+                          <option value="Distributor">Distributor</option>
+                          <option value="Contractor">Contractor</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="description">Company Description</label>
+                      <textarea
+                        id="description"
+                        name="description"
+                        value={profile.description}
+                        onChange={handleProfileChange}
+                        rows="4"
+                        placeholder="Tell others about your company, experience, and specialties..."
                       />
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label htmlFor="companyName">Company / Industry Name *</label>
-                    <input
-                      type="text"
-                      id="companyName"
-                      name="companyName"
-                      value={profile.companyName}
-                      onChange={handleProfileChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="industryType">Industry Type *</label>
-                      <select id="industryType" name="industryType" value={profile.industryType} onChange={handleProfileChange} required>
-                        <option value="">Select type</option>
-                        <option>Cement Manufacturer</option>
-                        <option>Steel &amp; Metal Producer</option>
-                        <option>Construction Materials Supplier</option>
-                        <option>Electrical &amp; Lighting</option>
-                        <option>Plumbing &amp; Sanitary</option>
-                        <option>Machinery &amp; Equipment</option>
-                        <option>Other</option>
-                      </select>
+                  {/* Contact Information */}
+                  <div className="form-section">
+                    <h3 className="section-title">Contact Information</h3>
+                    
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label htmlFor="phone">Phone Number <span className="required">*</span></label>
+                        <input
+                          type="tel"
+                          id="phone"
+                          name="phone"
+                          value={profile.phone}
+                          onChange={handleProfileChange}
+                          placeholder="+251 911 234567"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="email">Email Address <span className="required">*</span></label>
+                        <input
+                          type="email"
+                          id="email"
+                          name="email"
+                          value={profile.email}
+                          onChange={handleProfileChange}
+                          placeholder="company@example.com"
+                          required
+                        />
+                      </div>
                     </div>
+
                     <div className="form-group">
-                      <label htmlFor="businessRole">Business Role *</label>
-                      <select id="businessRole" name="businessRole" value={profile.businessRole} onChange={handleProfileChange} required>
-                        <option value="">Select role</option>
-                        <option value="Supplier">Supplier</option>
-                        <option value="Manufacturer">Manufacturer</option>
-                        <option value="Producer">Producer</option>
-                        <option value="Distributor">Distributor</option>
-                        <option value="Contractor">Contractor</option>
-                      </select>
+                      <label htmlFor="website">Website</label>
+                      <input
+                        type="url"
+                        id="website"
+                        name="website"
+                        value={profile.website}
+                        onChange={handleProfileChange}
+                        placeholder="https://www.yourcompany.com"
+                      />
                     </div>
                   </div>
 
-                  {/* Location with GPS */}
-                  <div className="form-group">
-                    <label htmlFor="location">Location / City *</label>
-                    <input
-                      type="text"
-                      id="location"
-                      name="location"
-                      value={profile.location}
-                      onChange={handleProfileChange}
-                      placeholder="e.g. Addis Ababa, Bole"
-                      required
-                    />
-                  </div>
+                  {/* Location Information */}
+                  <div className="form-section">
+                    <h3 className="section-title">Location</h3>
+                    
+                    <div className="form-group">
+                      <label htmlFor="location">City / Address <span className="required">*</span></label>
+                      <input
+                        type="text"
+                        id="location"
+                        name="location"
+                        value={profile.location}
+                        onChange={handleProfileChange}
+                        placeholder="e.g. Addis Ababa, Bole"
+                        required
+                      />
+                    </div>
 
-                  {/* GPS coordinates — auto-detected, not manually entered */}
-                  <div className="form-group">
-                    <label>GPS Coordinates <span style={{ color: "var(--text-muted)", fontWeight: 400, fontSize: "0.85rem" }}>(for map display)</span></label>
-                    <div className="gps-row">
-                      <button type="button" className="gps-btn" onClick={detectLocation} disabled={gpsLoading}>
-                        {gpsLoading ? "⏳ Detecting..." : "📍 Use My Location"}
+                    <div className="gps-section">
+                      <label>GPS Coordinates <span className="optional-label">(Optional - for map display)</span></label>
+                      <button type="button" className="gps-detect-btn" onClick={detectLocation} disabled={gpsLoading}>
+                        <span className="gps-icon">📍</span>
+                        {gpsLoading ? "Detecting Location..." : "Use My Current Location"}
                       </button>
                       {gpsStatus === "detected" && profile.latitude && (
-                        <span className="gps-ok">
-                          ✅ {Number(profile.latitude).toFixed(4)}, {Number(profile.longitude).toFixed(4)}
-                        </span>
+                        <div className="gps-status success">
+                          <span className="status-icon">✅</span>
+                          Location detected: {Number(profile.latitude).toFixed(4)}, {Number(profile.longitude).toFixed(4)}
+                        </div>
                       )}
                       {gpsStatus === "denied" && (
-                        <span className="gps-denied">⚠️ Location access denied — map pin won't be shown</span>
+                        <div className="gps-status error">
+                          <span className="status-icon">⚠️</span>
+                          Location access denied - map pin won't be shown
+                        </div>
                       )}
                       {!gpsStatus && profile.latitude && (
-                        <span className="gps-ok">
-                          📍 {Number(profile.latitude).toFixed(4)}, {Number(profile.longitude).toFixed(4)}
-                        </span>
+                        <div className="gps-status info">
+                          <span className="status-icon">📍</span>
+                          Coordinates: {Number(profile.latitude).toFixed(4)}, {Number(profile.longitude).toFixed(4)}
+                        </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="form-row">
+                  {/* Legal Information */}
+                  <div className="form-section">
+                    <h3 className="section-title">Legal Information</h3>
+                    
                     <div className="form-group">
-                      <label htmlFor="latitude">Latitude (for map)</label>
+                      <label htmlFor="licenseNumber">Registration / License Number <span className="required">*</span></label>
                       <input
-                        type="number"
-                        id="latitude"
-                        name="latitude"
-                        value={profile.latitude}
+                        type="text"
+                        id="licenseNumber"
+                        name="licenseNumber"
+                        value={profile.licenseNumber}
                         onChange={handleProfileChange}
-                        placeholder="e.g. 9.0320"
-                        step="0.000001"
-                        min="-90"
-                        max="90"
-                      />
-                      <small style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>
-                        Optional: Your location's latitude
-                      </small>
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="longitude">Longitude (for map)</label>
-                      <input
-                        type="number"
-                        id="longitude"
-                        name="longitude"
-                        value={profile.longitude}
-                        onChange={handleProfileChange}
-                        placeholder="e.g. 38.7469"
-                        step="0.000001"
-                        min="-180"
-                        max="180"
-                      />
-                      <small style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>
-                        Optional: Your location's longitude
-                      </small>
-                    </div>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="phone">Phone Number *</label>
-                      <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
-                        value={profile.phone}
-                        onChange={handleProfileChange}
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="email">Email *</label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={profile.email}
-                        onChange={handleProfileChange}
+                        placeholder="Enter your business registration number"
                         required
                       />
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label htmlFor="website">Website / Online Store</label>
-                    <input
-                      type="url"
-                      id="website"
-                      name="website"
-                      value={profile.website}
-                      onChange={handleProfileChange}
-                      placeholder="https://..."
-                    />
+                  <div className="form-actions">
+                    <button type="submit" className="save-profile-btn">
+                      {profileStatus === "incomplete" ? "Submit for Approval" : "Save Changes"}
+                    </button>
                   </div>
-
-                  <div className="form-group">
-                    <label htmlFor="description">Company Description</label>
-                    <textarea
-                      id="description"
-                      name="description"
-                      value={profile.description}
-                      onChange={handleProfileChange}
-                      rows="5"
-                      placeholder="Tell others about your company, experience, specialties..."
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="licenseNumber">Registration / License Number *</label>
-                    <input
-                      type="text"
-                      id="licenseNumber"
-                      name="licenseNumber"
-                      value={profile.licenseNumber}
-                      onChange={handleProfileChange}
-                      required
-                    />
-                  </div>
-
-                  <button type="submit" className="save-profile-btn">
-                    {profileStatus === "incomplete" ? "Submit for Approval" : "Update Profile"}
-                  </button>
                 </form>
               </>
             ) : (
@@ -1370,40 +1441,44 @@ function Industry() {
                   {profile.logoPreview ? (
                     <img src={profile.logoPreview} alt="Company Logo" className="company-logo" />
                   ) : (
-                    <div className="logo-placeholder-view">No Logo</div>
+                    <div className="logo-placeholder-view">
+                      <FaBuilding />
+                    </div>
                   )}
                   <div className="profile-title">
                     <h2>{profile.companyName || "Company Name"}</h2>
                     <p className="industry-type">{profile.industryType || "Industry Type"}{profile.businessRole ? ` · ${profile.businessRole}` : ""}</p>
                   </div>
                   <button className="edit-btn" onClick={handleEditClick}>
-                    Edit Profile
+                    <FaUser /> Edit Profile
                   </button>
                 </div>
 
                 <div className="profile-details">
                   <div className="detail-item">
-                    <strong>Location:</strong> {profile.location || "Not set"}
+                    <strong><FaMapMarkerAlt /> Location</strong>
+                    <span>{profile.location || "Not set"}</span>
                   </div>
                   <div className="detail-item">
-                    <strong>Phone:</strong> {profile.phone || "Not set"}
+                    <strong><FaPhone /> Phone</strong>
+                    <span>{profile.phone || "Not set"}</span>
                   </div>
                   <div className="detail-item">
-                    <strong>Email:</strong> {profile.email || "Not set"}
+                    <strong><FaEnvelope /> Email</strong>
+                    <span>{profile.email || "Not set"}</span>
                   </div>
                   {profile.website && (
                     <div className="detail-item">
-                      <strong>Website:</strong>{" "}
-                      <a href={profile.website} target="_blank" rel="noopener noreferrer">
-                        {profile.website}
-                      </a>
+                      <strong>🌐 Website</strong>
+                      <span>
+                        <a href={profile.website} target="_blank" rel="noopener noreferrer">
+                          {profile.website}
+                        </a>
+                      </span>
                     </div>
                   )}
-                  <div className="detail-item">
-                    <strong>License/Registration:</strong> {profile.licenseNumber || "Not set"}
-                  </div>
                   <div className="detail-item full-width">
-                    <strong>About Us:</strong>
+                    <strong>📄 About Us</strong>
                     <p>{profile.description || "No description added yet."}</p>
                   </div>
                 </div>
@@ -1484,7 +1559,7 @@ function Industry() {
                 <form onSubmit={handleProductSubmit}>
                   {/* ── Product Image ── */}
                   <div className="form-group">
-                    <label>Product Image <span style={{ color: "#9ca3af", fontWeight: 400 }}>(JPG/PNG/WebP, max 2 MB)</span></label>
+                    <label>Product Image <span style={{ color: "var(--text-muted)", fontWeight: 400, fontSize: "0.85rem" }}>(JPG/PNG/WebP, max 2 MB)</span></label>
                     <div className="product-img-upload-wrap">
                       {productImagePreview ? (
                         <div className="product-img-preview-box">
@@ -1497,13 +1572,15 @@ function Industry() {
                               setProductImagePreview(null);
                               if (productImageRef.current) productImageRef.current.value = "";
                             }}
-                          >✕ Remove</button>
+                          >
+                            <FaTimes /> Remove
+                          </button>
                         </div>
                       ) : (
                         <label className="product-img-placeholder" htmlFor="product-image-input">
-                          <span className="product-img-icon">📷</span>
-                          <span>Click to upload image</span>
-                          <span style={{ fontSize: "0.75rem", color: "#9ca3af" }}>Optional</span>
+                          <span className="product-img-icon"><FaImage /></span>
+                          <span className="upload-main-text">Click to upload image</span>
+                          <span className="upload-optional-text">Optional</span>
                         </label>
                       )}
                       <input
@@ -1921,9 +1998,69 @@ function AnalyticsSection({ subStatus, onUpgrade }) {
   }, []);
 
   if (loading) return (
-    <div className="an-loading">
-      <div className="an-spinner" />
-      <span>Loading analytics...</span>
+    <div className="analytics-skeleton">
+      {/* Stats Cards Skeleton */}
+      <div className="skeleton-stats-grid">
+        <div className="skeleton-stat-card">
+          <div className="skeleton skeleton-stat-icon"></div>
+          <div className="skeleton skeleton-stat-value"></div>
+          <div className="skeleton skeleton-stat-label"></div>
+        </div>
+        <div className="skeleton-stat-card">
+          <div className="skeleton skeleton-stat-icon"></div>
+          <div className="skeleton skeleton-stat-value"></div>
+          <div className="skeleton skeleton-stat-label"></div>
+        </div>
+        <div className="skeleton-stat-card">
+          <div className="skeleton skeleton-stat-icon"></div>
+          <div className="skeleton skeleton-stat-value"></div>
+          <div className="skeleton skeleton-stat-label"></div>
+        </div>
+        <div className="skeleton-stat-card">
+          <div className="skeleton skeleton-stat-icon"></div>
+          <div className="skeleton skeleton-stat-value"></div>
+          <div className="skeleton skeleton-stat-label"></div>
+        </div>
+      </div>
+
+      {/* Charts Skeleton */}
+      <div className="skeleton-charts-grid">
+        <div className="skeleton-chart-card">
+          <div className="skeleton skeleton-chart-title"></div>
+          <div className="skeleton-chart-bars">
+            <div className="skeleton skeleton-bar"></div>
+            <div className="skeleton skeleton-bar"></div>
+            <div className="skeleton skeleton-bar"></div>
+            <div className="skeleton skeleton-bar"></div>
+          </div>
+        </div>
+        <div className="skeleton-chart-card">
+          <div className="skeleton skeleton-chart-title"></div>
+          <div className="skeleton-donut-area">
+            <div className="skeleton skeleton-donut"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Additional Charts */}
+      <div className="skeleton-charts-grid">
+        <div className="skeleton-chart-card">
+          <div className="skeleton skeleton-chart-title"></div>
+          <div className="skeleton-chart-bars">
+            <div className="skeleton skeleton-bar"></div>
+            <div className="skeleton skeleton-bar"></div>
+            <div className="skeleton skeleton-bar"></div>
+          </div>
+        </div>
+        <div className="skeleton-chart-card">
+          <div className="skeleton skeleton-chart-title"></div>
+          <div className="skeleton-chart-bars">
+            <div className="skeleton skeleton-bar"></div>
+            <div className="skeleton skeleton-bar"></div>
+            <div className="skeleton skeleton-bar"></div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 
@@ -2004,10 +2141,10 @@ function AnalyticsSection({ subStatus, onUpgrade }) {
   };
 
   const statCards = [
-    { label: "Total Requests",   value: s.total_requests      || 0, color: "#0a5c2f", icon: "📋" },
-    { label: "Pending",          value: s.pending             || 0, color: "#f59e0b", icon: "⏳" },
-    { label: "Approved",         value: s.approved            || 0, color: "#16a34a", icon: "✅" },
-    { label: "Stakeholders",     value: s.unique_stakeholders || 0, color: "#3b82f6", icon: "🤝" },
+    { label: "Total Requests",   value: s.total_requests      || 0, color: "#0a5c2f", colorLight: "#1a8a4a", icon: <FaClipboardList /> },
+    { label: "Pending",          value: s.pending             || 0, color: "#f59e0b", colorLight: "#fbbf24", icon: <FaClock /> },
+    { label: "Approved",         value: s.approved            || 0, color: "#16a34a", colorLight: "#22c55e", icon: <FaCheckCircle /> },
+    { label: "Stakeholders",     value: s.unique_stakeholders || 0, color: "#3b82f6", colorLight: "#60a5fa", icon: <FaHandshake /> },
   ];
 
   return (
@@ -2015,16 +2152,23 @@ function AnalyticsSection({ subStatus, onUpgrade }) {
 
       {/* Header */}
       <div className="an-header">
-        <h2 className="an-title">Analytics</h2>
+        
         <p className="an-subtitle">Business performance overview — last 30 days</p>
       </div>
 
       {/* Stat cards */}
       <div className="an-stats-grid">
         {statCards.map(c => (
-          <div key={c.label} className="an-stat-card" style={{ borderTopColor: c.color }}>
+          <div 
+            key={c.label} 
+            className="an-stat-card" 
+            style={{ 
+              '--stat-color': c.color,
+              '--stat-color-light': c.colorLight
+            }}
+          >
             <div className="an-stat-icon">{c.icon}</div>
-            <div className="an-stat-value" style={{ color: c.color }}>{c.value}</div>
+            <div className="an-stat-value">{c.value}</div>
             <div className="an-stat-label">{c.label}</div>
           </div>
         ))}
@@ -2033,25 +2177,31 @@ function AnalyticsSection({ subStatus, onUpgrade }) {
       {/* Charts row */}
       <div className="an-charts-row">
         <div className="an-chart-card">
-          <h3 className="an-chart-title">📦 Product Performance</h3>
+          <h3 className="an-chart-title">
+            <FaBox /> Product Performance
+          </h3>
           <BarChart items={data?.byProduct} color="#0a5c2f" />
         </div>
         <div className="an-chart-card">
-          <h3 className="an-chart-title">🥧 Request Status</h3>
+          <h3 className="an-chart-title">
+            <FaChartBar /> Request Status
+          </h3>
           <DonutChart items={data?.byStatus} />
         </div>
       </div>
 
       {/* Timeline */}
       <div className="an-chart-card">
-        <h3 className="an-chart-title">📈 Requests Over Last 30 Days</h3>
+        <h3 className="an-chart-title">
+          <FaChartBar /> Requests Over Last 30 Days
+        </h3>
         <BarChart items={data?.overTime?.map(d => ({ product: d.day, requests: d.count }))} color="#3b82f6" />
       </div>
 
       {/* Revenue banner */}
       <div className="an-revenue-card">
-        <div>
-          <div className="an-revenue-label">Estimated Revenue (Approved + Completed)</div>
+        <div className="an-revenue-info">
+          <div className="an-revenue-label">Estimated Revenue</div>
           <div className="an-revenue-value">{Number(s.total_revenue || 0).toLocaleString()} ETB</div>
         </div>
         <div className="an-revenue-icon">💰</div>
@@ -2060,10 +2210,12 @@ function AnalyticsSection({ subStatus, onUpgrade }) {
       {/* Premium upsell */}
       {!isPremium && (
         <div className="an-upsell">
-          <div className="an-upsell-icon">⭐</div>
+          <div className="an-upsell-icon"><FaStar /></div>
           <h3 className="an-upsell-title">Unlock Advanced Insights</h3>
           <p className="an-upsell-desc">AI-powered forecasting, stakeholder profiles, and detailed 90-day reports.</p>
-          <button className="an-upsell-btn" onClick={onUpgrade}>Upgrade to Premium</button>
+          <button className="an-upsell-btn" onClick={onUpgrade}>
+            <FaStar /> Upgrade to Premium
+          </button>
         </div>
       )}
     </div>

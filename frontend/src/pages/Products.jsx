@@ -1,12 +1,34 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import FilterPanel from '../components/FilterPanel';
 import GlobalNav from '../components/GlobalNav';
+import StakeholderNav from '../components/StakeholderNav';
 import './Products.css';
 import { imageUrl } from "../utils/imageUrl";
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
+// Helper function to get user role
+const getUserRole = () => {
+  const userData = JSON.parse(localStorage.getItem("user") || "{}");
+  return userData.role || null;
+};
+
+// Helper function to determine navigation component
+const getNavigationComponent = (location, userRole) => {
+  // Check if user came from stakeholders page or is a stakeholder
+  const fromStakeholders = location.state?.from === 'stakeholders';
+  const isStakeholder = userRole === 'stakeholder';
+  
+  // Show StakeholderNav if user is stakeholder OR came from stakeholders page
+  if (isStakeholder || fromStakeholders) {
+    return StakeholderNav;
+  }
+  
+  // Otherwise show GlobalNav
+  return GlobalNav;
+};
 
 
 const getProductImage = (product) => {
@@ -48,6 +70,7 @@ const getProductIcon = (product) => {
 
 function Products() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -55,12 +78,32 @@ function Products() {
   const [addedId, setAddedId] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const cartRef = useRef(null);
+  const userRole = getUserRole();
+  
+  // Determine which navigation to show
+  const NavigationComponent = getNavigationComponent(location, userRole);
+  
+  // Determine back navigation path
+  const getBackPath = () => {
+    const fromStakeholders = location.state?.from === 'stakeholders';
+    const isStakeholder = userRole === 'stakeholder';
+    
+    if (isStakeholder || fromStakeholders) {
+      return '/stakeholders';
+    }
+    return '/';
+  };
 
   // Filter state
   const [currentFilters, setCurrentFilters] = useState({});
   const [totalResults, setTotalResults] = useState(0);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, hasNext: false, hasPrev: false });
   const { cart, totalItems, totalPrice, addToCart, updateQty, removeItem, clearCart } = useCart();
+
+  // Determine which navigation to render
+  const renderNavigation = () => {
+    return <NavigationComponent />;
+  };
 
   // Fetch products with filters
   const fetchProducts = useCallback(async (filters = {}, page = 1) => {
@@ -145,16 +188,8 @@ function Products() {
 
   if (loading) return (
     <div className="products-page">
-      <header className="products-header">
-        <div className="header-content">
-          <button className="back-btn" onClick={() => navigate('/')}>← Back to Home</button>
-          <h1>All Products</h1>
-          <button className="cart-btn" onClick={() => setCartOpen(true)}>
-            🛒 Cart
-            {totalItems > 0 && <span className="cart-count">{totalItems}</span>}
-          </button>
-        </div>
-      </header>
+      {renderNavigation()}
+      
       <div className="products-container">
         <div className="products-grid">
           {[...Array(6)].map((_, i) => (
@@ -174,22 +209,39 @@ function Products() {
       </div>
     </div>
   );
-  if (error)   return <div className="products-page"><div className="error">Error: {error}</div></div>;
+  if (error) return (
+    <div className="products-page">
+      {renderNavigation()}
+      <div className="error">Error: {error}</div>
+    </div>
+  );
 
   return (
     <div className="products-page">
-      <GlobalNav />
+      {renderNavigation()}
       {/* Header */}
       <header className="products-header">
         <div className="header-content">
-          <div>
-            <h1>All Products</h1>
-            <p className="results-summary">
-              {totalResults.toLocaleString()} products available
-            </p>
+          <div className="header-left">
+            <button className="back-btn" onClick={() => navigate(getBackPath())}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <div>
+              <h1>All Products</h1>
+              <p className="results-summary">
+                {totalResults.toLocaleString()} products available
+              </p>
+            </div>
           </div>
           <button className="cart-btn" onClick={() => setCartOpen(true)}>
-            🛒 Cart
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="9" cy="21" r="1"/>
+              <circle cx="20" cy="21" r="1"/>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+            </svg>
+            Cart
             {totalItems > 0 && <span className="cart-count">{totalItems}</span>}
           </button>
         </div>

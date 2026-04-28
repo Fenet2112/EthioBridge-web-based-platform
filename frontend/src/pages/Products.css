@@ -6,6 +6,7 @@
   font-family: 'Inter', sans-serif;
   background: var(--bg);
   min-height: 100vh;
+  padding-top: 96px;
 }
 
 /* HEADER */
@@ -27,6 +28,12 @@
   margin: 0 auto;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .header-content h1 {
   font-size: 1.4rem;
   font-weight: 800;
@@ -36,18 +43,35 @@
 
 .back-btn {
   background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.3);
+  border: 1px solid rgba(255,255,255,0.2);
   color: white;
-  font-size: 0.88rem;
-  font-weight: 600;
   cursor: pointer;
-  padding: 9px 18px;
+  padding: 10px;
   border-radius: 10px;
   transition: all 0.2s;
   font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
 }
 
-.back-btn:hover { background: rgba(255,255,255,0.25); }
+.back-btn:hover { 
+  background: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,0.4);
+  transform: translateX(-3px);
+}
+
+.back-btn svg {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.back-btn:hover svg {
+  transform: translateX(-2px);
+}
 
 .cart-btn {
   background: white;
@@ -60,10 +84,20 @@
   cursor: pointer;
   transition: all 0.2s;
   font-family: 'Inter', sans-serif;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.cart-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.cart-btn:hover { 
+  transform: translateY(-1px); 
+  opacity: 0.9;
+}
+
+.cart-btn svg {
+  flex-shrink: 0;
+}
 
 /* CONTAINER */
 .products-container {
@@ -372,24 +406,21 @@
    ══════════════════════════════════════ */
 
 /* Cart count badge on header button */
-.cart-btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
 .cart-count {
-  background: #e53e3e;
+  background: #dc2626;
   color: white;
   font-size: 0.7rem;
   font-weight: 800;
   min-width: 20px;
   height: 20px;
-  border-radius: 50px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 5px;
+  padding: 0 6px;
+  position: absolute;
+  top: -6px;
+  right: -6px;
 }
 
 /* Add-to-cart button flash */
@@ -701,7 +732,7 @@
   grid-template-columns: 300px 1fr;
   gap: 32px;
   max-width: 1400px;
-  margin: 0 auto;
+  margin: 24px auto 0;
   padding: 0 48px 60px;
 }
 

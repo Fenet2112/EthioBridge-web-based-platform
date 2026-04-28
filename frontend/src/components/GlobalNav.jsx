@@ -1,5 +1,6 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
 import Logo from "./Logo";
 import DarkModeToggle from "./DarkModeToggle";
 import "./GlobalNav.css";
@@ -16,6 +17,8 @@ function scrollToSection(e, sectionId) {
 
 export default function GlobalNav() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuth();
   const isHome = location.pathname === "/";
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -26,16 +29,40 @@ export default function GlobalNav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const handleLogoClick = (e) => {
+    if (isAuthenticated) {
+      e.preventDefault();
+      console.log('[GlobalNav] Authenticated user clicked home, logging out');
+      logout();
+      
+      // Force navigation to home and reload to ensure clean state
+      window.location.href = '/';
+    }
+    setMenuOpen(false);
+  };
+
+  const handleHomeNavClick = (e) => {
+    if (isAuthenticated) {
+      e.preventDefault();
+      console.log('[GlobalNav] Authenticated user clicked home link, logging out');
+      logout();
+      
+      // Force navigation to home and reload to ensure clean state
+      window.location.href = '/';
+    }
+    setMenuOpen(false);
+  };
+
   return (
     <nav className={`global-nav${scrolled ? " scrolled" : ""}`}>
-      <Link to="/" className="global-nav-logo" onClick={() => setMenuOpen(false)}>
+      <Link to="/" className="global-nav-logo" onClick={handleLogoClick}>
         <Logo size={40} color="#1d522d" />
         <span className="global-nav-logo-text">EthioBridge</span>
       </Link>
 
       <ul className={`global-nav-links${menuOpen ? " open" : ""}`}>
-        <li><Link to="/" className={isHome ? "active" : ""} onClick={() => setMenuOpen(false)}>Home</Link></li>
-        <li><Link to="/products" onClick={() => setMenuOpen(false)}>Products</Link></li>
+        <li><Link to="/" className={isHome ? "active" : ""} onClick={handleHomeNavClick}>Home</Link></li>
+        <li><Link to="/products" state={{ from: 'home' }} onClick={() => setMenuOpen(false)}>Products</Link></li>
         <li><Link to="/explore" onClick={() => setMenuOpen(false)}>Explore Map</Link></li>
         {isHome && (
           <>

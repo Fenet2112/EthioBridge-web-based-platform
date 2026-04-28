@@ -331,9 +331,8 @@ function Stakeholders() {
                   aria-label="Search industries"
                 />
                 <button 
-                  className={`search-location-btn ${userLocation ? 'active' : ''} ${locationLoading ? 'loading' : ''}`}
+                  className={`search-location-btn ${userLocation ? 'active' : ''}`}
                   onClick={requestUserLocation}
-                  disabled={locationLoading}
                   title={userLocation ? 'Location enabled' : 'Get my location'}
                   aria-label="Get current location"
                 >
@@ -474,7 +473,7 @@ function Stakeholders() {
                       <div className="card-actions">
                         <button 
                           className="btn-outline"
-                          onClick={() => handleViewDetails(industry.id)}
+                          onClick={() => navigate(`/industry/${industry.id}`, { state: { from: 'stakeholders' } })}
                         >
                           View Details
                         </button>
@@ -648,10 +647,10 @@ function Stakeholders() {
           <div className="footer-col">
             <h4>Company</h4>
             <ul>
-              <li><a href="#about">About Us</a></li>
-              <li><a href="#services">Services</a></li>
+              <li><a href="">About Us</a></li>
+              <li><a href="">Services</a></li>
               <li><a href="/help">Help Center</a></li>
-              <li><a href="#contact">Contact Us</a></li>
+              
             </ul>
           </div>
 
@@ -679,9 +678,9 @@ function Stakeholders() {
         <div className="footer-bottom">
           <p>© 2024 EthioBridge. All rights reserved. Building Ethiopia's construction future.</p>
           <div className="footer-bottom-links">
-            <a href="#privacy">Privacy Policy</a>
+            <a href="">Privacy Policy</a>
             <span>•</span>
-            <a href="#terms">Terms of Service</a>
+            <a href="">Terms of Service</a>
           </div>
         </div>
       </footer>

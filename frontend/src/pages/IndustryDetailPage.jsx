@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import StakeholderNav from "../components/StakeholderNav";
 import SubscriptionModal from "../components/SubscriptionModal";
 import IDVerificationModal from "../components/IDVerificationModal";
 import { API_BASE_URL } from "../utils/api";
@@ -20,12 +21,28 @@ function IndustryDetailPage() {
   const [showSubModal, setShowSubModal] = useState(false);
   const [showIDModal, setShowIDModal] = useState(false);
   const [pendingVerificationRequestId, setPendingVerificationRequestId] = useState(null);
+  
+  // Messaging state
+  const [showMessaging, setShowMessaging] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const messagesEndRef = React.useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
       const token = localStorage.getItem("token");
       const userData = JSON.parse(localStorage.getItem("user") || "{}");
-      if (!token) { navigate("/login"); return; }
+      
+      console.log("[IndustryDetailPage] Fetching industry with ID:", id);
+      console.log("[IndustryDetailPage] User data:", userData);
+      console.log("[IndustryDetailPage] Token exists:", !!token);
+      
+      if (!token) { 
+        console.log("[IndustryDetailPage] No token, redirecting to login");
+        navigate("/login"); 
+        return; 
+      }
 
       try {
         if (userData.role === "stakeholder") {
@@ -55,15 +72,20 @@ function IndustryDetailPage() {
           }
         }
 
+        console.log("[IndustryDetailPage] Fetching from:", `${API_BASE_URL}/api/industries/${id}`);
         const res = await fetch(`${API_BASE_URL}/api/industries/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
+        console.log("[IndustryDetailPage] Response status:", res.status);
+        console.log("[IndustryDetailPage] Response data:", data);
+        
         if (!res.ok) throw new Error(data.message || "Failed to fetch industry details");
         setIndustry(data.industry);
         setProducts(data.products);
         setReviews(data.reviews || []);
       } catch (err) {
+        console.error("[IndustryDetailPage] Error:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -140,22 +162,90 @@ function IndustryDetailPage() {
   };
 
   if (loading) return (
-    <div className="detail-loading">
-      <div className="loading-spinner"></div>
-      <p>Loading industry details...</p>
+    <div className="industry-detail-page-wrapper">
+      <StakeholderNav />
+      <div className="industry-detail-page">
+        <div className="detail-topbar">
+          <div className="skeleton-back-btn"></div>
+          <div className="skeleton-badge"></div>
+        </div>
+
+        {/* Skeleton Profile Section */}
+        <section className="industry-profile-section skeleton-section">
+          <div className="profile-hero">
+            <div className="skeleton-avatar-large"></div>
+            <div className="profile-hero-info">
+              <div className="skeleton-title"></div>
+              <div className="skeleton-badge-small"></div>
+            </div>
+            <div className="skeleton-button"></div>
+          </div>
+
+          <div className="profile-details-grid">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="skeleton-detail-chip"></div>
+            ))}
+          </div>
+
+          <div className="profile-description">
+            <div className="skeleton-heading"></div>
+            <div className="skeleton-text-line"></div>
+            <div className="skeleton-text-line"></div>
+            <div className="skeleton-text-line short"></div>
+          </div>
+        </section>
+
+        {/* Skeleton Products Section */}
+        <section className="products-section">
+          <div className="skeleton-heading"></div>
+          <div className="products-grid">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="skeleton-product-card">
+                <div className="skeleton-product-image"></div>
+                <div className="skeleton-product-info">
+                  <div className="skeleton-product-title"></div>
+                  <div className="skeleton-product-category"></div>
+                  <div className="skeleton-product-desc"></div>
+                  <div className="skeleton-product-desc short"></div>
+                  <div className="skeleton-product-footer">
+                    <div className="skeleton-price"></div>
+                    <div className="skeleton-button-small"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   );
-  if (error) return <div className="detail-error">⚠️ {error}</div>;
-  if (!industry) return <div className="detail-error">Industry not found</div>;
+  
+  if (error) return (
+    <div className="industry-detail-page-wrapper">
+      <StakeholderNav />
+      <div className="industry-detail-page">
+        <div className="detail-error">⚠️ {error}</div>
+      </div>
+    </div>
+  );
+  
+  if (!industry) return (
+    <div className="industry-detail-page-wrapper">
+      <StakeholderNav />
+      <div className="industry-detail-page">
+        <div className="detail-error">Industry not found</div>
+      </div>
+    </div>
+  );
 
   const isBlurred = !subStatus.can_request;
 
   return (
-    <div className="industry-detail-page">
+    <div className="industry-detail-page-wrapper">
+      <StakeholderNav />
+      <div className="industry-detail-page">
       <div className="detail-topbar">
-        <button className="back-btn" onClick={() => navigate("/stakeholders")} style={{ background: '#fff', border: '2px solid #0a5c2f', color: '#0a5c2f' }}>
-          ← Back to Industries
-        </button>
+       
         {!subStatus.is_subscribed && (
           <div className="free-usage-badge">
             {subStatus.free_requests_used >= 1
@@ -212,11 +302,11 @@ function IndustryDetailPage() {
             <h1>{industry.company_name}</h1>
             <span className="sector-badge">{industry.sector}</span>
           </div>
-          <button className="message-industry-btn" onClick={() => navigate(`/stakeholders`)}>
+          <button className="message-industry-btn" onClick={() => setShowMessaging(!showMessaging)}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
-            Message
+            {showMessaging ? 'Close Messages' : 'Message'}
           </button>
         </div>
 
@@ -286,14 +376,32 @@ function IndustryDetailPage() {
 
           {/* Verification */}
           <div className={`trust-card ${industry.is_verified ? 'trust-verified' : 'trust-unverified'}`}>
-            <div className="trust-card-icon">{industry.is_verified ? '✅' : '⚠️'}</div>
-            <div className="trust-card-label">Verification</div>
-            <div className="trust-card-value">{industry.is_verified ? 'Verified Industry' : 'Not Verified'}</div>
+            <div className="trust-card-icon">
+              {industry.is_verified ? (
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              ) : (
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              )}
+            </div>
+            <div className="trust-card-label">Verification Status</div>
+            <div className="trust-card-value">{industry.is_verified ? 'Verified' : 'Unverified'}</div>
+            <div className="trust-card-sub">{industry.is_verified ? 'Identity confirmed' : 'Pending verification'}</div>
           </div>
 
           {/* Success Rate */}
           <div className="trust-card">
-            <div className="trust-card-icon">📈</div>
+            <div className="trust-card-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+            </div>
             <div className="trust-card-label">Success Rate</div>
             {industry.success_rate !== null ? (
               <>
@@ -301,29 +409,42 @@ function IndustryDetailPage() {
                 <div className="trust-progress-bar">
                   <div className="trust-progress-fill" style={{ width: `${industry.success_rate}%` }} />
                 </div>
-                <div className="trust-card-sub">{industry.total_requests} total requests</div>
+                <div className="trust-card-sub">{industry.total_requests} completed requests</div>
               </>
             ) : (
-              <div className="trust-card-value trust-no-data">No data yet</div>
+              <>
+                <div className="trust-card-value trust-no-data">—</div>
+                <div className="trust-card-sub">No data available</div>
+              </>
             )}
           </div>
 
           {/* Response Speed */}
           <div className="trust-card">
-            <div className="trust-card-icon">⚡</div>
-            <div className="trust-card-label">Avg Response Time</div>
-            <div className="trust-card-value">
-              {industry.avg_response_time || <span className="trust-no-data">No data yet</span>}
+            <div className="trust-card-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
             </div>
+            <div className="trust-card-label">Response Time</div>
+            <div className="trust-card-value">
+              {industry.avg_response_time || <span className="trust-no-data">—</span>}
+            </div>
+            <div className="trust-card-sub">{industry.avg_response_time ? 'Average response' : 'No data available'}</div>
           </div>
 
           {/* Rating */}
           <div className="trust-card">
-            <div className="trust-card-icon">⭐</div>
-            <div className="trust-card-label">Rating</div>
+            <div className="trust-card-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </div>
+            <div className="trust-card-label">Customer Rating</div>
             {industry.avg_rating !== null ? (
               <>
-                <div className="trust-card-value">{industry.avg_rating} / 5</div>
+                <div className="trust-card-value">{industry.avg_rating.toFixed(1)} / 5.0</div>
                 <div className="trust-stars">
                   {[1,2,3,4,5].map(s => (
                     <span key={s} className={s <= Math.round(industry.avg_rating) ? 'star-filled' : 'star-empty'}>★</span>
@@ -332,7 +453,10 @@ function IndustryDetailPage() {
                 <div className="trust-card-sub">{industry.review_count} review{industry.review_count !== 1 ? 's' : ''}</div>
               </>
             ) : (
-              <div className="trust-card-value trust-no-data">No reviews yet</div>
+              <>
+                <div className="trust-card-value trust-no-data">—</div>
+                <div className="trust-card-sub">No reviews yet</div>
+              </>
             )}
           </div>
 
@@ -443,6 +567,94 @@ function IndustryDetailPage() {
           }}
         />
       )}
+
+      {/* Messaging Section */}
+      {showMessaging && industry && (
+        <div className="messaging-overlay" onClick={() => setShowMessaging(false)}>
+          <div className="messaging-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="messaging-header">
+              <div className="messaging-header-info">
+                <div className="messaging-avatar">{industry.company_name?.charAt(0) || "I"}</div>
+                <div>
+                  <h3>{industry.company_name}</h3>
+                  <p>{industry.sector}</p>
+                </div>
+              </div>
+              <button className="messaging-close-btn" onClick={() => setShowMessaging(false)}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+
+            <div className="messaging-body">
+              {messagesLoading ? (
+                <div className="messaging-loading">Loading messages...</div>
+              ) : messages.length === 0 ? (
+                <div className="messaging-empty">
+                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    <line x1="9" y1="10" x2="15" y2="10"/>
+                    <line x1="9" y1="14" x2="13" y2="14"/>
+                  </svg>
+                  <p>No messages yet. Start the conversation!</p>
+                </div>
+              ) : (
+                <>
+                  {messages.map(msg => (
+                    <div
+                      key={msg.id}
+                      className={`message-bubble ${msg.sender_role === 'stakeholder' ? 'sent' : 'received'}`}
+                    >
+                      <div className="message-content">{msg.content}</div>
+                      <div className="message-time">
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </>
+              )}
+            </div>
+
+            <div className="messaging-input-area">
+              <div className="messaging-input-row">
+                <input
+                  type="text"
+                  placeholder="Type a message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey && newMessage.trim()) {
+                      e.preventDefault();
+                      // Handle send message
+                      console.log('Send message:', newMessage);
+                      setNewMessage('');
+                    }
+                  }}
+                />
+                <button 
+                  className="messaging-send-btn"
+                  disabled={!newMessage.trim()}
+                  onClick={() => {
+                    if (newMessage.trim()) {
+                      console.log('Send message:', newMessage);
+                      setNewMessage('');
+                    }
+                  }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
     </div>
   );
 }

@@ -1085,13 +1085,40 @@
   font-weight: 700;
   text-decoration: none;
   transition: all 0.3s;
+  cursor: pointer;
+  font-family: inherit;
 }
 
-.footer-social-btn:hover {
+.footer-social-btn:hover:not(:disabled) {
   background: #0a5c2f;
   color: white;
   border-color: #0a5c2f;
   transform: translateY(-2px);
+}
+
+.footer-social-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.footer-link-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: color 0.2s;
+  font-family: inherit;
+  padding: 0;
+}
+
+.footer-link-btn:hover:not(:disabled) {
+  color: white;
+}
+
+.footer-link-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .footer-col h4 {
@@ -1427,10 +1454,19 @@
   font-weight: 700;
   text-decoration: none;
   transition: all 0.2s;
+  cursor: pointer;
+  font-family: inherit;
 }
-.social-btn:hover {
+.social-btn:hover:not(:disabled) {
   background: #0a5c2f;
   color: white;
+  border-color: #0a5c2f;
+  transform: translateY(-2px);
+}
+.social-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+
   border-color: #0a5c2f;
   transform: translateY(-2px);
 }

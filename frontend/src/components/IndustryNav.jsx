@@ -2,28 +2,26 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { 
-  FaIndustry, FaComments, FaBox, FaStar, FaUser, FaQuestionCircle,
-  FaLink, FaTimes, FaHome, FaDoorOpen, FaClipboardList, FaBell,
-  FaShoppingCart
+  FaUsers, FaComments, FaBox, FaChartLine, FaUser, FaQuestionCircle,
+  FaLink, FaTimes, FaHome, FaDoorOpen, FaClipboardList, FaBell
 } from "react-icons/fa";
 import ProfileDropdown from "./ProfileDropdown";
 import DarkModeToggle from "./DarkModeToggle";
-import "./StakeholderNav.css";
+import "./IndustryNav.css";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const NAV_ITEMS = [
-  { path: "/stakeholders",    icon: <FaIndustry />,     label: "Industries"      },
-  { path: "/my-transactions", icon: <FaClipboardList />, label: "My Transactions" },
-  { path: "/messages",        icon: <FaComments />,     label: "Messages"        },
-  { path: "/products",        icon: <FaBox />,          label: "Products"        },
-  { path: "/recommendations", icon: <FaStar />,         label: "For You"         },
-  { path: "/profile",         icon: <FaUser />,         label: "Profile"         },
-  { path: "/subscription",    icon: <FaStar />,         label: "Subscription"    },
-  { path: "/help",            icon: <FaQuestionCircle />, label: "Help"          },
+  { path: "/industry",        icon: <FaUsers />,         label: "Stakeholders"    },
+  { path: "/industry/messages", icon: <FaComments />,    label: "Messages"        },
+  { path: "/industry/products", icon: <FaBox />,         label: "Products"        },
+  { path: "/industry/requests", icon: <FaClipboardList />, label: "Requests"     },
+  { path: "/industry/analytics", icon: <FaChartLine />,  label: "Analytics"       },
+  { path: "/industry/profile",   icon: <FaUser />,       label: "Profile"         },
+  { path: "/help",               icon: <FaQuestionCircle />, label: "Help"        },
 ];
 
-function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, requestUserLocation }) {
+function IndustryNav({ unreadCount = 0 }) {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { logout } = useAuth();
@@ -42,7 +40,7 @@ function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, reques
 
   const fetchUnreadCount = async () => {
     try {
-      const res = await fetch(`${API}/api/stakeholder/notifications/unread-count`, {
+      const res = await fetch(`${API}/api/industry/notifications/unread-count`, {
         headers: { Authorization: `Bearer ${tok()}` }
       });
       if (res.ok) { const d = await res.json(); setNotifUnread(d.count || 0); }
@@ -52,7 +50,7 @@ function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, reques
   const fetchNotifications = async () => {
     setNotifsLoading(true);
     try {
-      const res = await fetch(`${API}/api/stakeholder/notifications`, {
+      const res = await fetch(`${API}/api/industry/notifications`, {
         headers: { Authorization: `Bearer ${tok()}` }
       });
       if (res.ok) { const d = await res.json(); setNotifications(d.notifications || []); }
@@ -61,7 +59,7 @@ function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, reques
   };
 
   const markRead = async (id) => {
-    await fetch(`${API}/api/stakeholder/notifications/${id}/read`, {
+    await fetch(`${API}/api/industry/notifications/${id}/read`, {
       method: 'PATCH', headers: { Authorization: `Bearer ${tok()}` }
     });
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
@@ -69,7 +67,7 @@ function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, reques
   };
 
   const markAllRead = async () => {
-    await fetch(`${API}/api/stakeholder/notifications/mark-all-read`, {
+    await fetch(`${API}/api/industry/notifications/mark-all-read`, {
       method: 'PATCH', headers: { Authorization: `Bearer ${tok()}` }
     });
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
@@ -117,12 +115,7 @@ function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, reques
   useEffect(() => { setOpen(false); }, [location.pathname]);
 
   const go = (path) => { 
-    // Pass state when navigating to products from stakeholders
-    if (path === '/products') {
-      navigate(path, { state: { from: 'stakeholders' } });
-    } else {
-      navigate(path);
-    }
+    navigate(path);
     setOpen(false); 
   };
 
@@ -133,7 +126,7 @@ function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, reques
 
   const handleHomeClick = (e) => {
     e.preventDefault();
-    console.log('[StakeholderNav] Navigating to home, logging out');
+    console.log('[IndustryNav] Navigating to home, logging out');
     
     // Logout and redirect to home
     logout();
@@ -145,40 +138,37 @@ function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, reques
   return (
     <>
       {/* ── Top bar ── */}
-      <nav className="sk-nav">
+      <nav className="ind-nav">
         {/* Hamburger */}
         <button
-          className={`sk-burger ${open ? "open" : ""}`}
+          className={`ind-burger ${open ? "open" : ""}`}
           onClick={() => setOpen(o => !o)}
           aria-label="Toggle menu"
         >
-          <span className="sk-bar" />
-          <span className="sk-bar" />
-          <span className="sk-bar" />
+          <span className="ind-bar" />
+          <span className="ind-bar" />
+          <span className="ind-bar" />
         </button>
 
         {/* Brand */}
-        <Link to="/stakeholders" className="sk-nav-brand" title="Industries">
-          <span className="sk-nav-logo"><FaLink /></span>
-          <span className="sk-nav-name">EthioBridge</span>
+        <Link to="/industry" className="ind-nav-brand" title="Dashboard">
+          <span className="ind-nav-logo"><FaLink /></span>
+          <span className="ind-nav-name">EthioBridge</span>
         </Link>
         
         {/* Spacer */}
         <div style={{ flex: 1 }} />
         
         {/* Right side — always visible */}
-        <div className="sk-nav-right">
-          <Link to="/cart" className="sk-nav-home sk-cart-btn" title="Cart">
-            <FaShoppingCart />
-          </Link>
-          <Link to="/" className="sk-nav-home" title="Back to Home" onClick={handleHomeClick}>
+        <div className="ind-nav-right">
+          <Link to="/" className="ind-nav-home" title="Back to Home" onClick={handleHomeClick}>
             <FaHome />
           </Link>
 
           {/* Notification Bell */}
-          <div className="sk-notif-wrap" ref={notifRef}>
+          <div className="ind-notif-wrap" ref={notifRef}>
             <button
-              className="sk-notif-btn"
+              className="ind-notif-btn"
               title="Notifications"
               onClick={() => {
                 setShowNotif(v => !v);
@@ -186,34 +176,34 @@ function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, reques
               }}
             >
               <FaBell />
-              {notifUnread > 0 && <span className="sk-notif-badge">{notifUnread}</span>}
+              {notifUnread > 0 && <span className="ind-notif-badge">{notifUnread}</span>}
             </button>
 
             {showNotif && (
-              <div className="sk-notif-dropdown">
-                <div className="sk-notif-header">
+              <div className="ind-notif-dropdown">
+                <div className="ind-notif-header">
                   <span>Notifications</span>
                   {notifUnread > 0 && (
-                    <button className="sk-notif-mark-all" onClick={markAllRead}>
+                    <button className="ind-notif-mark-all" onClick={markAllRead}>
                       Mark all read
                     </button>
                   )}
                 </div>
-                <div className="sk-notif-list">
+                <div className="ind-notif-list">
                   {notifsLoading ? (
-                    <div className="sk-notif-empty">Loading…</div>
+                    <div className="ind-notif-empty">Loading…</div>
                   ) : notifications.length === 0 ? (
-                    <div className="sk-notif-empty">No notifications yet</div>
+                    <div className="ind-notif-empty">No notifications yet</div>
                   ) : (
                     notifications.map(n => (
                       <div
                         key={n.id}
-                        className={`sk-notif-item ${n.is_read ? "read" : "unread"}`}
+                        className={`ind-notif-item ${n.is_read ? "read" : "unread"}`}
                         onClick={() => { if (!n.is_read) markRead(n.id); setShowNotif(false); }}
                       >
-                        <div className="sk-notif-title">{n.title}</div>
-                        <div className="sk-notif-msg">{n.message}</div>
-                        <div className="sk-notif-time">{fmtAgo(n.created_at)}</div>
+                        <div className="ind-notif-title">{n.title}</div>
+                        <div className="ind-notif-msg">{n.message}</div>
+                        <div className="ind-notif-time">{fmtAgo(n.created_at)}</div>
                       </div>
                     ))
                   )}
@@ -228,37 +218,37 @@ function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, reques
       </nav>
 
       {/* ── Backdrop ── */}
-      {open && <div className="sk-backdrop" onClick={() => setOpen(false)} />}
+      {open && <div className="ind-backdrop" onClick={() => setOpen(false)} />}
 
       {/* ── Slide-in drawer ── */}
-      <aside className={`sk-drawer ${open ? "open" : ""}`} ref={drawerRef}>
-        <div className="sk-drawer-header">
-          <span className="sk-drawer-title"><FaLink /> EthioPartner</span>
-          <button className="sk-drawer-close" onClick={() => setOpen(false)}><FaTimes /></button>
+      <aside className={`ind-drawer ${open ? "open" : ""}`} ref={drawerRef}>
+        <div className="ind-drawer-header">
+          <span className="ind-drawer-title"><FaLink /> EthioPartner</span>
+          <button className="ind-drawer-close" onClick={() => setOpen(false)}><FaTimes /></button>
         </div>
 
-        <nav className="sk-drawer-nav">
+        <nav className="ind-drawer-nav">
           {NAV_ITEMS.map(item => (
             <button
               key={item.path}
-              className={`sk-drawer-item ${active === item.path ? "active" : ""}`}
+              className={`ind-drawer-item ${active === item.path ? "active" : ""}`}
               onClick={() => go(item.path)}
             >
-              <span className="sk-drawer-icon">{item.icon}</span>
-              <span className="sk-drawer-label">{item.label}</span>
-              {item.path === "/messages" && unreadCount > 0 && (
-                <span className="sk-drawer-badge">{unreadCount}</span>
+              <span className="ind-drawer-icon">{item.icon}</span>
+              <span className="ind-drawer-label">{item.label}</span>
+              {item.path === "/industry/messages" && unreadCount > 0 && (
+                <span className="ind-drawer-badge">{unreadCount}</span>
               )}
-              {active === item.path && <span className="sk-drawer-dot" />}
+              {active === item.path && <span className="ind-drawer-dot" />}
             </button>
           ))}
         </nav>
 
-        <div className="sk-drawer-footer">
-          <button className="sk-drawer-home" onClick={handleHomeClick}>
+        <div className="ind-drawer-footer">
+          <button className="ind-drawer-home" onClick={handleHomeClick}>
             <span><FaHome /></span> Back to Home
           </button>
-          <button className="sk-drawer-logout" onClick={handleLogout}>
+          <button className="ind-drawer-logout" onClick={handleLogout}>
             <span><FaDoorOpen /></span> Logout
           </button>
         </div>
@@ -267,4 +257,4 @@ function StakeholderNav({ unreadCount = 0, userLocation, locationLoading, reques
   );
 }
 
-export default StakeholderNav;
+export default IndustryNav;

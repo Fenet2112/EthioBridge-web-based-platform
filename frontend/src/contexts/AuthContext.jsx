@@ -80,7 +80,7 @@ export function AuthProvider({ children }) {
     const updatedUser = { ...user, ...userData };
     setUser(updatedUser);
     localStorage.setItem('user', JSON.stringify(updatedUser));
-    console.log('[Auth] User data updated');
+    console.log('[Auth] User data updated'); 
   };
 
   // Helper to get auth headers for API calls

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import SubscriptionModal from "./SubscriptionModal";
 import IDVerificationModal from "./IDVerificationModal";
 import { API_BASE_URL } from "../utils/api";
-import "./IndustryDetailPage.css";
+import "../pages/IndustryDetailPage.css";
 
 function IndustryDetailPage() {
   const { id } = useParams();

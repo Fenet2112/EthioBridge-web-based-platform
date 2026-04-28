@@ -181,17 +181,19 @@ function StakeholderMessages() {
     if (file.size > 10 * 1024 * 1024) { alert("File must be under 10 MB"); e.target.value = ""; return; }
     setSelectedFile(file);
   };
-const removeSelectedFile = () => {
+  
+  const removeSelectedFile = () => {
     setSelectedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   if (loading) return <div className="messages-page-loading">Loading...</div>;
-}
+
   return (
     <div className="stakeholder-messages-page">
       <StakeholderNav unreadCount={unreadCount + supportUnread} />
 
       <div className="messages-container">
-
         {/* ── Sidebar ── */}
         <div className="conversations-list">
           <div className="messages-tabs">
@@ -199,7 +201,10 @@ const removeSelectedFile = () => {
               className={`messages-tab ${activeTab === "conversations" ? "active" : ""}`}
               onClick={() => setActiveTab("conversations")}
             >
-              Conversations
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              <span>Chats</span>
               {unreadCount > 0 && <span className="tab-badge">{unreadCount}</span>}
             </button>
             <button
@@ -210,74 +215,118 @@ const removeSelectedFile = () => {
                 setSupportUnread(0);
               }}
             >
-              Support
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span>Support</span>
               {supportUnread > 0 && <span className="tab-badge">{supportUnread}</span>}
             </button>
           </div>
 
           {activeTab === "conversations" && (
-            conversations.length === 0
-              ? <p className="no-conversations">No conversations yet. Start messaging industries from the main page!</p>
-              : conversations.map(conv => (
-                  <div
-                    key={conv.id}
-                    className={`conversation-item ${selectedConversation?.id === conv.id ? "active" : ""}`}
-                    onClick={() => loadMessages(conv)}
-                  >
-                    <div className="conv-avatar">{conv.company_name?.charAt(0) || "I"}</div>
-                    <div className="conv-info">
-                      <h4>{conv.company_name}</h4>
-                      <p className="last-message">{conv.last_message || "No messages yet"}</p>
+            <>
+              <div className="conversations-header">
+                <h3>Messages</h3>
+                <span className="conversations-count">{conversations.length}</span>
+              </div>
+              {conversations.length === 0 ? (
+                <div className="no-conversations">
+                  <p>No conversations yet</p>
+                  <p style={{ fontSize: '0.85rem', opacity: 0.8 }}>Start messaging industries from the stakeholders page!</p>
+                </div>
+              ) : (
+                <div className="conversations-scroll">
+                  {conversations.map(conv => (
+                    <div
+                      key={conv.id}
+                      className={`conversation-item ${selectedConversation?.id === conv.id ? "active" : ""}`}
+                      onClick={() => loadMessages(conv)}
+                    >
+                      <div className="conv-avatar">{conv.company_name?.charAt(0) || "I"}</div>
+                      <div className="conv-info">
+                        <h4>{conv.company_name}</h4>
+                        <p className="last-message">{conv.last_message || "No messages yet"}</p>
+                      </div>
+                      <div className="conv-meta">
+                        {conv.last_message_time && (
+                          <span className="conv-time">
+                            {new Date(conv.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                        {conv.unread_count > 0 && <span className="unread-count">{conv.unread_count}</span>}
+                      </div>
                     </div>
-                    {conv.unread_count > 0 && <span className="unread-count">{conv.unread_count}</span>}
-                  </div>
-                ))
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
           {activeTab === "support" && (
-            <div className="support-sidebar-info">
-              <div className="conv-avatar support-avatar">🛡</div>
-              <div className="conv-info">
-                <h4>EthioBridge Support</h4>
-                <p className="last-message">Your support tickets &amp; replies</p>
+            <>
+              <div className="conversations-header">
+                <h3>Support</h3>
+                {supportUnread > 0 && <span className="conversations-count">{supportUnread}</span>}
               </div>
-              {supportUnread > 0 && <span className="unread-count">{supportUnread}</span>}
-            </div>
+              <div className="support-sidebar-info">
+                <div className="conv-avatar support-avatar">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+                <div className="conv-info">
+                  <h4>EthioBridge Support</h4>
+                  <p className="last-message">Get help from our support team</p>
+                </div>
+              </div>
+            </>
           )}
         </div>
 
         {/* ── Main area ── */}
         <div className="messages-area">
-
           {/* Conversations tab */}
           {activeTab === "conversations" && (
-            !selectedConversation
-              ? <div className="no-conversation-selected"><p>Select a conversation to start messaging</p></div>
-              : <>
-                  <div className="messages-header">
-                    <div className="industry-info">
-                      <div className="industry-avatar">{selectedConversation.company_name?.charAt(0) || "I"}</div>
-                      <div>
-                        <h3>{selectedConversation.company_name}</h3>
-                        <p>{selectedConversation.sector}</p>
-                      </div>
+            !selectedConversation ? (
+              <div className="no-conversation-selected">
+                <div className="no-conversation-icon">
+                  <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    <line x1="9" y1="10" x2="15" y2="10"/>
+                    <line x1="9" y1="14" x2="13" y2="14"/>
+                  </svg>
+                </div>
+                <p>Select a conversation to start messaging</p>
+              </div>
+            ) : (
+              <>
+                <div className="messages-header">
+                  <div className="industry-info">
+                    <div className="industry-avatar">{selectedConversation.company_name?.charAt(0) || "I"}</div>
+                    <div>
+                      <h3>{selectedConversation.company_name}</h3>
+                      <p>{selectedConversation.sector}</p>
                     </div>
                   </div>
+                </div>
 
-              <div className="messages-list">
-                {messagesLoading ? (
-                  <p>Loading messages...</p>
-                ) : messages.length === 0 ? (
-                  <p className="no-messages">No messages yet. Start the conversation!</p>
-                ) : (
-                  <>
-                    {messages.map(msg => (
-                      <div
-                        key={msg.id}
-                        className={`message-bubble ${msg.sender_role === 'stakeholder' ? 'sent' : 'received'}`}
-                      >
-                        <div className="message-content">
-                          {msg.content}
+                <div className="messages-list">
+                  {messagesLoading ? (
+                    <p>Loading messages...</p>
+                  ) : messages.length === 0 ? (
+                    <p className="no-messages">No messages yet. Start the conversation!</p>
+                  ) : (
+                    <>
+                      {messages.map(msg => (
+                        <div
+                          key={msg.id}
+                          className={`message-bubble ${msg.sender_role === 'stakeholder' ? 'sent' : 'received'}`}
+                        >
+                          <div>
+                            {msg.content}
+                          </div>
                           {msg.file_url && (
                             <div className="message-attachment">
                               <a href={`${API_BASE_URL}${msg.file_url}`} target="_blank" rel="noopener noreferrer" className="attachment-link">
@@ -289,77 +338,134 @@ const removeSelectedFile = () => {
                               </a>
                             </div>
                           )}
+                          <div className="message-time">
+                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
                         </div>
-                        <div className="message-time">
-                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      ))}
+                      <div ref={messagesEndRef} />
+                    </>
+                  )}
+                </div>
+
+                <div className="message-input-area">
+                  {selectedFile && (
+                    <div className="selected-file-preview">
+                      <div className="file-preview-content">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                          <polyline points="13 2 13 9 20 9"/>
+                        </svg>
+                        <div className="file-info">
+                          <span className="file-name">{selectedFile.name}</span>
+                          <span className="file-size">{(selectedFile.size / 1024).toFixed(1)} KB</span>
                         </div>
                       </div>
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </>
-                )}
-              </div>
-
-              <div className="message-input-area">
-                {selectedFile && (
-                  <div className="selected-file-preview">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
-                      <polyline points="13 2 13 9 20 9"/>
-                    </svg>
-                    <span>{selectedFile.name}</span>
-                    <button type="button" onClick={removeSelectedFile} className="remove-file-btn">✕</button>
+                      <button type="button" onClick={removeSelectedFile} className="remove-file-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"/>
+                          <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                  <div className="input-row">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
+                      style={{ display: 'none' }}
+                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => fileInputRef.current?.click()} 
+                      className="attach-btn"
+                      title="Attach file"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                      </svg>
+                    </button>
+                    <input
+                      type="text"
+                      placeholder="Type a message..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                    />
+                    <button 
+                      className="send-btn"
+                      onClick={sendMessage} 
+                      disabled={!newMessage.trim() && !selectedFile}
+                      title="Send message"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"/>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                      </svg>
+                    </button>
                   </div>
-                )}
-                <div className="input-row">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    style={{ display: 'none' }}
-                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
-                  />
-                  <button 
-                    type="button" 
-                    onClick={() => fileInputRef.current?.click()} 
-                    className="attach-btn"
-                    title="Attach file"
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                </div>
+              </>
+            )
+          )}
+
+          {/* Support tab */}
+          {activeTab === "support" && (
+            <>
+              <div className="messages-header support-header">
+                <div className="industry-info">
+                  <div className="industry-avatar support-avatar-header">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                     </svg>
-                  </button>
-                  <input
-                    type="text"
-                    placeholder="Type your message..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                  />
-                  <button onClick={sendMessage} disabled={!newMessage.trim() && !selectedFile}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="22" y1="2" x2="11" y2="13"/>
-                      <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                    </svg>
-                  </button>
+                  </div>
+                  <div>
+                    <h3>EthioBridge Support</h3>
+                    <p>We're here to help you</p>
+                  </div>
                 </div>
                 <button
                   className="support-refresh-btn"
                   onClick={() => loadSupportThread()}
-                  title="Refresh"
-                >↻ Refresh</button>
+                  title="Refresh messages"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <polyline points="1 20 1 14 7 14"/>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                  </svg>
+                </button>
               </div>
 
               <div className="messages-list">
                 {supportLoading ? (
-                  <p style={{ padding: "20px", textAlign: "center" }}>Loading support messages…</p>
+                  <div className="loading-state">
+                    <div className="loading-spinner"></div>
+                    <p>Loading support messages...</p>
+                  </div>
                 ) : supportThread.length === 0 ? (
-                  <div style={{ padding: "40px 20px", textAlign: "center", color: "#6b7280" }}>
-                    <p style={{ fontSize: "1.1rem", marginBottom: "8px" }}>No support messages yet.</p>
-                    <p style={{ fontSize: "0.9rem" }}>
-                      Use the <a href="/contact" style={{ color: "#0a5c2f", fontWeight: 600 }}>Contact Us</a> or{" "}
-                      <a href="/help" style={{ color: "#0a5c2f", fontWeight: 600 }}>Help Center</a> page to send a message.
-                    </p>
+                  <div className="empty-state">
+                    <div className="empty-state-icon">
+                      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        <line x1="9" y1="10" x2="15" y2="10"/>
+                        <line x1="12" y1="7" x2="12" y2="13"/>
+                      </svg>
+                    </div>
+                    <h4>No support messages yet</h4>
+                    <p>Need help? Contact our support team through the Help Center</p>
+                    <div className="empty-state-actions">
+                      <a href="/help" className="empty-state-btn primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"/>
+                          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                          <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                        Help Center
+                      </a>
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -369,12 +475,15 @@ const removeSelectedFile = () => {
                         className={`message-bubble ${msg.sender === "user" ? "sent" : "received support-reply"}`}
                       >
                         {msg.sender === "admin" && (
-                          <div className="support-sender-label">🛡 EthioBridge Support</div>
+                          <div className="support-sender-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                            <span>Support Team</span>
+                          </div>
                         )}
-                        <div className="message-content">
-                          {msg.subject && <div className="support-subject">{msg.subject}</div>}
-                          <div>{msg.content}</div>
-                        </div>
+                        {msg.subject && <div className="support-subject">{msg.subject}</div>}
+                        <div>{msg.content}</div>
                         <div className="message-time">
                           {new Date(msg.created_at).toLocaleString([], {
                             month: "short", day: "numeric",
@@ -393,15 +502,16 @@ const removeSelectedFile = () => {
                 )}
               </div>
 
-              <div className="support-footer-note">
-                <p>
-                  To send a new support message, visit the{" "}
-                  <a href="/contact">Contact Us</a> or <a href="/help">Help Center</a> page.
-                </p>
+              <div className="support-info-banner">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <span>To send a new support request, visit the <a href="/help">Help Center</a></span>
               </div>
             </>
           )}
-
         </div>
       </div>
     </div>
