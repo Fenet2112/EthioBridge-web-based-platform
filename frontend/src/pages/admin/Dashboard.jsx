@@ -104,7 +104,7 @@ function Dashboard() {
 
   // Purchases
   const [purchaseRequests, setPurchaseRequests] = useState([]);
-  const [prFilter, setPrFilter]   = useState("pending_verification");
+  const [prFilter, setPrFilter]   = useState("pending");
   const [prSearch, setPrSearch]   = useState("");
 
   // User management
@@ -140,11 +140,18 @@ function Dashboard() {
   const fetchPurchaseRequests = async () => {
     setLoading(true); setError("");
     try {
-      const url = prFilter === "all" ? `${API}/api/admin/purchases` : `${API}/api/admin/purchases?status=${prFilter}`;
+      // "pending" tab shows both pending and pending_verification requests
+      let url;
+      if (prFilter === "all") {
+        url = `${API}/api/admin/purchases`;
+      } else if (prFilter === "pending") {
+        url = `${API}/api/admin/purchases?status=pending_verification`;
+      } else {
+        url = `${API}/api/admin/purchases?status=${prFilter}`;
+      }
       const res = await fetch(url, { headers: { Authorization: `Bearer ${tok()}` } });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      // Handle both array response and object with purchases property
       const purchasesList = Array.isArray(data) ? data : (data.purchases || data.purchaseRequests || []);
       setPurchaseRequests(purchasesList);
     } catch (e) { setError(e.message); }
@@ -342,7 +349,7 @@ function Dashboard() {
         <nav className="admin-nav">
           {NAV.slice(0, 5).map(n => (
             <button key={n.id} className={view === n.id ? "active" : ""}
-              onClick={() => { navTo(n.id); if (n.id === "users") setFilter("pending"); if (n.id === "purchases") setPrFilter("pending_verification"); }}>
+              onClick={() => { navTo(n.id); if (n.id === "users") setFilter("pending"); if (n.id === "purchases") setPrFilter("pending"); }}>
               <span className="nav-icon">{n.icon}</span>{n.label}
             </button>
           ))}
@@ -476,9 +483,9 @@ function Dashboard() {
               <div className="admin-topbar">
                 <div><h1>Purchase Requests</h1><p>{filteredPR.length} of {purchaseRequests.length} requests</p></div>
                 <div className="topbar-actions">
-                  {["pending_verification","pending","approved","rejected","all"].map(f => (
+                  {["pending","approved","rejected","all"].map(f => (
                     <button key={f} className={prFilter === f ? "active" : ""} onClick={() => setPrFilter(f)}>
-                      {f === "pending_verification" ? "🛡️ ID Review" : f === "pending" ? "Pending" : f.charAt(0).toUpperCase() + f.slice(1)}
+                      {f.charAt(0).toUpperCase() + f.slice(1)}
                     </button>
                   ))}
                   <button className="refresh-btn" onClick={fetchPurchaseRequests}>↻ Refresh</button>
