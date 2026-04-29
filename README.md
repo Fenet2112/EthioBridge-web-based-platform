@@ -553,10 +553,9 @@ This project is proprietary software. All rights reserved.
 
 ---
 
-## 👤 Author
 
-**Fenet** — Full-Stack Developer  
-📧 fenufen491@gmail.com  
+
+ 
 🌐 [EthioBridge Platform](https://etbd.vercel.app)
 
 ---

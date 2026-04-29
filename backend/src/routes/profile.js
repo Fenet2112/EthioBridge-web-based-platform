@@ -9,7 +9,6 @@ const fs = require("fs");
 // Profile picture upload (Cloudinary or local fallback)
 const upload = createUpload("profiles", "profiles", 5);
 
-// ── GET STAKEHOLDER STATUS (for checking approval status) ──
 router.get("/stakeholder/status", authenticateToken, async (req, res) => {
   try {
     if (req.user.role !== "stakeholder") {
@@ -32,7 +31,6 @@ router.get("/stakeholder/status", authenticateToken, async (req, res) => {
   }
 });
 
-// ── GET MY PROFILE ──
 router.get("/me", authenticateToken, async (req, res) => {
   try {
     let query;
@@ -65,8 +63,8 @@ router.get("/me", authenticateToken, async (req, res) => {
 
     let result = await pool.query(query, [req.user.id]);
 
-    // Auto-create a minimal stakeholder row so new users can set photo/username/bio
-    // before they submit their org profile
+    // Auto-create a minimal row so new users can set photo/username/bio
+    // before they submit their full org profile
     if (result.rows.length === 0 && req.user.role === "stakeholder") {
       await pool.query(
         `INSERT INTO stakeholders (user_id, organization_name, organization_type, location)
@@ -87,14 +85,12 @@ router.get("/me", authenticateToken, async (req, res) => {
   }
 });
 
-// ── UPDATE PROFILE ──
 router.put("/me", authenticateToken, async (req, res) => {
   const { username, full_name, bio } = req.body;
 
   try {
     let query, table, profileId;
 
-    // Get or create profile row
     if (req.user.role === "stakeholder") {
       table = "stakeholders";
       const idResult = await pool.query("SELECT id FROM stakeholders WHERE user_id = $1", [req.user.id]);
@@ -121,7 +117,6 @@ router.put("/me", authenticateToken, async (req, res) => {
       return res.status(403).json({ message: "Invalid user role" });
     }
 
-    // Check if username is taken (if provided and different)
     if (username) {
       const usernameCheck = await pool.query(
         `SELECT id FROM ${table} WHERE username = $1 AND id != $2`,
@@ -132,7 +127,6 @@ router.put("/me", authenticateToken, async (req, res) => {
       }
     }
 
-    // Update profile
     query = `
       UPDATE ${table}
       SET 
@@ -161,7 +155,6 @@ router.put("/me", authenticateToken, async (req, res) => {
   }
 });
 
-// ── UPLOAD PROFILE PICTURE ──
 router.post("/me/picture", authenticateToken, upload.single("profile_picture"), async (req, res) => {
   try {
     if (!req.file) {
@@ -194,19 +187,17 @@ router.post("/me/picture", authenticateToken, upload.single("profile_picture"), 
       );
     }
 
-    // Get old profile picture to delete it
     const oldPicResult = await pool.query(
       `SELECT profile_picture FROM ${table} WHERE user_id = $1`,
       [req.user.id]
     );
 
-    // Update profile picture in database
     const result = await pool.query(
       `UPDATE ${table} SET profile_picture = $1 WHERE user_id = $2 RETURNING profile_picture`,
       [profilePictureUrl, req.user.id]
     );
 
-    // Delete old profile picture file if it exists
+    // Delete old file after updating so we don't orphan storage
     if (oldPicResult.rows.length > 0 && oldPicResult.rows[0].profile_picture) {
       await deleteFile(oldPicResult.rows[0].profile_picture);
     }
@@ -221,7 +212,6 @@ router.post("/me/picture", authenticateToken, upload.single("profile_picture"), 
   }
 });
 
-// ── DELETE PROFILE PICTURE ──
 router.delete("/me/picture", authenticateToken, async (req, res) => {
   try {
     let table;
@@ -243,7 +233,6 @@ router.delete("/me/picture", authenticateToken, async (req, res) => {
     if (result.rows.length > 0 && result.rows[0].profile_picture) {
       await deleteFile(result.rows[0].profile_picture);
 
-      // Remove from database
       await pool.query(
         `UPDATE ${table} SET profile_picture = NULL WHERE user_id = $1`,
         [req.user.id]
@@ -257,12 +246,11 @@ router.delete("/me/picture", authenticateToken, async (req, res) => {
   }
 });
 
-// ── GET PUBLIC PROFILE BY USERNAME ──
 router.get("/user/:username", async (req, res) => {
   const { username } = req.params;
 
   try {
-    // Try stakeholders first
+    // Try stakeholders first, then industries
     let result = await pool.query(
       `SELECT 
         s.username, s.full_name, s.bio, s.profile_picture,
@@ -275,7 +263,6 @@ router.get("/user/:username", async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      // Try industries
       result = await pool.query(
         `SELECT 
           i.username, i.full_name, i.bio, i.profile_picture,

@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-// JWT secret must be configured via environment variable
+// Lazy getter so a missing JWT_SECRET throws at request time, not at startup
 const getJwtSecret = () => {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
@@ -9,16 +9,12 @@ const getJwtSecret = () => {
   return secret;
 };
 
-// Don't call getJwtSecret at module load - call it when needed
+// Module-level fallback; routes use JWT_SECRET directly
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 
-// Token expiry times
-const ACCESS_TOKEN_EXPIRY = '7d'; // 7 days
-const REFRESH_TOKEN_EXPIRY = '30d'; // 30 days
+const ACCESS_TOKEN_EXPIRY = '7d';
+const REFRESH_TOKEN_EXPIRY = '30d';
 
-/**
- * Generate access token
- */
 function generateAccessToken(user) {
   return jwt.sign(
     { 
@@ -33,9 +29,6 @@ function generateAccessToken(user) {
   );
 }
 
-/**
- * Generate refresh token
- */
 function generateRefreshToken(user) {
   return jwt.sign(
     { 
@@ -48,10 +41,7 @@ function generateRefreshToken(user) {
   );
 }
 
-/**
- * Verifies JWT token from Authorization header.
- * Attaches decoded user { id, email, role, status } to req.user.
- */
+// Verifies JWT and attaches decoded user to req.user
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.startsWith("Bearer ")
@@ -59,7 +49,6 @@ function authenticateToken(req, res, next) {
     : null;
 
   if (!token) {
-    console.log('[Auth] No token provided');
     return res.status(401).json({ 
       message: "Access denied. No token provided.",
       code: 'NO_TOKEN'
@@ -69,21 +58,16 @@ function authenticateToken(req, res, next) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    // Check if it's an access token
     if (decoded.type !== 'access') {
-      console.log('[Auth] Invalid token type:', decoded.type);
       return res.status(403).json({ 
         message: "Invalid token type.",
         code: 'INVALID_TOKEN_TYPE'
       });
     }
     
-    req.user = decoded; // { id, email, role, status }
-    console.log(`[Auth] User authenticated: ${decoded.email} (${decoded.role})`);
+    req.user = decoded;
     next();
   } catch (err) {
-    console.log('[Auth] Token verification failed:', err.message);
-    
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ 
         message: "Token expired. Please login again.",
@@ -107,7 +91,7 @@ function authenticateToken(req, res, next) {
 }
 
 /**
- * Middleware factory – restricts access to specified roles.
+ * Restricts a route to specific roles.
  * Usage: requireRole('industry') or requireRole('stakeholder', 'industry')
  */
 function requireRole(...roles) {
@@ -131,9 +115,8 @@ function requireRole(...roles) {
 }
 
 /**
- * Middleware – only allows approved users through.
- * Must be used after authenticateToken.
- * Fetches fresh status from database instead of relying on JWT token.
+ * Fetches fresh status from DB rather than trusting the JWT claim,
+ * so suspended/banned accounts are blocked immediately without waiting for token expiry.
  */
 async function requireApproved(req, res, next) {
   if (!req.user) {
@@ -144,7 +127,6 @@ async function requireApproved(req, res, next) {
   }
   
   try {
-    // Fetch fresh status from database instead of using JWT token status
     const pool = require("../config/db");
     const result = await pool.query("SELECT status FROM users WHERE id = $1", [req.user.id]);
     
@@ -156,8 +138,6 @@ async function requireApproved(req, res, next) {
     }
     
     const currentStatus = result.rows[0].status;
-    
-    // Update req.user with fresh status from database
     req.user.status = currentStatus;
     
     if (currentStatus !== "approved") {

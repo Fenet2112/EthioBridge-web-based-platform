@@ -37,7 +37,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Global model state ─────────────────────────────────────────────────────────
+# Global model state — hot-swapped on /train without restarting the process
 _model: Optional[dict] = None
 _model_lock = threading.Lock()
 
@@ -58,7 +58,6 @@ def startup_event():
         print("[startup] No model found. Run  python train_model.py  first.")
         print("[startup] Falling back to popularity-based recommendations.")
 
-# ── DB helpers ─────────────────────────────────────────────────────────────────
 def get_conn():
     return psycopg2.connect(
         host=os.getenv("DB_HOST", "localhost"),
@@ -77,7 +76,6 @@ def query(sql, params=None):
     finally:
         conn.close()
 
-# ── Live data helpers ──────────────────────────────────────────────────────────
 def user_product_interactions(user_id: int) -> List[Dict]:
     return query("""
         SELECT s.user_id, pr.product_id
@@ -119,12 +117,10 @@ def live_popularity():
     max_cnt = max(r["cnt"] for r in rows)
     return {r["product_id"]: r["cnt"] / max_cnt for r in rows}
 
-# ── Cosine similarity ──────────────────────────────────────────────────────────
 def cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
     denom = np.linalg.norm(a) * np.linalg.norm(b)
     return float(np.dot(a, b) / denom) if denom > 0 else 0.0
 
-# ── Collaborative boost via KNN ────────────────────────────────────────────────
 def knn_collaborative_boost(user_id: int, model: dict, interactions: List[Dict]) -> dict:
     """
     Find similar users via KNN, return {product_id: boost_score}.
@@ -169,7 +165,6 @@ def knn_collaborative_boost(user_id: int, model: dict, interactions: List[Dict])
     max_cnt = max(r["cnt"] for r in rows)
     return {r["product_id"]: r["cnt"] / max_cnt for r in rows}
 
-# ── SVD collaborative boost ────────────────────────────────────────────────────
 def svd_collaborative_boost(user_id: int, model: dict) -> dict:
     """
     Use SVD latent factors to find similar users and their products.
@@ -189,7 +184,7 @@ def svd_collaborative_boost(user_id: int, model: dict) -> dict:
     sims       = user_factors @ user_vec / (
         np.linalg.norm(user_factors, axis=1) * np.linalg.norm(user_vec) + 1e-9
     )
-    sims[ui]   = -1  # exclude self
+    sims[ui]   = -1  # exclude self from similarity ranking
     top_k      = np.argsort(sims)[-5:][::-1]
     similar_ids = [all_users[i] for i in top_k if sims[i] > 0]
 
@@ -212,9 +207,6 @@ def svd_collaborative_boost(user_id: int, model: dict) -> dict:
     max_b = max(boost.values())
     return {k: v / max_b for k, v in boost.items()}
 
-# ══════════════════════════════════════════════════════════════════════════════
-# ENDPOINT: /recommend/products
-# ══════════════════════════════════════════════════════════════════════════════
 @app.get("/recommend/products")
 def recommend_products(
     user_id: int   = Query(...),
@@ -224,14 +216,12 @@ def recommend_products(
 ):
     model = get_model()
 
-    # ── Get user's purchase history ──────────────────────────────────────────
     interactions  = user_product_interactions(user_id)
     already_seen  = {r["product_id"] for r in interactions}
     has_history   = len(already_seen) > 0
     has_category  = bool(category and category.strip())
     has_budget    = budget > 0
 
-    # ── Get products (from model cache or live DB) ───────────────────────────
     if model and model.get("product_lookup"):
         products    = list(model["product_lookup"].values())
         product_pop = model.get("product_pop", {})
@@ -244,7 +234,7 @@ def recommend_products(
     if not products:
         return {"recommendations": [], "recommendation_type": "none", "model_version": None}
 
-    # ── Pure popularity fallback (no signal at all) ──────────────────────────
+    # No signal at all — return pure popularity ranking
     if not has_history and not has_category and not has_budget:
         popular = sorted(
             [
@@ -274,31 +264,28 @@ def recommend_products(
             "model_version":      model.get("version") if model else None,
         }
 
-    # ── Collaborative boosts ─────────────────────────────────────────────────
     knn_boost = knn_collaborative_boost(user_id, model, interactions) if model else {}
     svd_boost = svd_collaborative_boost(user_id, model) if model else {}
 
-    # ── Content-based query vector ───────────────────────────────────────────
     if preprocessor:
         query_vec = preprocessor.query_vector(category, budget)
     else:
-        # Fallback: simple keyword + price vector
+        # No trained preprocessor available; build a bare query vector
         from preprocessor import DataPreprocessor as DP
         tmp = DP()
         query_vec = tmp.query_vector(category, budget)
 
-    # ── Filter by category (soft) ────────────────────────────────────────────
+    # Soft category filter — fall back to all products if nothing matches
     if has_category:
         cat_lower = category.lower()
         candidates = [
             p for p in products
             if cat_lower in (p.get("category") or "").lower()
             or cat_lower in (p.get("name") or "").lower()
-        ] or products  # fall back to all if no match
+        ] or products  # fall back to all if no category match
     else:
         candidates = products
 
-    # ── Score each candidate ─────────────────────────────────────────────────
     scored = []
     for p in candidates:
         pid = p["id"]
@@ -319,7 +306,7 @@ def recommend_products(
         svd_score    = svd_boost.get(pid, 0.0)
         collab_score = 0.6 * knn_score + 0.4 * svd_score
 
-        # Soft budget penalty
+        # Soft budget penalty — partial over-budget products still surface, just ranked lower
         budget_penalty = 0.0
         if has_budget and p.get("price"):
             price = float(p["price"])
@@ -369,9 +356,6 @@ def recommend_products(
     }
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# ENDPOINT: /recommend/industries
-# ══════════════════════════════════════════════════════════════════════════════
 @app.get("/recommend/industries")
 def recommend_industries(
     user_id: int   = Query(...),
@@ -470,9 +454,6 @@ def recommend_industries(
     }
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# ENDPOINT: /train
-# ══════════════════════════════════════════════════════════════════════════════
 @app.post("/train")
 def trigger_training(background_tasks: BackgroundTasks):
     def _retrain():
@@ -492,7 +473,6 @@ def trigger_training(background_tasks: BackgroundTasks):
     return {"message": "Retraining started in background."}
 
 
-# ── Health ─────────────────────────────────────────────────────────────────────
 @app.get("/health")
 def health():
     model = get_model()

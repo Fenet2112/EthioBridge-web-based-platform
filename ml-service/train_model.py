@@ -36,7 +36,6 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../backend/.env
 
 from preprocessor import DataPreprocessor, MODEL_DIR, MODEL_PATH
 
-# ── DB helpers ─────────────────────────────────────────────────────────────────
 def get_conn():
     return psycopg2.connect(
         host=os.getenv("DB_HOST", "localhost"),
@@ -55,7 +54,6 @@ def query(sql, params=None):
     finally:
         conn.close()
 
-# ── 1. Fetch raw data ──────────────────────────────────────────────────────────
 def fetch_interactions():
     """All approved purchase requests: stakeholder user_id → product_id."""
     return query("""
@@ -103,7 +101,6 @@ def fetch_users():
         WHERE u.role = 'stakeholder' AND u.status = 'approved'
     """)
 
-# ── 2. Popularity scores ───────────────────────────────────────────────────────
 def compute_popularity(interactions: List[Dict], key: str) -> dict:
     counts = {}
     for r in interactions:
@@ -127,7 +124,6 @@ def compute_industry_popularity() -> dict:
     max_cnt = max(r["cnt"] for r in rows)
     return {r["industry_id"]: r["cnt"] / max_cnt for r in rows}
 
-# ── 3. Train KNN collaborative filter ─────────────────────────────────────────
 def train_knn(matrix: np.ndarray, n_neighbors: int = 10):
     if matrix is None or matrix.shape[0] < 2:
         print("[train] Not enough users for KNN — skipping.")
@@ -138,7 +134,6 @@ def train_knn(matrix: np.ndarray, n_neighbors: int = 10):
     print(f"[train] KNN trained: {matrix.shape[0]} users × {matrix.shape[1]} products")
     return knn
 
-# ── 4. Train SVD for latent factors ───────────────────────────────────────────
 def train_svd(matrix: np.ndarray, n_components: int = 20):
     if matrix is None or matrix.shape[0] < 2 or matrix.shape[1] < 2:
         print("[train] Not enough data for SVD — skipping.")
@@ -150,12 +145,10 @@ def train_svd(matrix: np.ndarray, n_components: int = 20):
           f"explained variance: {svd.explained_variance_ratio_.sum():.2%}")
     return svd, user_factors
 
-# ── 5. Evaluate (basic) ────────────────────────────────────────────────────────
 def evaluate_model(knn, matrix, all_users, all_products):
     """
-    Simple leave-one-out evaluation on users with ≥2 interactions.
-    Reports Hit Rate@10: fraction of users where the held-out item
-    appears in the top-10 KNN recommendations.
+    Leave-one-out Hit Rate@10: fraction of users (capped at 100) where
+    the held-out item appears in the top-10 KNN recommendations.
     """
     if knn is None or matrix is None:
         return None
@@ -167,13 +160,11 @@ def evaluate_model(knn, matrix, all_users, all_products):
     hits = 0
     for ui in eligible[:min(100, len(eligible))]:  # cap at 100 for speed
         row = matrix[ui].copy()
-        # Hold out one random positive
         pos_indices = np.where(row > 0)[0]
         held_out = np.random.choice(pos_indices)
         row[held_out] = 0.0
 
         distances, indices = knn.kneighbors(row.reshape(1, -1))
-        # Get products liked by similar users
         similar_users = [idx for idx in indices[0] if idx != ui]
         rec_products = set()
         for su in similar_users:
@@ -185,14 +176,12 @@ def evaluate_model(knn, matrix, all_users, all_products):
     print(f"[eval] Hit Rate@10 = {hit_rate:.3f} ({hits}/{min(100, len(eligible))} users)")
     return hit_rate
 
-# ── Main ───────────────────────────────────────────────────────────────────────
 def train():
     start = time.time()
     print("=" * 60)
     print("  EthioBridge ML Training Pipeline v2")
     print("=" * 60)
 
-    # ── Step 1: Fetch ──────────────────────────────────────────────────────────
     print("\n[1/7] Fetching data from database...")
     raw_interactions = fetch_interactions()
     raw_products     = fetch_products()
@@ -201,7 +190,6 @@ def train():
     print(f"      {len(raw_interactions)} interactions | {len(raw_products)} products | "
           f"{len(industries)} industries | {len(users)} stakeholders")
 
-    # ── Step 2: Preprocess ─────────────────────────────────────────────────────
     print("\n[2/7] Preprocessing & feature engineering...")
     preprocessor = DataPreprocessor()
 
@@ -214,7 +202,6 @@ def train():
     print(f"      Sectors encoded:    {len(preprocessor.sector_encoder.classes_)}")
     print(f"      Roles encoded:      {len(preprocessor.role_encoder.classes_)}")
 
-    # ── Step 3: Build matrices ─────────────────────────────────────────────────
     print("\n[3/7] Building feature matrices...")
     product_matrix, product_ids = preprocessor.build_product_matrix(products)
     print(f"      Product feature matrix: {product_matrix.shape}")
@@ -228,35 +215,28 @@ def train():
     else:
         print("      No interactions — collaborative filtering will be skipped.")
 
-    # ── Step 4: Popularity ─────────────────────────────────────────────────────
     print("\n[4/7] Computing popularity scores...")
     product_pop  = compute_popularity(interactions, "product_id")
     industry_pop = compute_industry_popularity()
     print(f"      {len(product_pop)} products with scores | {len(industry_pop)} industries")
 
-    # ── Step 5: Train KNN ──────────────────────────────────────────────────────
     print("\n[5/7] Training KNN collaborative filter...")
     knn_model = train_knn(interaction_matrix)
 
-    # ── Step 6: Train SVD ──────────────────────────────────────────────────────
     print("\n[6/7] Training SVD latent factor model...")
     svd_model, user_factors = train_svd(interaction_matrix)
 
-    # ── Step 7: Evaluate ───────────────────────────────────────────────────────
     print("\n[7/7] Evaluating model...")
     hit_rate = evaluate_model(knn_model, interaction_matrix, all_users, all_products)
 
-    # ── Save ───────────────────────────────────────────────────────────────────
     product_lookup  = {p["id"]: p for p in products}
     industry_lookup = {i["id"]: i for i in industries}
 
     payload = {
-        # Metadata
         "version":          time.strftime("%Y%m%d_%H%M%S"),
         "trained_at":       time.strftime("%Y-%m-%d %H:%M:%S"),
         "hit_rate_at_10":   hit_rate,
 
-        # Collaborative filtering
         "knn_model":        knn_model,
         "svd_model":        svd_model,
         "user_factors":     user_factors,
@@ -266,19 +246,16 @@ def train():
         "all_products":     all_products,
         "interaction_matrix": interaction_matrix,
 
-        # Content-based
         "product_features": product_matrix,
         "product_ids":      product_ids,
 
-        # Lookups
         "product_lookup":   product_lookup,
         "industry_lookup":  industry_lookup,
 
-        # Popularity
         "product_pop":      product_pop,
         "industry_pop":     industry_pop,
 
-        # Preprocessor (for identical inference encoding)
+        # Preprocessor saved alongside model so inference uses identical encodings
         "preprocessor":     preprocessor,
     }
 

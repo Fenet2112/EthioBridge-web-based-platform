@@ -5,7 +5,7 @@ const { authenticateToken } = require("../middleware/auth");
 
 const ML_SERVICE = process.env.ML_SERVICE_URL || "http://localhost:8000";
 
-// ── Fallback: popular products when ML service is down ──
+// Popularity-based fallback when the ML service is unreachable
 async function fallbackProducts(category = "", limit = 10) {
   let sql = `
     SELECT p.id AS product_id, p.name, p.category, p.price, p.unit,
@@ -61,7 +61,6 @@ async function fallbackIndustries(category = "", limit = 10) {
   return result.rows.map(r => ({ ...r, score: null, fallback: true }));
 }
 
-// ── GET /api/recommendations/products ──
 router.get("/recommendations/products", authenticateToken, async (req, res) => {
   const { category = "", budget = 0, top_n = 10 } = req.query;
   const user_id = req.user.id;
@@ -100,7 +99,6 @@ router.get("/recommendations/products", authenticateToken, async (req, res) => {
   }
 });
 
-// ── GET /api/recommendations/industries ──
 router.get("/recommendations/industries", authenticateToken, async (req, res) => {
   const { category = "", budget = 0, top_n = 10 } = req.query;
   const user_id = req.user.id;

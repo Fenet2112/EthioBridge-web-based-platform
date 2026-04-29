@@ -1,8 +1,7 @@
 const { Pool } = require("pg");
 require("dotenv").config({ path: require("path").resolve(__dirname, "../../.env") });
 
-// Supabase connection configuration
-// Support both individual parameters and connection string
+// Prefer DATABASE_URL (Supabase/Render); fall back to individual params for local dev
 const poolConfig = process.env.DATABASE_URL ? {
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DB_SSL === 'true' ? {
@@ -14,7 +13,6 @@ const poolConfig = process.env.DATABASE_URL ? {
   database: process.env.DB_NAME || "ethiobridge",
   password: process.env.DB_PASSWORD || "1234",
   port: parseInt(process.env.DB_PORT) || 5432,
-  // SSL configuration for Supabase
   ssl: process.env.DB_SSL === 'true' ? {
     rejectUnauthorized: false
   } : false,
@@ -22,23 +20,19 @@ const poolConfig = process.env.DATABASE_URL ? {
 
 const pool = new Pool({
   ...poolConfig,
-  // Connection pool settings optimized for stability
-  max: 20, // Maximum number of clients in the pool
-  min: 2, // Minimum number of clients to keep alive
-  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 10000, // Return an error after 10 seconds if connection could not be established
-  // Keep connections alive
+  max: 20,
+  min: 2,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
   keepAlive: true,
   keepAliveInitialDelayMillis: 10000,
 });
 
-// Connection event handlers
 pool.on('connect', (client) => {
   console.log('✓ Connected to Supabase database');
 });
 
 pool.on('acquire', (client) => {
-  // Client acquired from pool
 });
 
 pool.on('remove', (client) => {
@@ -52,10 +46,10 @@ pool.on('error', (err, client) => {
     code: err.code,
     stack: err.stack
   });
-  // Don't exit process - let the pool handle reconnection
+  // Don't exit — let the pool handle reconnection
 });
 
-// Graceful shutdown handler
+// Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, closing database pool...');
   await pool.end();
