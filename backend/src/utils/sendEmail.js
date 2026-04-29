@@ -1,6 +1,5 @@
 const nodemailer = require('nodemailer');
 
-// Lazy-init so env vars are read at call time, not module load
 let _transporter = null;
 let _verified = false;
 
@@ -9,18 +8,20 @@ const getTransporter = () => {
   if (!_transporter) {
     _transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
+      port: 465,       // SSL — more reliable than 587/STARTTLS on cloud hosts
+      secure: true,
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 15000,
+      connectionTimeout: 30000,
+      greetingTimeout: 30000,
+      socketTimeout: 30000,
+      pool: true,       // reuse connections
+      maxConnections: 3,
     });
   }
   return _transporter;
 };
 
-// Verify SMTP once on first send
+// Verify SMTP once on first send — reset on failure so next call retries
 const verifyOnce = async (t) => {
   if (_verified) return;
   try {
@@ -28,8 +29,12 @@ const verifyOnce = async (t) => {
     _verified = true;
     console.log(`[EMAIL] SMTP ready — ${process.env.EMAIL_USER}`);
   } catch (err) {
+    _transporter = null; // force re-init on next attempt
+    _verified = false;
     console.error('[EMAIL] SMTP verification failed:', err.message);
-    // EMAIL_PASS must be a 16-char Gmail App Password, not your regular password
+    console.error('[EMAIL] Make sure EMAIL_PASS is a valid 16-char Gmail App Password');
+    console.error('[EMAIL] Generate one at: https://myaccount.google.com/apppasswords');
+    throw err;
   }
 };
 

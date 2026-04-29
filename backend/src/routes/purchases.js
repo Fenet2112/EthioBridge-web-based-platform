@@ -9,7 +9,7 @@ const fs = require('fs');
 const { sendPurchaseApprovedEmail, sendPurchaseRejectedEmail } = require("../utils/sendEmail");
 const { createNotification } = require("../utils/createNotification");
 
-// ── Multer setup for ID documents ──
+// Multer config for ID document uploads
 const idStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = 'uploads/id_documents';
@@ -29,7 +29,7 @@ const uploadId = multer({
   }
 });
 
-// Admin authentication middleware
+// Admin JWT auth — separate secret from user JWT
 const requireAdminAuth = (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.startsWith("Bearer ")
@@ -47,7 +47,37 @@ const requireAdminAuth = (req, res, next) => {
   }
 };
 
-// ── CREATE PURCHASE REQUEST ──
+// Check if this stakeholder has any previous purchase requests
+router.get(
+  "/purchases/check-first-request",
+  authenticateToken,
+  requireRole("stakeholder"),
+  async (req, res) => {
+    try {
+      const stakeResult = await pool.query(
+        "SELECT id, identity_verified FROM stakeholders WHERE user_id = $1",
+        [req.user.id]
+      );
+
+      if (stakeResult.rows.length === 0) {
+        // No profile yet — show full form
+        return res.json({ isFirstRequest: true, identityVerified: false });
+      }
+
+      const { identity_verified } = stakeResult.rows[0];
+
+      // Only skip the full form if admin has explicitly verified this stakeholder
+      res.json({
+        isFirstRequest: !identity_verified,
+        identityVerified: !!identity_verified,
+      });
+    } catch (error) {
+      console.error("Check first request error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
 router.post(
   "/purchases",
   authenticateToken,
@@ -60,7 +90,7 @@ router.post(
     }
 
     try {
-      // ── Subscription / free-request gate ──
+      // Check subscription / free-request gate
       const [subResult, settingsResult] = await Promise.all([
         pool.query(
           "SELECT free_requests_used, is_subscribed, subscription_expires_at FROM users WHERE id = $1",
@@ -100,7 +130,7 @@ router.post(
       let stakeholder_id, identity_verified;
 
       if (stakeResult.rows.length === 0) {
-        // Create basic stakeholder profile if needed
+        // No profile yet — require full details
         if (!full_name || !organization_name || !phone || !location) {
           return res.status(400).json({ message: "Profile info required for first request." });
         }
@@ -109,35 +139,40 @@ router.post(
            VALUES ($1, $2, 'Other', $3, $4, $5) RETURNING id, identity_verified`,
           [req.user.id, organization_name, location, phone, full_name]
         );
+      } else {
+        // Has a profile — if not yet verified, still require contact info
+        const notVerified = !stakeResult.rows[0].identity_verified;
+        if (notVerified && (!full_name || !organization_name || !phone || !location)) {
+          return res.status(400).json({ message: "Contact info required until your identity is verified." });
+        }
       }
 
       stakeholder_id = stakeResult.rows[0].id;
       identity_verified = stakeResult.rows[0].identity_verified;
 
-      // ── Determine request status ──
+      // isFirstRequest = not yet verified by admin
+      const isFirstRequest = !identity_verified;
+
       let requestStatus, requestData;
 
-      if (req.user.status === "approved" || identity_verified) {
-        // Verified/approved users: use profile data, send directly to industry
+      if (identity_verified) {
+        // Admin-verified stakeholder — reuse stored profile, send directly to industry
         const profileResult = await pool.query(
           "SELECT organization_name, contact_person, phone, location FROM stakeholders WHERE id = $1",
           [stakeholder_id]
         );
         const p = profileResult.rows[0];
         requestData = {
-          full_name:         p.contact_person    || full_name         || 'N/A',
-          organization_name: p.organization_name || organization_name || 'N/A',
-          phone:             p.phone             || phone             || 'N/A',
-          location:          p.location          || location          || 'N/A',
+          full_name:         p.contact_person    || 'N/A',
+          organization_name: p.organization_name || 'N/A',
+          phone:             p.phone             || 'N/A',
+          location:          p.location          || 'N/A',
         };
         requestStatus = 'approved';
       } else {
-        // First-time unverified: needs ID upload — return 403 with flag
-        if (!full_name || !organization_name || !phone || !location) {
-          return res.status(400).json({ message: "Contact info required." });
-        }
+        // Not yet verified — hold for admin review after ID upload
         requestData = { full_name, organization_name, phone, location };
-        // Check if they already have a pending_verification request
+        // Block duplicate pending_verification requests
         const existingPending = await pool.query(
           "SELECT id FROM purchase_requests WHERE stakeholder_id = $1 AND status = 'pending_verification'",
           [stakeholder_id]
@@ -162,7 +197,7 @@ router.post(
           quantity, notes || null, requestStatus]
       );
 
-      // Increment free_requests_used if not subscribed
+      // Increment free_requests_used only for unsubscribed users
       if (!isSubscribed) {
         await pool.query(
           "UPDATE users SET free_requests_used = free_requests_used + 1 WHERE id = $1",
@@ -170,25 +205,19 @@ router.post(
         );
       }
 
-      // Auto-create conversation for directly approved requests
-      if (requestStatus === 'approved') {
-        await pool.query(
-          `INSERT INTO conversations (stakeholder_id, industry_id, purchase_request_id)
-           VALUES ($1, $2, $3) ON CONFLICT (stakeholder_id, industry_id) DO NOTHING`,
-          [stakeholder_id, industry_id, result.rows[0].id]
-        );
-      }
+      // Conversation is opened by admin on approval, not here
+      // (pending_verification requests wait for admin review first)
 
       const requiresVerification = requestStatus === 'pending_verification';
       res.status(201).json({
         message: requiresVerification
           ? "Please upload your ID to complete the request."
-          : "Purchase request sent to industry successfully!",
+          : "Purchase request sent successfully!",
         request: result.rows[0],
         requires_verification: requiresVerification,
       });
 
-      // ── Run approval workflow for non-verification requests ──
+      // Run auto-approval workflow only for already-verified returning users
       if (!requiresVerification) {
         try {
           const { processPurchaseRequestApproval } = require('../services/approvalWorkflow');
@@ -199,7 +228,7 @@ router.post(
         }
       }
 
-      // ── Notify the industry about the new purchase request ──
+      // Notify the industry (non-fatal)
       try {
         const industryUserRes = await pool.query(
           `SELECT i.user_id, p.name AS product_name, s.organization_name
@@ -230,7 +259,6 @@ router.post(
   }
 );
 
-// ── UPLOAD ID DOCUMENT for a pending_verification request ──
 router.post(
   "/purchases/:id/upload-id",
   authenticateToken,
@@ -281,7 +309,6 @@ router.post(
   }
 );
 
-// ── GET MY REQUESTS (stakeholder view) ──
 router.get(
   "/purchases/my-requests",
   authenticateToken,
@@ -325,7 +352,6 @@ router.get(
   }
 );
 
-// ── GET PURCHASE REQUESTS FOR MY INDUSTRY (transaction history) ──
 router.get(
   "/purchases/industry-requests",
   authenticateToken,
@@ -382,7 +408,6 @@ router.get(
   }
 );
 
-// ── ADMIN: GET ALL PURCHASE REQUESTS ──
 router.get("/admin/purchases", requireAdminAuth, async (req, res) => {
   const { status } = req.query;
   try {
@@ -402,7 +427,13 @@ router.get("/admin/purchases", requireAdminAuth, async (req, res) => {
       JOIN users u ON u.id = s.user_id
     `;
     const params = [];
-    if (status) { query += " WHERE pr.status = $1"; params.push(status); }
+    if (status) {
+      query += " WHERE pr.status = $1";
+      params.push(status);
+    } else {
+      // Default: show requests that need admin review
+      query += " WHERE pr.status = 'pending_verification'";
+    }
     query += " ORDER BY pr.created_at DESC";
 
     const result = await pool.query(query, params);
@@ -413,7 +444,7 @@ router.get("/admin/purchases", requireAdminAuth, async (req, res) => {
   }
 });
 
-// ── ADMIN: APPROVE PURCHASE REQUEST (also marks stakeholder as identity_verified) ──
+// Admin approves a purchase request — marks stakeholder as verified, opens conversation, sends email
 router.patch("/admin/purchases/:id/approve", requireAdminAuth, async (req, res) => {
   const { id } = req.params;
   const { admin_notes } = req.body;
@@ -427,21 +458,21 @@ router.patch("/admin/purchases/:id/approve", requireAdminAuth, async (req, res) 
 
     const request = result.rows[0];
 
-    // Mark stakeholder as identity_verified so future requests skip ID upload
+    // Mark stakeholder as identity_verified so future requests skip the ID upload step
     await pool.query(
       `UPDATE stakeholders SET identity_verified = TRUE, identity_verified_at = NOW()
        WHERE id = $1`,
       [request.stakeholder_id]
     );
 
-    // Auto-create conversation
+    // Open conversation so stakeholder and industry can now communicate
     await pool.query(
       `INSERT INTO conversations (stakeholder_id, industry_id, purchase_request_id)
        VALUES ($1, $2, $3) ON CONFLICT (stakeholder_id, industry_id) DO NOTHING`,
       [request.stakeholder_id, request.industry_id, request.id]
     );
 
-    // Send approval email to stakeholder (non-fatal)
+    // Send approval email + in-app notification
     try {
       const emailRes = await pool.query(
         `SELECT u.id AS stakeholder_user_id, u.email, p.name AS product_name, i.company_name
@@ -455,7 +486,6 @@ router.patch("/admin/purchases/:id/approve", requireAdminAuth, async (req, res) 
       if (emailRes.rows.length > 0) {
         const { stakeholder_user_id, email, product_name, company_name } = emailRes.rows[0];
         await sendPurchaseApprovedEmail(email, product_name, company_name);
-        // Notify stakeholder
         await createNotification(pool, stakeholder_user_id,
           'Purchase Request Approved',
           `Your request for "${product_name}" from ${company_name} has been approved. You can now message the industry.`,
@@ -466,13 +496,13 @@ router.patch("/admin/purchases/:id/approve", requireAdminAuth, async (req, res) 
       console.error("Purchase approval email/notif failed (non-fatal):", emailErr.message);
     }
 
-    res.json({ message: "Purchase request approved and stakeholder verified", request });  } catch (error) {
+    res.json({ message: "Purchase request approved and stakeholder verified", request });
+  } catch (error) {
     console.error("Admin approve purchase error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// ── ADMIN: REJECT PURCHASE REQUEST ──
 router.patch("/admin/purchases/:id/reject", requireAdminAuth, async (req, res) => {
   const { id } = req.params;
   const { admin_notes } = req.body;
@@ -486,7 +516,7 @@ router.patch("/admin/purchases/:id/reject", requireAdminAuth, async (req, res) =
     );
     if (result.rows.length === 0) return res.status(404).json({ message: "Purchase request not found" });
 
-    // Send rejection email to stakeholder (non-fatal)
+    // Send rejection email + in-app notification (non-fatal)
     try {
       const emailRes = await pool.query(
         `SELECT u.id AS stakeholder_user_id, u.email, p.name AS product_name, i.company_name

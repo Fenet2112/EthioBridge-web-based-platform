@@ -16,6 +16,7 @@ function IndustryDetailPage() {
   const [error, setError] = useState("");
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isFirstRequest, setIsFirstRequest] = useState(true); // default true — show full form until backend confirms otherwise
   const [needsSessionRefresh, setNeedsSessionRefresh] = useState(false);
   const [subStatus, setSubStatus] = useState({ can_request: true, free_requests_used: 0, is_subscribed: false });
   const [showSubModal, setShowSubModal] = useState(false);
@@ -70,6 +71,19 @@ function IndustryDetailPage() {
             const subData = await subRes.json();
             setSubStatus(subData);
           }
+
+          // Check if this is the user's first purchase request (not yet identity_verified)
+          const firstReqRes = await fetch(`${API_BASE_URL}/api/purchases/check-first-request`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (firstReqRes.ok) {
+            const firstReqData = await firstReqRes.json();
+            // isFirstRequest = true means not yet verified by admin → show full form
+            setIsFirstRequest(firstReqData.isFirstRequest);
+          } else {
+            console.warn("[IndustryDetailPage] check-first-request failed:", firstReqRes.status);
+            // Keep default true — safer to show full form than to hide required fields
+          }
         }
 
         console.log("[IndustryDetailPage] Fetching from:", `${API_BASE_URL}/api/industries/${id}`);
@@ -105,8 +119,6 @@ function IndustryDetailPage() {
 
   const handleBuySubmit = async (formData) => {
     const token = localStorage.getItem("token");
-    const userData = JSON.parse(localStorage.getItem("user") || "{}");
-    const isApproved = userData.status === "approved";
 
     try {
       const payload = {
@@ -115,7 +127,7 @@ function IndustryDetailPage() {
         quantity: parseInt(formData.quantity),
         notes: formData.notes || null,
       };
-      if (!isApproved) {
+      if (isFirstRequest) {
         payload.full_name = formData.full_name;
         payload.organization_name = formData.organization_name;
         payload.phone = formData.phone;
@@ -151,9 +163,13 @@ function IndustryDetailPage() {
         can_request: prev.is_subscribed || prev.free_requests_used + 1 < 1,
       }));
 
-      alert(isApproved
-        ? "Purchase request sent to industry successfully!"
-        : "Purchase request submitted for admin verification!");
+      const wasFirst = isFirstRequest;
+      // Only flip to returning-user mode after admin verifies — don't flip on submit
+      // (the ID still needs to be uploaded and admin needs to approve)
+
+      alert(wasFirst
+        ? "Purchase request submitted! Please upload your ID in the next step."
+        : "Purchase request sent successfully!");
       setShowBuyModal(false);
       setSelectedProduct(null);
     } catch (err) {
@@ -535,6 +551,7 @@ function IndustryDetailPage() {
       {showBuyModal && (
         <BuyModal
           product={selectedProduct}
+          isFirstRequest={isFirstRequest}
           onClose={() => setShowBuyModal(false)}
           onSubmit={handleBuySubmit}
         />
@@ -659,9 +676,7 @@ function IndustryDetailPage() {
   );
 }
 
-function BuyModal({ product, onClose, onSubmit }) {
-  const userData = JSON.parse(localStorage.getItem("user") || "{}");
-  const isApproved = userData.status === "approved";
+function BuyModal({ product, isFirstRequest, onClose, onSubmit }) {
   const [formData, setFormData] = useState({ quantity: 1, notes: "", full_name: "", organization_name: "", phone: "", location: "" });
   const [loading, setLoading] = useState(false);
 
@@ -686,13 +701,13 @@ function BuyModal({ product, onClose, onSubmit }) {
           <strong>{product?.name}</strong>
         </p>
 
-        {isApproved ? (
+        {!isFirstRequest ? (
           <div className="modal-notice info">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
               <polyline points="22 4 12 14.01 9 11.01"/>
             </svg>
-            Your verified profile will be sent to the industry automatically.
+            Your profile will be sent to the industry automatically.
           </div>
         ) : (
           <div className="modal-notice warning">
@@ -706,7 +721,7 @@ function BuyModal({ product, onClose, onSubmit }) {
         )}
 
         <form onSubmit={handleSubmit}>
-          {!isApproved && (
+          {isFirstRequest && (
             <>
               <div className="form-group">
                 <label>Full Name *</label>
@@ -737,7 +752,7 @@ function BuyModal({ product, onClose, onSubmit }) {
             <textarea name="notes" value={formData.notes} onChange={handleChange} rows="3" placeholder="Any special requirements..." />
           </div>
           <button type="submit" className="submit-buy-btn" disabled={loading}>
-            {loading ? "Submitting..." : isApproved ? "Send Purchase Request" : "Submit for Verification"}
+            {loading ? "Submitting..." : isFirstRequest ? "Submit for Verification" : "Send Purchase Request"}
           </button>
         </form>
       </div>

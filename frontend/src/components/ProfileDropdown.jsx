@@ -11,8 +11,6 @@ function ProfileDropdown() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [profile, setProfile] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState(null);
 
   const dropdownRef = useRef(null);
 
@@ -66,7 +64,7 @@ function ProfileDropdown() {
     return '?';
   };
 
-  const profilePicUrl = previewUrl || imageUrl(profile?.profile_picture);
+  const profilePicUrl = imageUrl(profile?.profile_picture);
 
   return (
     <div className="profile-dropdown-container" ref={dropdownRef}>
@@ -121,11 +119,12 @@ function ProfileDropdown() {
           <div className="dropdown-divider"></div>
 
           {/* VIEW MODE */}
-          {!isEditing ? (
-            <>
               <button
                 className="dropdown-item"
-                onClick={() => setIsEditing(true)}
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate('/profile?edit=true');
+                }}
               >
                 ✏️ Edit Profile
               </button>
@@ -158,20 +157,6 @@ function ProfileDropdown() {
               >
                 🚪 Logout
               </button>
-            </>
-          ) : (
-            /* EDIT MODE */
-            <div className="dropdown-edit-form">
-              <h3>Edit Profile</h3>
-
-              <button
-                className="btn-cancel"
-                onClick={() => setIsEditing(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          )}
 
         </div>
       )}

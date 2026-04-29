@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { imageUrl } from '../utils/imageUrl';
 import StakeholderNav from '../components/StakeholderNav';
 import { API_BASE_URL } from '../utils/api';
@@ -7,8 +7,9 @@ import './ProfilePage.css';
 
 function ProfilePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(searchParams.get('edit') === 'true');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -16,6 +17,15 @@ function ProfilePage() {
   const fileInputRef = useRef(null);
 
   useEffect(() => { fetchProfile(); }, []);
+
+  // Scroll to edit form if opened via ?edit=true
+  useEffect(() => {
+    if (isEditing && !loading) {
+      setTimeout(() => {
+        document.querySelector('.pp-info-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [isEditing, loading]);
 
   const fetchProfile = async () => {
     const token = localStorage.getItem('token');
