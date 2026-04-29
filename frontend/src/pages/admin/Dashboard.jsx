@@ -125,7 +125,9 @@ function Dashboard() {
   const fetchUsers = async () => {
     setLoading(true); setError("");
     try {
-      const ep = filter === "pending" ? `${API}/api/admin/pending` : `${API}/api/admin/users`;
+      const ep = filter === "pending"
+        ? `${API}/api/admin/pending`
+        : `${API}/api/admin/users/all`;
       const res = await fetch(ep, { headers: { Authorization: `Bearer ${tok()}` } });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
