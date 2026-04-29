@@ -104,7 +104,7 @@ function Dashboard() {
 
   // Purchases
   const [purchaseRequests, setPurchaseRequests] = useState([]);
-  const [prFilter, setPrFilter]   = useState("pending");
+  const [prFilter, setPrFilter]   = useState("pending_verification");
   const [prSearch, setPrSearch]   = useState("");
 
   // User management
@@ -340,7 +340,7 @@ function Dashboard() {
         <nav className="admin-nav">
           {NAV.slice(0, 5).map(n => (
             <button key={n.id} className={view === n.id ? "active" : ""}
-              onClick={() => { navTo(n.id); if (n.id === "users") setFilter("pending"); if (n.id === "purchases") setPrFilter("pending"); }}>
+              onClick={() => { navTo(n.id); if (n.id === "users") setFilter("pending"); if (n.id === "purchases") setPrFilter("pending_verification"); }}>
               <span className="nav-icon">{n.icon}</span>{n.label}
             </button>
           ))}
@@ -474,9 +474,9 @@ function Dashboard() {
               <div className="admin-topbar">
                 <div><h1>Purchase Requests</h1><p>{filteredPR.length} of {purchaseRequests.length} requests</p></div>
                 <div className="topbar-actions">
-                  {["pending","pending_verification","approved","rejected","all"].map(f => (
+                  {["pending_verification","pending","approved","rejected","all"].map(f => (
                     <button key={f} className={prFilter === f ? "active" : ""} onClick={() => setPrFilter(f)}>
-                      {f === "pending_verification" ? "🛡️ ID Review" : f.charAt(0).toUpperCase() + f.slice(1)}
+                      {f === "pending_verification" ? "🛡️ ID Review" : f === "pending" ? "Pending" : f.charAt(0).toUpperCase() + f.slice(1)}
                     </button>
                   ))}
                   <button className="refresh-btn" onClick={fetchPurchaseRequests}>↻ Refresh</button>

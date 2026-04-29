@@ -430,10 +430,8 @@ router.get("/admin/purchases", requireAdminAuth, async (req, res) => {
     if (status) {
       query += " WHERE pr.status = $1";
       params.push(status);
-    } else {
-      // Default: show requests that need admin review
-      query += " WHERE pr.status = 'pending_verification'";
     }
+    // No status filter = return everything (used by "All" tab)
     query += " ORDER BY pr.created_at DESC";
 
     const result = await pool.query(query, params);
