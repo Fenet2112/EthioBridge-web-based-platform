@@ -529,9 +529,15 @@ function Dashboard() {
                       {req.id_document_url && (
                         <div className="id-doc-section">
                           <div className="id-doc-label">🛡️ Identity Document ({req.id_document_type?.replace(/_/g, ' ')})</div>
-                          {req.id_document_url.match(/\.(jpg|jpeg|png)$/i)
-                            ? <a href={`${API}${req.id_document_url}`} target="_blank" rel="noopener noreferrer"><img src={`${API}${req.id_document_url}`} alt="ID" className="id-doc-preview" /></a>
-                            : <a href={`${API}${req.id_document_url}`} target="_blank" rel="noopener noreferrer" className="id-doc-link">📄 View Document (PDF)</a>}
+                          {(() => {
+                            // Full URL (Supabase) or local path — build correct href
+                            const docUrl = req.id_document_url.startsWith('http')
+                              ? req.id_document_url
+                              : `${API}${req.id_document_url}`;
+                            return req.id_document_url.match(/\.(jpg|jpeg|png)$/i)
+                              ? <a href={docUrl} target="_blank" rel="noopener noreferrer"><img src={docUrl} alt="ID" className="id-doc-preview" /></a>
+                              : <a href={docUrl} target="_blank" rel="noopener noreferrer" className="id-doc-link">📄 View Document (PDF)</a>;
+                          })()}
                         </div>
                       )}
                       {(req.status === "pending" || req.status === "pending_verification") && req.id_document_url && (

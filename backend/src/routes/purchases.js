@@ -8,26 +8,43 @@ const path = require('path');
 const fs = require('fs');
 const { sendPurchaseApprovedEmail, sendPurchaseRejectedEmail } = require("../utils/sendEmail");
 const { createNotification } = require("../utils/createNotification");
+const { supabaseConfigured, cloudinaryConfigured } = require("../utils/cloudinaryUpload");
 
-// Multer config for ID document uploads
-const idStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = 'uploads/id_documents';
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, `id_${req.user.id}_${Date.now()}${path.extname(file.originalname)}`);
-  }
-});
-const uploadId = multer({
-  storage: idStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|pdf/;
-    cb(null, allowed.test(path.extname(file.originalname).toLowerCase()));
-  }
-});
+// ID document upload — uses Supabase if configured, otherwise local disk
+// Supports images + PDF (unlike the image-only createUpload helper)
+let uploadId;
+
+if (supabaseConfigured) {
+  // Memory storage — we upload to Supabase manually in the route handler
+  uploadId = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      const allowed = /jpeg|jpg|png|pdf/;
+      cb(null, allowed.test(path.extname(file.originalname).toLowerCase()));
+    }
+  });
+} else {
+  // Local disk fallback
+  const idStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      const dir = 'uploads/id_documents';
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+      cb(null, `id_${req.user.id}_${Date.now()}${path.extname(file.originalname)}`);
+    }
+  });
+  uploadId = multer({
+    storage: idStorage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      const allowed = /jpeg|jpg|png|pdf/;
+      cb(null, allowed.test(path.extname(file.originalname).toLowerCase()));
+    }
+  });
+}
 
 // Admin JWT auth — separate secret from user JWT
 const requireAdminAuth = (req, res, next) => {
@@ -293,7 +310,39 @@ router.post(
         return res.status(400).json({ message: "This request does not require ID verification." });
       }
 
-      const fileUrl = `/uploads/id_documents/${req.file.filename}`;
+      let fileUrl;
+
+      if (supabaseConfigured) {
+        // Upload to Supabase id-documents bucket
+        const { createClient } = require('@supabase/supabase-js');
+        const supabase = createClient(
+          process.env.SUPABASE_URL,
+          process.env.SUPABASE_SERVICE_ROLE_KEY,
+          { auth: { persistSession: false } }
+        );
+        const ext = path.extname(req.file.originalname).toLowerCase() || '.jpg';
+        const filePath = `id_documents/${req.user.id}_${Date.now()}${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('id-documents')
+          .upload(filePath, req.file.buffer, {
+            contentType: req.file.mimetype,
+            upsert: false,
+          });
+
+        if (uploadError) {
+          console.error('[ID Upload] Supabase error:', uploadError.message);
+          return res.status(500).json({ message: 'ID upload failed: ' + uploadError.message });
+        }
+
+        const { data } = supabase.storage.from('id-documents').getPublicUrl(filePath);
+        fileUrl = data.publicUrl;
+        console.log(`[ID Upload] Stored in Supabase: ${fileUrl}`);
+      } else {
+        // Local disk fallback
+        fileUrl = `/uploads/id_documents/${req.file.filename}`;
+      }
+
       await pool.query(
         `UPDATE purchase_requests
          SET id_document_url = $1, id_document_type = $2, updated_at = NOW()
