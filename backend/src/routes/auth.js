@@ -61,7 +61,7 @@ router.post("/signup", async (req, res) => {
        VALUES ($1, $2, $3, $4, FALSE, $5, $6)
        RETURNING id, email, role, status`,
       [email, hashedPassword, role,
-       role === 'stakeholder' ? 'approved' : 'incomplete',  // stakeholders get immediate access
+       role === 'stakeholder' ? 'pending' : 'incomplete',  // stakeholders start as pending, await admin approval
        verificationToken, tokenExpires]
     );
 
@@ -138,8 +138,9 @@ router.post("/login", async (req, res) => {
     }
 
     // TEMPORARY: Auto-verify email if not verified (until SendGrid is configured)
+    // TODO: Remove this once EMAIL_USER/EMAIL_PASS are correctly configured
     if (!user.email_verified) {
-      console.log(`[LOGIN] Auto-verifying email for ${email} (SendGrid not configured yet)`);
+      console.log(`[LOGIN] Auto-verifying email for ${email} — remove this once SMTP is working`);
       await pool.query("UPDATE users SET email_verified = TRUE WHERE id = $1", [user.id]);
       user.email_verified = true;
     }
@@ -269,16 +270,12 @@ router.post("/profile/stakeholder", uploadStakeholderID.single("id_document"), a
       [user_id, organization_name, organization_type, location, description || null, phone || null, contact_person || null, idDocUrl, idDocType]
     );
 
-    // Stakeholders are approved on signup — profile completion just saves data
-    // Status only changes if somehow still 'incomplete' (legacy accounts)
+    // Profile completion just saves data — status is managed by admin approval
     const currentStatus = userResult.rows[0].status;
-    if (currentStatus === 'incomplete') {
-      await pool.query("UPDATE users SET status = 'approved' WHERE id = $1", [user_id]);
-    }
 
     res.json({ 
       message: "Stakeholder profile updated successfully.",
-      status: currentStatus === 'incomplete' ? 'approved' : currentStatus
+      status: currentStatus
     });
   } catch (error) {
     console.error("Stakeholder profile CRASH:", error.message);
