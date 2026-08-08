@@ -456,6 +456,9 @@ def recommend_industries(
 
 @app.post("/train")
 def trigger_training(background_tasks: BackgroundTasks):
+# ══════════════════════════════════════════════════════════════════════════════
+@app.post("/train")
+def trigger_training(background_tasks: BackgroundTasks):
     def _retrain():
         global _model
         print("[/train] Background retraining started...")
